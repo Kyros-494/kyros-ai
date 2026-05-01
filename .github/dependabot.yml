@@ -11,8 +11,6 @@ updates:
     labels: ["dependencies", "python"]
     # reviewers: ["Kyros-494"]  # Uncomment and update when you have team members
     groups:
-      security:
-        applies-to: security-updates
       minor-patch:
         applies-to: version-updates
         update-types: ["minor", "patch"]
