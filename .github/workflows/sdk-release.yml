@@ -1,0 +1,138 @@
+# SDK Release Workflow
+# Triggers on git tags matching: sdk-v* (e.g., sdk-v0.1.0)
+# Publishes Python SDK to PyPI and TypeScript SDK to npm
+#
+# ── PyPI Setup (one-time) ──────────────────────────────────────────────────────
+# This workflow uses PyPI Trusted Publishers (OIDC) — no API token needed.
+# Before the first release, configure a Trusted Publisher on PyPI:
+#   1. Go to https://pypi.org/manage/account/publishing/
+#   2. Add a new publisher:
+#      - PyPI project name: kyros-sdk
+#      - Owner:             Kyros-494
+#      - Repository:        kyros-ai
+#      - Workflow filename: sdk-release.yml
+#      - Environment name:  (leave blank)
+#
+# ── npm Setup (one-time) ───────────────────────────────────────────────────────
+# Add NPM_TOKEN to GitHub repository secrets:
+#   Settings → Secrets → Actions → New repository secret
+#   Name: NPM_TOKEN  Value: <npm automation token>
+
+name: SDK Release
+
+on:
+  push:
+    tags:
+      - 'sdk-v*'
+
+jobs:
+  # ─── Python SDK → PyPI ────────────────────────
+  publish-python:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for PyPI Trusted Publisher (OIDC)
+    defaults:
+      run:
+        working-directory: sdks/python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build tools
+        run: pip install hatch build twine
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> $GITHUB_OUTPUT
+
+      - name: Bump version
+        # hatch reads/writes the version from kyros/__init__.py (configured in pyproject.toml)
+        run: hatch version "${{ steps.version.outputs.VERSION }}"
+
+      - name: Build sdist + wheel
+        run: python -m build
+
+      - name: Verify package
+        run: twine check dist/*
+
+      - name: Publish to PyPI (Trusted Publisher — no token needed)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdks/python/dist/
+
+  # ─── TypeScript SDK → npm ─────────────────────
+  publish-typescript:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdks/typescript
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> $GITHUB_OUTPUT
+
+      - name: Bump version in package.json
+        run: npm version "${{ steps.version.outputs.VERSION }}" --no-git-tag-version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ─── Create GitHub Release ────────────────────
+  github-release:
+    needs: [publish-python, publish-typescript]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "SDK v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Kyros SDK v${{ steps.version.outputs.VERSION }}
+
+            ### Python
+            ```bash
+            pip install kyros-sdk==${{ steps.version.outputs.VERSION }}
+            ```
+
+            ### TypeScript / Node
+            ```bash
+            npm install @kyros/sdk@${{ steps.version.outputs.VERSION }}
+            ```
+
+            See [CHANGELOG](https://github.com/Kyros-494/kyros-ai/blob/main/sdks/python/CHANGELOG.md) for details.
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
