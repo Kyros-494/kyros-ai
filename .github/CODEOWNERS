@@ -1,0 +1,38 @@
+# Code Owners for Kyros
+# These owners will be automatically requested for review when someone opens a pull request.
+
+# Global owners - default for everything
+* @kyros494
+
+# Server core
+/server/ @kyros494
+/server/kyros/ @kyros494
+/server/alembic/ @kyros494
+
+# Python SDK
+/sdks/python/ @kyros494
+
+# TypeScript SDK
+/sdks/typescript/ @kyros494
+
+# Documentation
+/docs/ @kyros494
+*.md @kyros494
+
+# CI/CD and workflows
+/.github/ @kyros494
+/.github/workflows/ @kyros494
+
+# Security-sensitive files
+/SECURITY.md @kyros494
+/LICENSE @kyros494
+/LICENSE-MIT @kyros494
+/CONTRIBUTING.md @kyros494
+
+# Configuration files
+docker-compose.yml @kyros494
+Makefile @kyros494
+*.Dockerfile @kyros494
+
+# Tests
+/server/tests/ @kyros494

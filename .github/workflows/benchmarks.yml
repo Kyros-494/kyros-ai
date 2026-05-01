@@ -1,0 +1,56 @@
+# E86 — Performance benchmark suite in CI
+name: Benchmarks
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: kyros_test
+          POSTGRES_USER: kyros
+          POSTGRES_PASSWORD: test
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: server
+        run: pip install -e ".[dev]" locust
+
+      - name: Run unit tests
+        working-directory: server
+        run: pytest tests/unit/ -v --tb=short
+
+      - name: Run load test (30s, 50 users)
+        working-directory: server
+        run: |
+          locust -f tests/load/locustfile.py \
+            --host=http://localhost:8000 \
+            --headless \
+            --users=50 \
+            --spawn-rate=10 \
+            --run-time=30s \
+            --csv=benchmark_results \
+            --only-summary
+        continue-on-error: true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: server/benchmark_results*.csv

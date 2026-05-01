@@ -1,0 +1,46 @@
+# E87 — Dependabot: automated dependency updates + vulnerability alerts
+version: 2
+updates:
+  # Python server dependencies
+  - package-ecosystem: "pip"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "python"]
+    # reviewers: ["Kyros-494"]  # Uncomment and update when you have team members
+    groups:
+      security:
+        applies-to: security-updates
+      minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+
+  # Python SDK
+  - package-ecosystem: "pip"
+    directory: "/sdks/python"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "sdk-python"]
+
+  # TypeScript SDK
+  - package-ecosystem: "npm"
+    directory: "/sdks/typescript"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "sdk-typescript"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "ci"]
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/server"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "docker"]
