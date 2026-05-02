@@ -1,0 +1,59 @@
+# Kyros .gitignore
+
+# ─── Python ────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+server/.venv/
+
+# ─── Node ──────────────────────────────
+node_modules/
+npm-debug.log*
+dist/
+*.tsbuildinfo
+
+# ─── Next.js ───────────────────────────
+.next/
+out/
+
+# ─── Environment ──────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── IDE ───────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── OS ────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Docker ────────────────────────────
+docker-compose.override.yml
+
+# ─── Terraform ─────────────────────────
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# ─── Testing ──────────────────────────
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ─── ML Models (large files) ──────────
+*.onnx
+*.bin
+*.pt
+models/
