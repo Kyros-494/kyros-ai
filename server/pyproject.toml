@@ -1,0 +1,85 @@
+[project]
+name = "kyros-server"
+version = "0.1.0"
+description = "Kyros — Persistent memory operating system for AI agents"
+requires-python = ">=3.12"
+dependencies = [
+    # Web framework
+    "fastapi>=0.115.0,<1.0.0",
+    "uvicorn[standard]>=0.32.0,<1.0.0",
+    # Data validation
+    "pydantic>=2.9.0,<3.0.0",
+    "pydantic-settings>=2.6.0,<3.0.0",
+    # Database
+    "sqlalchemy[asyncio]>=2.0.36,<3.0.0",
+    "asyncpg>=0.30.0,<1.0.0",
+    "alembic>=1.14.0,<2.0.0",
+    "pgvector>=0.3.0,<1.0.0",
+    # Cache
+    "redis[hiredis]>=5.2.0,<6.0.0",
+    # HTTP client
+    "httpx>=0.28.0,<1.0.0",
+    # ML / Embeddings
+    "sentence-transformers>=5.4.1,<6.0.0",
+    "transformers>=5.0.0,<6.0.0",
+    "numpy>=1.26.0,<3.0.0",
+    # Auth
+    "python-jose[cryptography]>=3.3.0,<4.0.0",
+    "passlib[bcrypt]>=1.7.4,<2.0.0",
+    # Logging
+    "structlog>=24.4.0,<26.0.0",
+    # Utilities
+    "prettytable>=3.11.0,<4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "locust>=2.32.0",
+    "pre-commit>=4.0.0",
+    "httpx>=0.28.0",  # for TestClient
+    "tqdm>=4.66.0",   # for benchmark progress bars
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ANN"]
+ignore = [
+    "ANN101",  # Missing type annotation for self
+    "ANN102",  # Missing type annotation for cls
+    "ANN401",  # Dynamically typed expressions (Any)
+    "B008",    # Do not perform function calls in default arguments (FastAPI Depends)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-ra -q --tb=short"
+markers = [
+    "integration: requires running server + database",
+    "unit: fast isolated tests with no external dependencies",
+    "slow: tests that take more than 5 seconds",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:sqlalchemy",
+    "ignore::DeprecationWarning:asyncpg",
+    "ignore::PendingDeprecationWarning",
+]
