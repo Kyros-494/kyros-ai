@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kyros}
+      POSTGRES_USER: ${POSTGRES_USER:-kyros}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kyros}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Production: tune shared_buffers and work_mem via POSTGRES_INITDB_ARGS
+    # or a custom postgresql.conf mounted as a volume.
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly yes
+      --appendfsync everysec
+      --loglevel warning
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  kyros-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      # Use 'production' target for production deployments (no --reload, non-root user).
+      # Use 'development' target for local development (hot-reload enabled).
+      target: ${KYROS_BUILD_TARGET:-development}
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
+    env_file:
+      - .env
+    environment:
+      KYROS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kyros}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kyros}
+      KYROS_REDIS_URL: redis://redis:6379/0
+      PYTHONPATH: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      # Mount your local Downloads folder so benchmark data files are accessible
+      # inside the container at /data/
+      - ${BENCHMARK_DATA_DIR:-./data}:/data:ro
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    # Recommended resource limits for production (uncomment and tune):
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 2g
+    #       cpus: "2.0"
+    #     reservations:
+    #       memory: 512m
+
+volumes:
+  pgdata:
+  redisdata:
