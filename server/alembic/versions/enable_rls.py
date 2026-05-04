@@ -60,12 +60,18 @@ def upgrade() -> None:
 
     # Create a dedicated app role that respects RLS.
     # Password must be provided via environment variable for security.
+    # In test/CI environments, use a default test password if not set.
     app_password = os.environ.get("KYROS_DB_APP_PASSWORD")
+    is_test_env = os.environ.get("KYROS_ENVIRONMENT") in ("test", "ci", "development")
+    
     if not app_password:
-        raise ValueError(
-            "KYROS_DB_APP_PASSWORD environment variable must be set before running this migration. "
-            "Generate a strong password with: openssl rand -base64 32"
-        )
+        if is_test_env:
+            app_password = "test-password-change-in-production"
+        else:
+            raise ValueError(
+                "KYROS_DB_APP_PASSWORD environment variable must be set before running this migration. "
+                "Generate a strong password with: openssl rand -base64 32"
+            )
 
     # Use parameterized query to safely pass password
     connection = op.get_bind()
