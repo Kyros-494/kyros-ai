@@ -138,11 +138,7 @@ async def _call_gemini(
     model = _gemini_model()
     resp = await client.post(
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}",
-        json={
-            "contents": [
-                {"parts": [{"text": f"{system_prompt}\n\nUser: {prompt}"}]}
-            ]
-        },
+        json={"contents": [{"parts": [{"text": f"{system_prompt}\n\nUser: {prompt}"}]}]},
     )
 
     if resp.status_code == 400:

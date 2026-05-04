@@ -5,14 +5,14 @@ Requires: pip install llama-index-core kyros-sdk
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from kyros import Client
 from kyros.exceptions import KyrosError
 
 try:
-    from llama_index.core.memory import BaseMemory
     from llama_index.core.llms import ChatMessage, MessageRole
+    from llama_index.core.memory import BaseMemory
 except ImportError as e:
     raise ImportError(
         "llama-index-core is required for the LlamaIndex integration. "
@@ -20,7 +20,7 @@ except ImportError as e:
     ) from e
 
 
-class KyrosMemory(BaseMemory):
+class KyrosMemory(BaseMemory):  # type: ignore[misc]
     """Kyros-backed persistent memory for LlamaIndex agents.
 
     Usage:
@@ -41,11 +41,11 @@ class KyrosMemory(BaseMemory):
         arbitrary_types_allowed = True
 
     @classmethod
-    def from_defaults(cls, client: Client, agent_id: str, k: int = 10) -> "KyrosMemory":
+    def from_defaults(cls, client: Client, agent_id: str, k: int = 10) -> KyrosMemory:
         """Create a KyrosMemory instance with sensible defaults."""
         return cls(client=client, agent_id=agent_id, k=k)
 
-    def get(self, input: Optional[str] = None, **kwargs: Any) -> list[ChatMessage]:
+    def get(self, input: str | None = None, **kwargs: Any) -> list[ChatMessage]:
         """Retrieve relevant memories as ChatMessage context."""
         if not input:
             return []
@@ -69,20 +69,19 @@ class KyrosMemory(BaseMemory):
 
     def put(self, message: ChatMessage) -> None:
         """Store a message as an episodic memory."""
+        import contextlib
+
         content = message.content
         if not isinstance(content, str):
             content = str(content)
         if not content.strip():
             return
 
-        try:
+        with contextlib.suppress(KyrosError):
             self.client.remember(
                 self.agent_id,
                 content,
-                role=message.role.value if hasattr(message.role, "value") else str(message.role),
             )
-        except KyrosError:
-            pass  # Best-effort
 
     def set(self, messages: list[ChatMessage]) -> None:
         """Store a batch of messages."""

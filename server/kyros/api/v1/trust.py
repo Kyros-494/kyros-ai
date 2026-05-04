@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -10,7 +11,7 @@ router = APIRouter()
 
 
 @router.get("/status")
-async def get_trust_status():
+async def get_trust_status() -> dict[str, Any]:
     """Return the current trust and compliance status of the platform.
 
     Update the compliance fields to reflect your actual certification status

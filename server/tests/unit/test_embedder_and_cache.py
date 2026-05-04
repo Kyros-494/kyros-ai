@@ -11,17 +11,19 @@ import pytest
 
 # ─── EmbeddingModel Tests ─────────────────────
 
-class TestEmbeddingModel:
 
+class TestEmbeddingModel:
     def _make_embedder(self, dim: int = 384) -> Any:
         """Helper: build an EmbeddingModel with a mocked SentenceTransformer."""
         import numpy as np
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = dim
             mock_model.encode.return_value = np.random.randn(dim).astype(np.float32)
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
+
             embedder = EmbeddingModel("test-model")
             embedder._mock_model = mock_model  # keep reference for assertions
             return embedder
@@ -40,6 +42,7 @@ class TestEmbeddingModel:
 
     def test_embed_raises_on_empty_string(self):
         from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
@@ -50,6 +53,7 @@ class TestEmbeddingModel:
 
     def test_embed_raises_on_whitespace_only(self):
         from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
@@ -60,12 +64,14 @@ class TestEmbeddingModel:
 
     def test_embed_batch_returns_list_of_lists(self):
         import numpy as np
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.encode.return_value = np.random.randn(3, 384).astype(np.float32)
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
+
             embedder = EmbeddingModel("test-model")
             results = embedder.embed_batch(["a", "b", "c"])
             assert len(results) == 3
@@ -73,6 +79,7 @@ class TestEmbeddingModel:
 
     def test_embed_batch_raises_on_empty_list(self):
         from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
@@ -84,12 +91,14 @@ class TestEmbeddingModel:
     def test_embed_batch_sanitizes_empty_strings(self):
         """Empty strings in a batch should be replaced with a space, not crash."""
         import numpy as np
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.encode.return_value = np.random.randn(3, 384).astype(np.float32)
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
+
             embedder = EmbeddingModel("test-model")
             # Should not raise even with empty strings in the batch
             results = embedder.embed_batch(["hello", "", "world"])
@@ -101,6 +110,7 @@ class TestEmbeddingModel:
 
     def test_model_load_failure_raises_embedding_error(self):
         from kyros.ml.embedder import EmbeddingError
+
         with (
             patch(
                 "kyros.ml.embedder.SentenceTransformer",
@@ -108,17 +118,20 @@ class TestEmbeddingModel:
             ),
             pytest.raises(EmbeddingError, match="Failed to load"),
         ):
-                from kyros.ml.embedder import EmbeddingModel
-                EmbeddingModel("nonexistent-model")
+            from kyros.ml.embedder import EmbeddingModel
+
+            EmbeddingModel("nonexistent-model")
 
     def test_embed_model_error_raises_embedding_error(self):
         from kyros.ml.embedder import EmbeddingError
+
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.encode.side_effect = RuntimeError("CUDA out of memory")
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
+
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="Embedding failed"):
                 embedder.embed("test text")
@@ -126,8 +139,8 @@ class TestEmbeddingModel:
 
 # ─── MemoryCache Tests ────────────────────────
 
-class TestMemoryCache:
 
+class TestMemoryCache:
     @pytest.fixture
     def mock_redis(self) -> Generator[Any, None, None]:
         """Mock Redis client with a synchronous pipeline (matches redis.asyncio behavior)."""
@@ -148,6 +161,7 @@ class TestMemoryCache:
     async def test_cache_episodic_memory_calls_pipeline(self, mock_redis):
         """Caching an episodic memory should queue zadd + trim + expire then execute."""
         from kyros.storage.redis_cache import MemoryCache
+
         cache = MemoryCache(mock_redis)
         agent_id = uuid4()
 
@@ -168,6 +182,7 @@ class TestMemoryCache:
     async def test_get_recent_episodic_empty_cache(self, mock_redis):
         """Getting recent memories from an empty cache should return []."""
         from kyros.storage.redis_cache import MemoryCache
+
         cache = MemoryCache(mock_redis)
         results = await cache.get_recent_episodic(uuid4(), limit=10)
         assert results == []
@@ -176,6 +191,7 @@ class TestMemoryCache:
     async def test_cache_semantic_fact_calls_hset(self, mock_redis):
         """Caching a semantic fact should queue hset + expire then execute."""
         from kyros.storage.redis_cache import MemoryCache
+
         cache = MemoryCache(mock_redis)
 
         await cache.cache_semantic_fact(uuid4(), "user_123", "language", "Python")
@@ -189,6 +205,7 @@ class TestMemoryCache:
     async def test_invalidate_agent_deletes_three_keys(self, mock_redis):
         """Invalidating an agent should delete exactly 3 cache keys."""
         from kyros.storage.redis_cache import MemoryCache
+
         cache = MemoryCache(mock_redis)
 
         await cache.invalidate_agent(uuid4())

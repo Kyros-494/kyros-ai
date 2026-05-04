@@ -4,6 +4,7 @@ Revision ID: 0005
 Revises: 0004
 Create Date: 2026-04-25
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -22,7 +23,12 @@ def upgrade() -> None:
     op.create_table(
         "usage_events",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("tenant_id", UUID(as_uuid=True), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "tenant_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("agent_id", UUID(as_uuid=True), nullable=True),
         sa.Column("operation", sa.String(100), nullable=False),
         sa.Column("memory_type", sa.String(50), nullable=True),
@@ -37,7 +43,9 @@ def upgrade() -> None:
 
     # Partition-ready: this table will be the highest write volume.
     # When needed, convert to range-partitioned by created_at (monthly).
-    op.execute("COMMENT ON TABLE usage_events IS 'High-write billing table. Partition by created_at when >10M rows.'")
+    op.execute(
+        "COMMENT ON TABLE usage_events IS 'High-write billing table. Partition by created_at when >10M rows.'"
+    )
 
 
 def downgrade() -> None:

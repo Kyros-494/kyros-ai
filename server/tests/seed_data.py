@@ -151,14 +151,11 @@ async def seed_all() -> None:
         successes = 5 - i  # first proc has most successes
         for _ in range(successes):
             await service.report_outcome(
-                tenant_id, OutcomeRequest(
-                    procedure_id=pid, success=True, duration_ms=100.0 + i * 20
-                )
+                tenant_id,
+                OutcomeRequest(procedure_id=pid, success=True, duration_ms=100.0 + i * 20),
             )
         if i > 0:
-            await service.report_outcome(
-                tenant_id, OutcomeRequest(procedure_id=pid, success=False)
-            )
+            await service.report_outcome(tenant_id, OutcomeRequest(procedure_id=pid, success=False))
     print("  Outcomes reported.")
 
     # ── Episodic memories with explicit causal links ──────────────────────
@@ -168,9 +165,9 @@ async def seed_all() -> None:
         RememberRequest(
             agent_id=agent,
             content=(
-            "User reported the deployment pipeline was failing due to "
-            "missing KYROS_DATABASE_URL env var"
-        ),
+                "User reported the deployment pipeline was failing due to "
+                "missing KYROS_DATABASE_URL env var"
+            ),
             importance=0.9,
         ),
     )
@@ -219,9 +216,16 @@ async def seed_all() -> None:
     print("\n── Final table counts ──────────────────────────────────────")
     async with get_db_session() as session:
         tables = [
-            "tenants", "agents", "episodic_memories", "semantic_memories",
-            "procedural_memories", "causal_edges", "semantic_edges",
-            "memory_audit_logs", "usage_events", "semantic_propagation_logs",
+            "tenants",
+            "agents",
+            "episodic_memories",
+            "semantic_memories",
+            "procedural_memories",
+            "causal_edges",
+            "semantic_edges",
+            "memory_audit_logs",
+            "usage_events",
+            "semantic_propagation_logs",
         ]
         for tbl in tables:
             r = await session.execute(text(f"SELECT COUNT(*) FROM {tbl}"))

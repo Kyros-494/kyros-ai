@@ -1,4 +1,7 @@
 """Quick connection check before running benchmarks."""
+
+from __future__ import annotations
+
 import asyncio
 import os
 
@@ -7,9 +10,7 @@ os.environ.setdefault(
     "postgresql+asyncpg://kyros:kyros_dev_password@localhost:5433/kyros",
 )
 os.environ.setdefault("KYROS_REDIS_URL", "redis://localhost:6379/0")
-os.environ.setdefault(
-    "KYROS_JWT_SECRET_KEY", "dev-secret-change-in-production-kyros-2026"
-)
+os.environ.setdefault("KYROS_JWT_SECRET_KEY", "dev-secret-change-in-production-kyros-2026")
 os.environ.setdefault("KYROS_ENVIRONMENT", "development")
 os.environ.setdefault("KYROS_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 os.environ.setdefault("KYROS_EMBEDDING_DIMENSION", "384")

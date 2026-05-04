@@ -25,13 +25,16 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 
 class Base(DeclarativeBase):
     """Base class for all Kyros ORM models."""
+
     pass
 
 
 # ─── E15: Tenants & Agents ────────────────────
 
+
 class Tenant(Base):
     """A tenant (organisation or individual user) — the billing unit."""
+
     __tablename__ = "tenants"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -49,10 +52,13 @@ class Tenant(Base):
 
 class Agent(Base):
     """An AI agent that stores memories — belongs to a tenant."""
+
     __tablename__ = "agents"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     external_id = Column(String(255), nullable=False)
     display_name = Column(String(255), nullable=True)
     metadata_ = Column("metadata", JSONB, nullable=False, default=dict)
@@ -63,20 +69,32 @@ class Agent(Base):
     )
 
     tenant = relationship("Tenant", back_populates="agents")
-    episodic_memories = relationship("EpisodicMemory", back_populates="agent", cascade="all, delete-orphan")
-    semantic_memories = relationship("SemanticMemory", back_populates="agent", cascade="all, delete-orphan")
-    procedural_memories = relationship("ProceduralMemory", back_populates="agent", cascade="all, delete-orphan")
+    episodic_memories = relationship(
+        "EpisodicMemory", back_populates="agent", cascade="all, delete-orphan"
+    )
+    semantic_memories = relationship(
+        "SemanticMemory", back_populates="agent", cascade="all, delete-orphan"
+    )
+    procedural_memories = relationship(
+        "ProceduralMemory", back_populates="agent", cascade="all, delete-orphan"
+    )
 
 
 # ─── E16: Episodic Memories ───────────────────
 
+
 class EpisodicMemory(Base):
     """A single episodic memory — a conversation turn, action, or observation."""
+
     __tablename__ = "episodic_memories"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     content = Column(Text, nullable=False)
     content_type = Column(String(50), nullable=False, default="text")
     role = Column(String(50), nullable=True)
@@ -96,10 +114,10 @@ class EpisodicMemory(Base):
     # B02: Memory category for domain-specific decay rates
     memory_category = Column(String(100), nullable=True, default="general")
     # C01–C03: Memory Integrity Proof columns
-    content_hash = Column(String(64), nullable=True)      # SHA-256 of content+metadata
-    merkle_leaf = Column(String(64), nullable=True)        # This memory's Merkle leaf hash
-    merkle_root = Column(String(64), nullable=True)        # Current Merkle root at write time
-    nonce = Column(String(32), nullable=True)              # Random nonce to prevent hash collisions
+    content_hash = Column(String(64), nullable=True)  # SHA-256 of content+metadata
+    merkle_leaf = Column(String(64), nullable=True)  # This memory's Merkle leaf hash
+    merkle_root = Column(String(64), nullable=True)  # Current Merkle root at write time
+    nonce = Column(String(32), nullable=True)  # Random nonce to prevent hash collisions
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     deleted_at = Column(DateTime, nullable=True)
 
@@ -115,13 +133,19 @@ class EpisodicMemory(Base):
 
 # ─── E17: Semantic Memories ───────────────────
 
+
 class SemanticMemory(Base):
     """A semantic fact — subject-predicate-object triple (knowledge graph)."""
+
     __tablename__ = "semantic_memories"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     subject = Column(String(500), nullable=False)
     predicate = Column(String(500), nullable=False)
     object = Column(Text, nullable=False)
@@ -159,13 +183,19 @@ class SemanticMemory(Base):
 
 # ─── E18: Procedural Memories ─────────────────
 
+
 class ProceduralMemory(Base):
     """A learned procedure — a reusable workflow or tool-call sequence."""
+
     __tablename__ = "procedural_memories"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     name = Column(String(500), nullable=False)
     description = Column(Text, nullable=False)
     task_type = Column(String(255), nullable=False)
@@ -205,12 +235,16 @@ class ProceduralMemory(Base):
 
 # ─── E19: Usage Events ────────────────────────
 
+
 class UsageEvent(Base):
     """A billing usage event — every API operation is logged here."""
+
     __tablename__ = "usage_events"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     agent_id = Column(UUID(as_uuid=True), nullable=True)
     operation = Column(String(100), nullable=False)
     memory_type = Column(String(50), nullable=True)
@@ -228,17 +262,23 @@ class UsageEvent(Base):
 
 # ─── C07: Memory Audit Log ────────────────────
 
+
 class MemoryAuditLog(Base):
     """Append-only audit log for cryptographic Merkle roots.
 
     Used to prove the state of an agent's memory at any given point in time.
     Provides immutable evidence of memory integrity.
     """
+
     __tablename__ = "memory_audit_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
     merkle_root = Column(String(64), nullable=False)
     tree_size = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
@@ -253,24 +293,32 @@ class MemoryAuditLog(Base):
 
 # ─── D01: Causal Memory Graph ─────────────────
 
+
 class CausalEdge(Base):
     """A causal relationship between two memories (WHY something happened).
 
     Creates a directed graph of memories: from_memory_id -(relation)-> to_memory_id.
     Usually: cause -(causes)-> effect, or decision -(based_on)-> observation.
     """
+
     __tablename__ = "causal_edges"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
 
     # We use String/UUID for from/to because they can point to any memory table
     # (episodic, semantic, procedural)
     from_memory_id = Column(UUID(as_uuid=True), nullable=False)
     to_memory_id = Column(UUID(as_uuid=True), nullable=False)
 
-    relation = Column(String(100), nullable=False, default="causes")  # 'causes', 'motivates', 'prevents'
+    relation = Column(
+        String(100), nullable=False, default="causes"
+    )  # 'causes', 'motivates', 'prevents'
     confidence = Column(Float, nullable=False, default=1.0)
     description = Column(Text, nullable=True)  # Human-readable explanation of the causality
 
@@ -288,20 +336,30 @@ class CausalEdge(Base):
 
 # ─── E04: Semantic Belief Graph ───────────────
 
+
 class SemanticEdge(Base):
     """A semantic relationship between two facts in semantic memory.
 
     Used for Belief Propagation: if the confidence of from_fact changes,
     the confidence of to_fact is automatically updated based on their relatedness.
     """
+
     __tablename__ = "semantic_edges"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = Column(
+        UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
 
-    from_fact_id = Column(UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False)
-    to_fact_id = Column(UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False)
+    from_fact_id = Column(
+        UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False
+    )
+    to_fact_id = Column(
+        UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False
+    )
 
     # Cosine similarity between the embeddings of the two facts
     relatedness_score = Column(Float, nullable=False)
@@ -322,14 +380,20 @@ class SemanticEdge(Base):
 
 # ─── E11: Propagation Audit Log ───────────────
 
+
 class SemanticPropagationLog(Base):
     """Audit log of all confidence changes caused by belief propagation."""
+
     __tablename__ = "semantic_propagation_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
 
-    fact_id = Column(UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False)
+    fact_id = Column(
+        UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False
+    )
     triggered_by_fact_id = Column(UUID(as_uuid=True), nullable=False)
 
     old_confidence = Column(Float, nullable=False)
@@ -342,9 +406,6 @@ class SemanticPropagationLog(Base):
         Index("ix_sem_prop_log_agent", "agent_id"),
         Index("ix_sem_prop_log_fact", "fact_id"),
     )
-
-
-
 
     agent = relationship("Agent")
     fact = relationship("SemanticMemory", foreign_keys=[fact_id])

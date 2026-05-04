@@ -123,13 +123,15 @@ async def compress_agent(
                 "agent_id": agent_id,
                 "tenant_id": tenant_id,
                 "content": card.summary,
-                "metadata": json.dumps({
-                    "compression": True,
-                    "level": 3,
-                    "source_count": card.memory_count,
-                    "compression_ratio": card.compression_ratio,
-                    "levels": card.levels,
-                }),
+                "metadata": json.dumps(
+                    {
+                        "compression": True,
+                        "level": 3,
+                        "source_count": card.memory_count,
+                        "compression_ratio": card.compression_ratio,
+                        "levels": card.levels,
+                    }
+                ),
             },
         )
 

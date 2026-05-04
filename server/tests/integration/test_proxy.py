@@ -24,6 +24,7 @@ from kyros.proxy.server import create_proxy_app
 
 # ─── V06: Agent ID Extraction ─────────────────
 
+
 class TestAgentIdExtraction:
     def test_extracts_standard_header(self) -> None:
         assert extract_agent_id({"X-Agent-ID": "my-agent"}) == "my-agent"
@@ -39,6 +40,7 @@ class TestAgentIdExtraction:
 
 
 # ─── V03: OpenAI Provider ─────────────────────
+
 
 class TestOpenAIProvider:
     def test_normalize_request_with_system(self) -> None:
@@ -95,6 +97,7 @@ class TestOpenAIProvider:
 
 # ─── V04: Anthropic Provider ──────────────────
 
+
 class TestAnthropicProvider:
     def test_normalize_request(self) -> None:
         body = {
@@ -121,6 +124,7 @@ class TestAnthropicProvider:
 
 # ─── V05: Gemini Provider ─────────────────────
 
+
 class TestGeminiProvider:
     def test_normalize_request(self) -> None:
         body = {
@@ -146,6 +150,7 @@ class TestGeminiProvider:
 
 # ─── V08: Memory Block Formatting ─────────────
 
+
 class TestMemoryFormatting:
     def test_formats_memories_into_block(self) -> None:
         memories = [
@@ -163,6 +168,7 @@ class TestMemoryFormatting:
 
 
 # ─── V09: Response Filtering ──────────────────
+
 
 class TestResponseFiltering:
     def setup_method(self) -> None:
@@ -187,6 +193,7 @@ class TestResponseFiltering:
 
 
 # ─── V10: Classifier ──────────────────────────
+
 
 class TestClassifier:
     def test_classifies_semantic(self) -> None:
@@ -218,6 +225,7 @@ class TestClassifier:
 
 # ─── V12: Triple Extraction ───────────────────
 
+
 class TestTripleExtraction:
     def test_extracts_works_at(self) -> None:
         triples = extract_triples("Alice works at TechCorp.")
@@ -242,6 +250,7 @@ class TestTripleExtraction:
 
 
 # ─── V16: Runtime Config ──────────────────────
+
 
 class TestProxyConfig:
     def setup_method(self, method: object) -> None:

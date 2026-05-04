@@ -24,6 +24,7 @@ from dataclasses import dataclass
 
 # ─── C05: SHA-256 Content Hashing ─────────────
 
+
 def generate_nonce(length: int = 16) -> str:
     """Generate a cryptographically secure random nonce.
 
@@ -104,6 +105,7 @@ def verify_content_hash(
 
 # ─── Merkle Tree ──────────────────────────────
 
+
 def _hash_pair(left: str, right: str) -> str:
     """Hash two nodes together to form a parent node."""
     combined = left + right
@@ -118,6 +120,7 @@ class MerkleProof:
     in order (left/right as indicated), and compare the final
     result with the known root.
     """
+
     leaf_hash: str
     root_hash: str
     proof_path: list[dict]  # [{"hash": "abc...", "position": "left|right"}, ...]
@@ -183,7 +186,7 @@ class MerkleTree:
             IndexError: If leaf_index is out of range.
         """
         if leaf_index < 0 or leaf_index >= len(self.leaves):
-            raise IndexError(f"Leaf index {leaf_index} out of range (0..{len(self.leaves)-1})")
+            raise IndexError(f"Leaf index {leaf_index} out of range (0..{len(self.leaves) - 1})")
 
         proof_path = []
         index = leaf_index
@@ -197,22 +200,28 @@ class MerkleTree:
                 # We are left child, sibling is right
                 sibling_index = index + 1
                 if sibling_index < len(level):
-                    proof_path.append({
-                        "hash": level[sibling_index],
-                        "position": "right",
-                    })
+                    proof_path.append(
+                        {
+                            "hash": level[sibling_index],
+                            "position": "right",
+                        }
+                    )
                 else:
                     # Odd number — sibling is self (duplicated)
-                    proof_path.append({
-                        "hash": level[index],
-                        "position": "right",
-                    })
+                    proof_path.append(
+                        {
+                            "hash": level[index],
+                            "position": "right",
+                        }
+                    )
             else:
                 # We are right child, sibling is left
-                proof_path.append({
-                    "hash": level[index - 1],
-                    "position": "left",
-                })
+                proof_path.append(
+                    {
+                        "hash": level[index - 1],
+                        "position": "left",
+                    }
+                )
 
             index = index // 2
 
@@ -252,9 +261,11 @@ class MerkleTree:
 
 # ─── Write-Time Integration ───────────────────
 
+
 @dataclass
 class IntegrityStamp:
     """Generated at memory write time. Stored alongside the memory."""
+
     content_hash: str
     nonce: str
     merkle_leaf: str  # Same as content_hash for now; separating for future flexibility

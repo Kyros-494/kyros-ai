@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 
 # ─── Enums ─────────────────────────────────────
 
+
 class MemoryType(StrEnum):
     EPISODIC = "episodic"
     SEMANTIC = "semantic"
@@ -25,9 +26,14 @@ class ContentType(StrEnum):
 
 # ─── REMEMBER (Write) ─────────────────────────
 
+
 class RememberRequest(BaseModel):
-    agent_id: str = Field(..., min_length=1, max_length=255, description="Your agent's unique identifier")
-    content: str = Field(..., min_length=1, max_length=50_000, description="Memory content to store")
+    agent_id: str = Field(
+        ..., min_length=1, max_length=255, description="Your agent's unique identifier"
+    )
+    content: str = Field(
+        ..., min_length=1, max_length=50_000, description="Memory content to store"
+    )
     memory_type: MemoryType = MemoryType.EPISODIC
     content_type: ContentType = ContentType.TEXT
     role: str | None = Field(default=None, max_length=50)
@@ -35,8 +41,12 @@ class RememberRequest(BaseModel):
     metadata: dict = Field(default_factory=dict)
     importance: float = Field(default=0.5, ge=0.0, le=1.0)
     # D07: Explicit Causal Edges
-    cause_memory_id: str | None = Field(default=None, description="ID of the memory that caused this one")
-    effect_memory_id: str | None = Field(default=None, description="ID of the memory that this one caused")
+    cause_memory_id: str | None = Field(
+        default=None, description="ID of the memory that caused this one"
+    )
+    effect_memory_id: str | None = Field(
+        default=None, description="ID of the memory that this one caused"
+    )
 
     @field_validator("content")
     @classmethod
@@ -62,9 +72,12 @@ class RememberResponse(BaseModel):
 
 # ─── RECALL (Search) ──────────────────────────
 
+
 class RecallRequest(BaseModel):
     agent_id: str = Field(..., min_length=1, max_length=255)
-    query: str = Field(..., min_length=1, max_length=5_000, description="Natural language search query")
+    query: str = Field(
+        ..., min_length=1, max_length=5_000, description="Natural language search query"
+    )
     memory_type: MemoryType | None = None
     k: int = Field(default=10, ge=1, le=100, description="Number of results to return")
     min_relevance: float = Field(default=0.0, ge=0.0, le=1.0)
@@ -118,6 +131,7 @@ class RecallResponse(BaseModel):
 
 # ─── FORGET (Delete) ──────────────────────────
 
+
 class ForgetRequest(BaseModel):
     agent_id: str = Field(..., min_length=1, max_length=255)
     memory_id: UUID | None = None
@@ -126,6 +140,7 @@ class ForgetRequest(BaseModel):
 
 
 # ─── SUMMARISE ────────────────────────────────
+
 
 class SummariseResponse(BaseModel):
     agent_id: str
@@ -137,10 +152,13 @@ class SummariseResponse(BaseModel):
 
 # ─── SEMANTIC FACTS ───────────────────────────
 
+
 class StoreFactRequest(BaseModel):
     agent_id: str = Field(..., min_length=1, max_length=255)
     subject: str = Field(..., min_length=1, max_length=500, description="Entity the fact is about")
-    predicate: str = Field(..., min_length=1, max_length=500, description="Relationship or property name")
+    predicate: str = Field(
+        ..., min_length=1, max_length=500, description="Relationship or property name"
+    )
     object: str = Field(..., min_length=1, max_length=5_000, description="Value of the fact")
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     source_type: str = Field(default="explicit", max_length=50)
@@ -164,11 +182,18 @@ class FactResult(BaseModel):
 
 # ─── PROCEDURAL MEMORY ────────────────────────
 
+
 class StoreProcedureRequest(BaseModel):
     agent_id: str = Field(..., min_length=1, max_length=255)
-    name: str = Field(..., min_length=1, max_length=500, description="Human-readable procedure name")
-    description: str = Field(..., min_length=1, max_length=5_000, description="What this procedure does")
-    task_type: str = Field(..., min_length=1, max_length=255, description="Task category for matching")
+    name: str = Field(
+        ..., min_length=1, max_length=500, description="Human-readable procedure name"
+    )
+    description: str = Field(
+        ..., min_length=1, max_length=5_000, description="What this procedure does"
+    )
+    task_type: str = Field(
+        ..., min_length=1, max_length=255, description="Task category for matching"
+    )
     steps: list[dict] = Field(..., min_length=1, description="Ordered list of procedure steps")
     metadata: dict = Field(default_factory=dict)
 
@@ -222,6 +247,7 @@ class OutcomeResponse(BaseModel):
 
 
 # ─── EXPORT / IMPORT ─────────────────────────
+
 
 class ExportResponse(BaseModel):
     agent_id: str

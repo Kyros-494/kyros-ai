@@ -13,9 +13,7 @@ class TestTenantIsolation:
     """Tenant A's memories must never appear in Tenant B's recall results."""
 
     @pytest.fixture
-    def tenant_a_client(
-        self, base_url: str
-    ) -> Generator[httpx.Client, None, None]:
+    def tenant_a_client(self, base_url: str) -> Generator[httpx.Client, None, None]:
         with httpx.Client(
             base_url=base_url,
             headers={"X-API-Key": "mk_test_tenant_a_key_111", "Content-Type": "application/json"},
@@ -24,9 +22,7 @@ class TestTenantIsolation:
             yield c
 
     @pytest.fixture
-    def tenant_b_client(
-        self, base_url: str
-    ) -> Generator[httpx.Client, None, None]:
+    def tenant_b_client(self, base_url: str) -> Generator[httpx.Client, None, None]:
         with httpx.Client(
             base_url=base_url,
             headers={"X-API-Key": "mk_test_tenant_b_key_222", "Content-Type": "application/json"},

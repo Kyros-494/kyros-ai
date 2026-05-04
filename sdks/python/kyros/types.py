@@ -1,7 +1,6 @@
 """Kyros SDK type definitions — mirrors the server API schemas."""
 
-from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -31,13 +30,13 @@ class MemoryResult(BaseModel):
     relevance_score: float
     importance: float
     created_at: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     # Ebbinghaus decay fields (always present)
     freshness_score: float
     freshness_warning: bool
-    memory_category: Optional[str] = None
+    memory_category: str | None = None
     # Causal ancestry (present when include_causal_ancestry=True)
-    causal_ancestry: List[Dict[str, Any]] = Field(default_factory=list)
+    causal_ancestry: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class RecallResponse(BaseModel):
@@ -45,7 +44,7 @@ class RecallResponse(BaseModel):
 
     agent_id: str
     query: str
-    results: List[MemoryResult]
+    results: list[MemoryResult]
     total_searched: int
     latency_ms: float
 
@@ -63,9 +62,9 @@ class FactResult(BaseModel):
     confidence: float
     created_at: str
     was_contradiction: bool
-    replaced_fact_id: Optional[str] = None
+    replaced_fact_id: str | None = None
     # Belief propagation updates triggered by this fact
-    propagated_updates: List[Dict[str, Any]] = Field(default_factory=list)
+    propagated_updates: list[dict[str, Any]] = Field(default_factory=list)
 
     class Config:
         """Pydantic config."""
@@ -93,11 +92,11 @@ class ProcedureResult(BaseModel):
     name: str
     description: str
     task_type: str
-    steps: List[Dict[str, Any]]
+    steps: list[dict[str, Any]]
     success_rate: float
     total_executions: int
     relevance_score: float
-    avg_duration_ms: Optional[float] = None
+    avg_duration_ms: float | None = None
     created_at: str
 
 
@@ -106,7 +105,7 @@ class ProcedureMatchResponse(BaseModel):
 
     agent_id: str
     task_description: str
-    results: List[ProcedureResult]
+    results: list[ProcedureResult]
     latency_ms: float
 
 
@@ -117,7 +116,7 @@ class ProcedureOutcomeResponse(BaseModel):
     success_count: int
     failure_count: int
     success_rate: float
-    avg_duration_ms: Optional[float] = None
+    avg_duration_ms: float | None = None
 
 
 # ─── Admin ────────────────────────────────────────────────────────────────────
@@ -136,9 +135,9 @@ class ExportData(BaseModel):
     """Exported memory data."""
 
     agent_id: str
-    episodic: List[Dict[str, Any]]
-    semantic: List[Dict[str, Any]]
-    procedural: List[Dict[str, Any]]
+    episodic: list[dict[str, Any]]
+    semantic: list[dict[str, Any]]
+    procedural: list[dict[str, Any]]
     total_memories: int
     exported_at: str
 
@@ -152,10 +151,10 @@ class RememberRequest(BaseModel):
     agent_id: str
     content: str
     content_type: ContentType = "text"
-    role: Optional[str] = None
-    session_id: Optional[str] = None
+    role: str | None = None
+    session_id: str | None = None
     importance: float = 0.5
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RecallRequest(BaseModel):
@@ -163,10 +162,10 @@ class RecallRequest(BaseModel):
 
     agent_id: str
     query: str
-    memory_type: Optional[MemoryType] = None
+    memory_type: MemoryType | None = None
     k: int = 10
     min_relevance: float = 0.0
-    session_id: Optional[str] = None
+    session_id: str | None = None
     include_causal_ancestry: bool = False
 
 
@@ -188,8 +187,8 @@ class StoreProcedureRequest(BaseModel):
     name: str
     description: str
     task_type: str
-    steps: List[Dict[str, Any]]
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    steps: list[dict[str, Any]]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class MatchProcedureRequest(BaseModel):
@@ -205,4 +204,4 @@ class OutcomeRequest(BaseModel):
 
     procedure_id: str
     success: bool
-    duration_ms: Optional[int] = None
+    duration_ms: int | None = None
