@@ -63,7 +63,7 @@ def upgrade() -> None:
     # In test/CI environments, use a default test password if not set.
     app_password = os.environ.get("KYROS_DB_APP_PASSWORD")
     is_test_env = os.environ.get("KYROS_ENVIRONMENT") in ("test", "ci", "development")
-    
+
     if not app_password:
         if is_test_env:
             app_password = "test-password-change-in-production"
