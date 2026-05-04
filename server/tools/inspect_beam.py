@@ -92,7 +92,7 @@ def inspect_beam_dataset(subset: str = "1M") -> None:
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main entry point for BEAM dataset inspection."""
     import argparse
 

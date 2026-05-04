@@ -1,5 +1,6 @@
 """D08: Causal Graph API Endpoints."""
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
@@ -23,7 +24,7 @@ class CausalExplainRequest(BaseModel):
 
 
 @router.post("/explain")
-async def explain_memory(request: Request, body: CausalExplainRequest) -> dict[str, any]:
+async def explain_memory(request: Request, body: CausalExplainRequest) -> dict[str, Any]:
     """Explain why a memory happened (causal chain traversal)."""
     from kyros.intelligence.causal import traverse_causal_chain
 
@@ -67,7 +68,7 @@ class CausalFrequencyRequest(BaseModel):
 
 
 @router.post("/frequent-causes")
-async def frequent_causes(request: Request, body: CausalFrequencyRequest) -> dict[str, any]:
+async def frequent_causes(request: Request, body: CausalFrequencyRequest) -> dict[str, Any]:
     """Analyze what causes a specific type of event across all memories."""
     from kyros.intelligence.causal import analyze_causal_frequencies
 
@@ -95,7 +96,7 @@ async def frequent_causes(request: Request, body: CausalFrequencyRequest) -> dic
 
 
 @router.get("/graph/{agent_id}")
-async def get_causal_graph(agent_id: str, request: Request, limit: int = 100) -> dict[str, any]:
+async def get_causal_graph(agent_id: str, request: Request, limit: int = 100) -> dict[str, Any]:
     """Return the agent's causal graph for D3/Cytoscape frontend rendering."""
     if limit < 1 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")

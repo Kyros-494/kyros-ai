@@ -80,11 +80,7 @@ async def _do_update_merkle_root(agent_id: UUID, tenant_id: UUID) -> str:
     async with get_db_session_for_tenant(str(tenant_id)) as session:
         # Collect all active memory leaves across all three tables, ordered
         # deterministically so the tree is reproducible.
-        _allowed_tables = frozenset(
-            {"episodic_memories", "semantic_memories", "procedural_memories"}
-        )
         for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
-            assert table in _allowed_tables, f"Unexpected table name: {table}"  # safety guard
             result = await session.execute(
                 text(f"""
                 SELECT merkle_leaf

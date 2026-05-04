@@ -7,7 +7,6 @@ used for benchmarking the Kyros memory system.
 
 import json
 import sys
-from pathlib import Path
 
 
 def inspect_msc_dataset(filepath: str) -> None:
@@ -32,7 +31,7 @@ def inspect_msc_dataset(filepath: str) -> None:
             print(json.dumps(item, indent=2)[:1200])
 
         # Show dataset sizes
-        print(f"\n\nDataset sizes:")
+        print("\n\nDataset sizes:")
         print(f"  Total train: {len(msc.get('train', []))}")
         print(f"  Total valid: {len(msc.get('valid', []))}")
         print(f"  Total test: {len(msc.get('test', []))}")
@@ -87,7 +86,7 @@ def inspect_locomo_dataset(filepath: str) -> None:
         sys.exit(1)
 
 
-def main():
+def main() -> None:
     """Main entry point for dataset inspection."""
     import argparse
 
