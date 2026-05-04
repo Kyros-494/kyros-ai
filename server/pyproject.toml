@@ -58,6 +58,19 @@ ignore = [
     "B008",    # Do not perform function calls in default arguments (FastAPI Depends)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "ANN001",  # Missing type annotation for function argument
+    "ANN201",  # Missing return type annotation for public function
+    "ANN202",  # Missing return type annotation for private function
+    "E501",    # Line too long (test readability > strict line length)
+    "N806",    # Variable in function should be lowercase (test mocks)
+]
+"tests/conftest.py" = ["E402"]  # Need to set env vars before imports
+"tests/seed_data.py" = ["E501"]  # Long lines for test data
+"tests/load/*.py" = ["ANN"]  # Locust load tests don't need strict annotations
+"alembic/versions/*.py" = ["ANN"]  # Migration files don't need annotations
+
 [tool.ruff.format]
 quote-style = "double"
 

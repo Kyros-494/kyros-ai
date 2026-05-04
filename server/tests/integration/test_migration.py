@@ -3,21 +3,23 @@
 
 import pytest
 
-from kyros.ml.translation import EmbeddingTranslator, MODEL_REGISTRY, benchmark_translation_accuracy
+from kyros.ml.translation import MODEL_REGISTRY, EmbeddingTranslator, benchmark_translation_accuracy
 
 
 @pytest.mark.asyncio
-async def test_translation_linear_produces_correct_dimension():
+async def test_translation_linear_produces_correct_dimension() -> None:
     """Linear projection should produce a vector of the target model's dimension."""
     translator = EmbeddingTranslator()
     source_vec = [0.1] * 384
 
-    target_vec = translator.translate_linear(source_vec, "all-MiniLM-L6-v2", "text-embedding-3-small")
+    target_vec = translator.translate_linear(
+        source_vec, "all-MiniLM-L6-v2", "text-embedding-3-small"
+    )
     assert len(target_vec) == MODEL_REGISTRY["text-embedding-3-small"].dimension
 
 
 @pytest.mark.asyncio
-async def test_translation_mlp_produces_correct_dimension():
+async def test_translation_mlp_produces_correct_dimension() -> None:
     """MLP projection should produce a vector of the target model's dimension."""
     translator = EmbeddingTranslator()
     source_vec = [0.1] * 384
@@ -27,7 +29,7 @@ async def test_translation_mlp_produces_correct_dimension():
 
 
 @pytest.mark.asyncio
-async def test_translation_unknown_source_raises():
+async def test_translation_unknown_source_raises() -> None:
     """Translating from an unknown model should raise ValueError."""
     translator = EmbeddingTranslator()
     with pytest.raises(ValueError, match="Unknown source model"):
@@ -35,7 +37,7 @@ async def test_translation_unknown_source_raises():
 
 
 @pytest.mark.asyncio
-async def test_translation_unknown_target_raises():
+async def test_translation_unknown_target_raises() -> None:
     """Translating to an unknown model should raise ValueError."""
     translator = EmbeddingTranslator()
     with pytest.raises(ValueError, match="Unknown target model"):
@@ -43,7 +45,7 @@ async def test_translation_unknown_target_raises():
 
 
 @pytest.mark.asyncio
-async def test_benchmark_translation_accuracy_returns_expected_keys():
+async def test_benchmark_translation_accuracy_returns_expected_keys() -> None:
     """Benchmark should return a dict with the required metric keys."""
     translator = EmbeddingTranslator()
 
@@ -69,7 +71,7 @@ async def test_benchmark_translation_accuracy_returns_expected_keys():
 
 
 @pytest.mark.asyncio
-async def test_benchmark_empty_dataset_returns_zero():
+async def test_benchmark_empty_dataset_returns_zero() -> None:
     """Benchmark with empty dataset should return zero samples and zero accuracy."""
     translator = EmbeddingTranslator()
     result = benchmark_translation_accuracy(

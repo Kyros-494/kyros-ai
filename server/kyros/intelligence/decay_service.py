@@ -13,17 +13,18 @@ B13: Re-verification workflow (flag stale, require confirmation)
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
+
+from sqlalchemy import text
 
 from kyros.intelligence.decay import (
     DecayConfig,
     evaluate_freshness,
 )
-from kyros.storage.postgres import get_db_session
-from sqlalchemy import text
 from kyros.logging import get_logger
+from kyros.storage.postgres import get_db_session
 
 logger = get_logger("kyros.decay.service")
 
@@ -101,7 +102,7 @@ async def update_all_freshness_scores(
     if config is None:
         config = DecayConfig()
 
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
     stats = {"fresh": 0, "warning": 0, "critical": 0, "stale": 0, "total": 0}
 
     tables = ["episodic_memories", "semantic_memories", "procedural_memories"]
@@ -265,7 +266,7 @@ async def generate_staleness_report(
 
     return {
         "agent_id": str(agent_id),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "summary": {
             "warning_count": len(stale_40) - len(stale_15),
             "critical_count": len(stale_15) - len(stale_05),
@@ -345,7 +346,7 @@ async def check_and_emit_staleness_webhooks(
             "freshness_score": mem["freshness_score"],
             "category": mem["category"],
             "status": mem["status"],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         events.append(event)
 

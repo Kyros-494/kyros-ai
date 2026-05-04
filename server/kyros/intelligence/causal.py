@@ -7,14 +7,15 @@ memories into a directed graph of cause-and-effect.
 from __future__ import annotations
 
 import json
-from uuid import UUID, uuid4
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID, uuid4
 
+from sqlalchemy import text
+
+from kyros.logging import get_logger
 from kyros.ml.models import call_llm
 from kyros.storage.postgres import get_db_session, get_db_session_for_tenant
-from kyros.logging import get_logger
-from sqlalchemy import text
 
 logger = get_logger("kyros.causal")
 
@@ -124,7 +125,7 @@ async def store_causal_edges(
         edges: List of dicts containing from_memory_id, to_memory_id, relation, confidence, description.
     """
     stored_edges = []
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
     tenant_id_to_use = tenant_id or uuid4()
 
     async with get_db_session_for_tenant(str(tenant_id_to_use)) as session:
@@ -202,13 +203,13 @@ async def traverse_causal_chain(
             if row:
                 nodes[str(row.id)] = {"id": str(row.id), "content": row.content}
                 break
-                
+
         if not nodes:
             return {"nodes": [], "edges": []}
 
         # Recursive CTE for graph traversal
         # We need upstream (causes) and downstream (effects)
-        
+
         if direction in ("causes", "both"):
             # Find what caused this memory (upstream)
             result = await session.execute(
@@ -217,9 +218,9 @@ async def traverse_causal_chain(
                     SELECT from_memory_id, to_memory_id, relation, confidence, description, 1 as depth
                     FROM causal_edges
                     WHERE to_memory_id = :start_id AND agent_id = :agent_id
-                    
+
                     UNION ALL
-                    
+
                     SELECT ce.from_memory_id, ce.to_memory_id, ce.relation, ce.confidence, ce.description, ct.depth + 1
                     FROM causal_edges ce
                     JOIN causal_tree ct ON ce.to_memory_id = ct.from_memory_id
@@ -248,9 +249,9 @@ async def traverse_causal_chain(
                     SELECT from_memory_id, to_memory_id, relation, confidence, description, 1 as depth
                     FROM causal_edges
                     WHERE from_memory_id = :start_id AND agent_id = :agent_id
-                    
+
                     UNION ALL
-                    
+
                     SELECT ce.from_memory_id, ce.to_memory_id, ce.relation, ce.confidence, ce.description, ct.depth + 1
                     FROM causal_edges ce
                     JOIN causal_tree ct ON ce.from_memory_id = ct.to_memory_id
@@ -276,9 +277,9 @@ async def traverse_causal_chain(
         for e in edges:
             missing_nodes.add(e["from"])
             missing_nodes.add(e["to"])
-        
+
         missing_nodes -= set(nodes.keys())
-        
+
         if missing_nodes:
             missing_ids = list(missing_nodes)
             for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
@@ -304,14 +305,14 @@ async def analyze_causal_frequencies(
     limit: int = 50,
 ) -> dict:
     """Analyze what causes a specific type of event across the entire memory.
-    
+
     1. Embed the effect_theme (e.g., "customer churn").
     2. Find memories that semantically match this theme.
     3. Traverse upstream (causes) for those memories.
     4. Use an LLM to group and count the root causes.
     """
     query_embedding = embedder.embed(effect_theme)
-    
+
     async with get_db_session() as session:
         # Find episodic memories matching the effect theme
         result = await session.execute(
@@ -329,10 +330,10 @@ async def analyze_causal_frequencies(
             }
         )
         effect_memories = result.fetchall()
-        
+
     if not effect_memories:
         return {"theme": effect_theme, "causes": []}
-        
+
     # Find causes for these effects
     all_causes = []
     for mem in effect_memories:
@@ -344,18 +345,18 @@ async def analyze_causal_frequencies(
                 cause_node = next((n for n in graph["nodes"] if n["id"] == cause_id), None)
                 if cause_node:
                     all_causes.append(cause_node["content"])
-                    
+
     if not all_causes:
         return {"theme": effect_theme, "causes": []}
-        
+
     # Use LLM to group and summarize frequencies
     prompt = f"""
     Analyze the following list of root causes for the theme: "{effect_theme}".
     Group similar causes together and calculate their frequency.
-    
+
     Raw Causes:
     {json.dumps(all_causes, indent=2)}
-    
+
     Respond ONLY with a JSON array of objects, sorted by frequency (descending).
     Format:
     [
@@ -363,7 +364,7 @@ async def analyze_causal_frequencies(
       {{"cause_summary": "High pricing", "frequency": 3, "percentage": 30.0}}
     ]
     """
-    
+
     try:
         response_text = await call_llm(prompt, temperature=0.0)
         cleaned = response_text.strip()
@@ -377,7 +378,7 @@ async def analyze_causal_frequencies(
     except Exception as e:
         logger.error("Failed to analyze causal frequencies", error=str(e))
         return {"theme": effect_theme, "causes": [], "error": str(e)}
-        
+
     return {
         "theme": effect_theme,
         "analyzed_effects_count": len(effect_memories),

@@ -22,7 +22,6 @@ import json
 import secrets
 from dataclasses import dataclass
 
-
 # ─── C05: SHA-256 Content Hashing ─────────────
 
 def generate_nonce(length: int = 16) -> str:
@@ -133,7 +132,7 @@ class MerkleTree:
     Provides proof generation and verification for individual leaves.
     """
 
-    def __init__(self, leaf_hashes: list[str]):
+    def __init__(self, leaf_hashes: list[str]) -> None:
         """Build a Merkle tree from a list of content hashes.
 
         Args:

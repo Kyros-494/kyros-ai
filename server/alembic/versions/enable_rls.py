@@ -18,16 +18,17 @@ SECURITY NOTE: The database password for kyros_app role must be set via
 environment variable KYROS_DB_APP_PASSWORD before running this migration.
 Never hardcode passwords in migration files.
 """
-from typing import Sequence, Union
 import os
+from collections.abc import Sequence
 
-from alembic import op
 from sqlalchemy import text
 
+from alembic import op
+
 revision: str = "0006"
-down_revision: Union[str, None] = "0005"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "0005"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 # Tables that hold tenant-scoped data
 RLS_TABLES = [
@@ -64,7 +65,7 @@ def upgrade() -> None:
             "KYROS_DB_APP_PASSWORD environment variable must be set before running this migration. "
             "Generate a strong password with: openssl rand -base64 32"
         )
-    
+
     # Use parameterized query to safely pass password
     connection = op.get_bind()
     connection.execute(

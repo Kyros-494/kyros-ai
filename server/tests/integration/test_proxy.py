@@ -8,42 +8,40 @@ Usage:
 """
 
 from fastapi.testclient import TestClient
-
-from kyros.proxy.server import create_proxy_app
 from kyros.proxy.architecture import ProxyConfig
-from kyros.proxy.providers import OpenAIProvider, AnthropicProvider, GeminiProvider
+from kyros.proxy.classifier import (
+    MemoryCategory,
+    classify_content,
+    extract_triples,
+)
 from kyros.proxy.interceptors import (
     extract_agent_id,
     format_memory_block,
     should_store_response,
 )
-from kyros.proxy.classifier import (
-    classify_content,
-    extract_triples,
-    MemoryCategory,
-)
-
+from kyros.proxy.providers import AnthropicProvider, GeminiProvider, OpenAIProvider
+from kyros.proxy.server import create_proxy_app
 
 # ─── V06: Agent ID Extraction ─────────────────
 
 class TestAgentIdExtraction:
-    def test_extracts_standard_header(self):
+    def test_extracts_standard_header(self) -> None:
         assert extract_agent_id({"X-Agent-ID": "my-agent"}) == "my-agent"
 
-    def test_extracts_lowercase_header(self):
+    def test_extracts_lowercase_header(self) -> None:
         assert extract_agent_id({"x-agent-id": "bot-42"}) == "bot-42"
 
-    def test_returns_none_when_missing(self):
+    def test_returns_none_when_missing(self) -> None:
         assert extract_agent_id({"Content-Type": "application/json"}) is None
 
-    def test_returns_none_for_empty_value(self):
+    def test_returns_none_for_empty_value(self) -> None:
         assert extract_agent_id({"X-Agent-ID": "  "}) is None
 
 
 # ─── V03: OpenAI Provider ─────────────────────
 
 class TestOpenAIProvider:
-    def test_normalize_request_with_system(self):
+    def test_normalize_request_with_system(self) -> None:
         body = {
             "model": "gpt-4o",
             "messages": [
@@ -58,7 +56,7 @@ class TestOpenAIProvider:
         assert len(result.user_messages) == 1
         assert result.user_messages[0]["content"] == "Hello!"
 
-    def test_normalize_request_without_system(self):
+    def test_normalize_request_without_system(self) -> None:
         body = {
             "model": "gpt-4o-mini",
             "messages": [{"role": "user", "content": "Hi"}],
@@ -67,7 +65,7 @@ class TestOpenAIProvider:
         assert result.system_message == ""
         assert len(result.user_messages) == 1
 
-    def test_inject_memories_with_existing_system(self):
+    def test_inject_memories_with_existing_system(self) -> None:
         body = {
             "messages": [
                 {"role": "system", "content": "Be concise."},
@@ -79,13 +77,13 @@ class TestOpenAIProvider:
         assert "MEMORY: user likes Python" in system["content"]
         assert "Be concise." in system["content"]
 
-    def test_inject_memories_without_system(self):
+    def test_inject_memories_without_system(self) -> None:
         body = {"messages": [{"role": "user", "content": "Hello"}]}
         result = OpenAIProvider.inject_memories(body, "", "MEMORY: test")
         assert result["messages"][0]["role"] == "system"
         assert "MEMORY: test" in result["messages"][0]["content"]
 
-    def test_extract_response(self):
+    def test_extract_response(self) -> None:
         body = {
             "choices": [{"message": {"role": "assistant", "content": "I am an AI."}}],
             "model": "gpt-4o",
@@ -98,7 +96,7 @@ class TestOpenAIProvider:
 # ─── V04: Anthropic Provider ──────────────────
 
 class TestAnthropicProvider:
-    def test_normalize_request(self):
+    def test_normalize_request(self) -> None:
         body = {
             "model": "claude-3-5-sonnet-20241022",
             "system": "You are a poet.",
@@ -109,13 +107,13 @@ class TestAnthropicProvider:
         assert result.system_message == "You are a poet."
         assert len(result.user_messages) == 1
 
-    def test_inject_memories(self):
+    def test_inject_memories(self) -> None:
         body = {"system": "Be creative.", "messages": []}
         result = AnthropicProvider.inject_memories(body, "Be creative.", "MEMORY: likes haiku")
         assert "MEMORY: likes haiku" in result["system"]
         assert "Be creative." in result["system"]
 
-    def test_extract_response(self):
+    def test_extract_response(self) -> None:
         body = {"content": [{"type": "text", "text": "A lovely haiku."}], "model": "claude"}
         result = AnthropicProvider.extract_response(200, body, {})
         assert result.assistant_content == "A lovely haiku."
@@ -124,7 +122,7 @@ class TestAnthropicProvider:
 # ─── V05: Gemini Provider ─────────────────────
 
 class TestGeminiProvider:
-    def test_normalize_request(self):
+    def test_normalize_request(self) -> None:
         body = {
             "model": "gemini-1.5-flash",
             "systemInstruction": {"parts": [{"text": "Be helpful."}]},
@@ -134,13 +132,13 @@ class TestGeminiProvider:
         assert result.provider == "gemini"
         assert "Be helpful." in result.system_message
 
-    def test_inject_memories(self):
+    def test_inject_memories(self) -> None:
         body = {"systemInstruction": {"parts": [{"text": "Be factual."}]}, "contents": []}
         result = GeminiProvider.inject_memories(body, "Be factual.", "MEMORY: user is in London")
         text = result["systemInstruction"]["parts"][0]["text"]
         assert "MEMORY: user is in London" in text
 
-    def test_extract_response(self):
+    def test_extract_response(self) -> None:
         body = {"candidates": [{"content": {"parts": [{"text": "Gemini response."}]}}]}
         result = GeminiProvider.extract_response(200, body, {})
         assert result.assistant_content == "Gemini response."
@@ -149,7 +147,7 @@ class TestGeminiProvider:
 # ─── V08: Memory Block Formatting ─────────────
 
 class TestMemoryFormatting:
-    def test_formats_memories_into_block(self):
+    def test_formats_memories_into_block(self) -> None:
         memories = [
             {"content": "User likes Python", "score": 0.9},
             {"content": "User works at TechCorp", "score": 0.8},
@@ -160,83 +158,85 @@ class TestMemoryFormatting:
         assert "User works at TechCorp" in result
         assert "[Memories]" in result
 
-    def test_empty_memories_returns_empty(self):
+    def test_empty_memories_returns_empty(self) -> None:
         assert format_memory_block([], "template {memories}") == ""
 
 
 # ─── V09: Response Filtering ──────────────────
 
 class TestResponseFiltering:
-    def setup_method(self):
+    def setup_method(self) -> None:
         self.config = ProxyConfig()
 
-    def test_stores_meaningful_response(self):
+    def test_stores_meaningful_response(self) -> None:
         assert should_store_response(
             "The user prefers dark mode and Python for all backend work.", self.config
         )
 
-    def test_skips_trivial_response(self):
+    def test_skips_trivial_response(self) -> None:
         assert not should_store_response("Hello!", self.config)
         assert not should_store_response("Sure.", self.config)
         assert not should_store_response("Ok", self.config)
 
-    def test_skips_empty(self):
+    def test_skips_empty(self) -> None:
         assert not should_store_response("", self.config)
         assert not should_store_response("   ", self.config)
 
-    def test_skips_very_short(self):
+    def test_skips_very_short(self) -> None:
         assert not should_store_response("Yes no", self.config)
 
 
 # ─── V10: Classifier ──────────────────────────
 
 class TestClassifier:
-    def test_classifies_semantic(self):
+    def test_classifies_semantic(self) -> None:
         result = classify_content("Alice works at TechCorp as an engineer. She lives in London.")
         assert result.category == MemoryCategory.SEMANTIC
 
-    def test_classifies_procedural(self):
+    def test_classifies_procedural(self) -> None:
         result = classify_content(
             "Step 1: Install dependencies. Then run the build command. Next deploy to production."
         )
         assert result.category == MemoryCategory.PROCEDURAL
 
-    def test_classifies_skip(self):
+    def test_classifies_skip(self) -> None:
         result = classify_content("Hello!")
         assert result.category == MemoryCategory.SKIP
 
-    def test_classifies_episodic_default(self):
+    def test_classifies_episodic_default(self) -> None:
         result = classify_content(
             "Today we discussed the quarterly revenue targets and the team agreed on the timeline."
         )
         assert result.category == MemoryCategory.EPISODIC
 
-    def test_importance_boosted_by_keywords(self):
-        result = classify_content("CRITICAL: The password for the production database is needed urgently.")
+    def test_importance_boosted_by_keywords(self) -> None:
+        result = classify_content(
+            "CRITICAL: The password for the production database is needed urgently."
+        )
         assert result.importance > 0.7
 
 
 # ─── V12: Triple Extraction ───────────────────
 
 class TestTripleExtraction:
-    def test_extracts_works_at(self):
+    def test_extracts_works_at(self) -> None:
         triples = extract_triples("Alice works at TechCorp.")
         assert len(triples) >= 1
         assert triples[0].subject == "Alice"
         assert triples[0].predicate == "works_at"
         assert "TechCorp" in triples[0].obj
 
-    def test_extracts_lives_in(self):
+    def test_extracts_lives_in(self) -> None:
         triples = extract_triples("Bob lives in London.")
         assert len(triples) >= 1
         assert triples[0].predicate == "lives_in"
 
-    def test_extracts_preference(self):
+    def test_extracts_preference(self) -> None:
         triples = extract_triples("Charlie prefers TypeScript.")
         assert len(triples) >= 1
         assert triples[0].predicate == "prefers"
 
-    def test_no_triples_in_generic_text(self):
+    def test_no_triples_in_generic_text(self) -> None:
         triples = extract_triples("The weather is nice today and I feel great about it.")
         assert len(triples) == 0
 

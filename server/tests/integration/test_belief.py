@@ -18,7 +18,7 @@ from kyros.intelligence.belief import index_fact_relationships, run_belief_propa
 
 
 @pytest.mark.asyncio
-async def test_belief_propagation_chain(db_session):
+async def test_belief_propagation_chain(db_session) -> None:
     """Confidence drop on fact A should propagate to related facts B and C."""
     tenant_id = uuid4()
     agent_id = uuid4()
@@ -94,7 +94,7 @@ async def test_belief_propagation_chain(db_session):
 
 
 @pytest.mark.asyncio
-async def test_propagation_skipped_for_tiny_delta(db_session):
+async def test_propagation_skipped_for_tiny_delta(db_session) -> None:
     """A delta smaller than 0.01 should not trigger any propagation."""
     agent_id = uuid4()
     fact_id = uuid4()
@@ -110,7 +110,7 @@ async def test_propagation_skipped_for_tiny_delta(db_session):
 
 
 @pytest.mark.asyncio
-async def test_propagation_respects_max_depth(db_session):
+async def test_propagation_respects_max_depth(db_session) -> None:
     """Propagation should not exceed max_depth hops."""
     tenant_id = uuid4()
     agent_id = uuid4()

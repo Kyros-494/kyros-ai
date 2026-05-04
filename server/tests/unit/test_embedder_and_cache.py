@@ -2,23 +2,25 @@
 
 from __future__ import annotations
 
-import pytest
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
+import pytest
 
 # ─── EmbeddingModel Tests ─────────────────────
 
 class TestEmbeddingModel:
 
-    def _make_embedder(self, dim: int = 384):
+    def _make_embedder(self, dim: int = 384) -> Any:
         """Helper: build an EmbeddingModel with a mocked SentenceTransformer."""
         import numpy as np
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = dim
             mock_model.encode.return_value = np.random.randn(dim).astype(np.float32)
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
             embedder = EmbeddingModel("test-model")
             embedder._mock_model = mock_model  # keep reference for assertions
@@ -37,32 +39,32 @@ class TestEmbeddingModel:
         embedder._mock_model.encode.assert_called_once()
 
     def test_embed_raises_on_empty_string(self):
-        from kyros.ml.embedder import EmbeddingModel, EmbeddingError
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="empty"):
                 embedder.embed("")
 
     def test_embed_raises_on_whitespace_only(self):
-        from kyros.ml.embedder import EmbeddingModel, EmbeddingError
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="empty"):
                 embedder.embed("   ")
 
     def test_embed_batch_returns_list_of_lists(self):
         import numpy as np
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.encode.return_value = np.random.randn(3, 384).astype(np.float32)
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
             embedder = EmbeddingModel("test-model")
             results = embedder.embed_batch(["a", "b", "c"])
@@ -70,11 +72,11 @@ class TestEmbeddingModel:
             assert all(len(r) == 384 for r in results)
 
     def test_embed_batch_raises_on_empty_list(self):
-        from kyros.ml.embedder import EmbeddingModel, EmbeddingError
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="empty batch"):
                 embedder.embed_batch([])
@@ -82,11 +84,11 @@ class TestEmbeddingModel:
     def test_embed_batch_sanitizes_empty_strings(self):
         """Empty strings in a batch should be replaced with a space, not crash."""
         import numpy as np
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.encode.return_value = np.random.randn(3, 384).astype(np.float32)
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
             embedder = EmbeddingModel("test-model")
             # Should not raise even with empty strings in the batch
@@ -99,18 +101,23 @@ class TestEmbeddingModel:
 
     def test_model_load_failure_raises_embedding_error(self):
         from kyros.ml.embedder import EmbeddingError
-        with patch("kyros.ml.embedder.SentenceTransformer", side_effect=RuntimeError("model not found")):
-            with pytest.raises(EmbeddingError, match="Failed to load"):
+        with (
+            patch(
+                "kyros.ml.embedder.SentenceTransformer",
+                side_effect=RuntimeError("model not found"),
+            ),
+            pytest.raises(EmbeddingError, match="Failed to load"),
+        ):
                 from kyros.ml.embedder import EmbeddingModel
                 EmbeddingModel("nonexistent-model")
 
     def test_embed_model_error_raises_embedding_error(self):
         from kyros.ml.embedder import EmbeddingError
-        with patch("kyros.ml.embedder.SentenceTransformer") as MockST:
+        with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
             mock_model.get_sentence_embedding_dimension.return_value = 384
             mock_model.encode.side_effect = RuntimeError("CUDA out of memory")
-            MockST.return_value = mock_model
+            mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="Embedding failed"):
@@ -122,7 +129,7 @@ class TestEmbeddingModel:
 class TestMemoryCache:
 
     @pytest.fixture
-    def mock_redis(self):
+    def mock_redis(self) -> Generator[Any, None, None]:
         """Mock Redis client with a synchronous pipeline (matches redis.asyncio behavior)."""
         redis = AsyncMock()
         pipe = MagicMock()  # pipeline() is sync in redis.asyncio

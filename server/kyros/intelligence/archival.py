@@ -18,10 +18,10 @@ import asyncio
 import json
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from kyros.storage.postgres import get_db_session
 from kyros.logging import get_logger
+from kyros.storage.postgres import get_db_session
 
 logger = get_logger("kyros.intelligence.archival")
 
@@ -36,7 +36,7 @@ BATCH_SIZE = 500
 class S3Archiver:
     """Handles archival of deleted memories to S3."""
 
-    def __init__(self, bucket: str = S3_BUCKET, prefix: str = S3_PREFIX):
+    def __init__(self, bucket: str = S3_BUCKET, prefix: str = S3_PREFIX) -> None:
         self.bucket = bucket
         self.prefix = prefix
         self._client = None
@@ -62,7 +62,7 @@ class S3Archiver:
         Returns:
             S3 key or local file path where the archive was stored.
         """
-        timestamp = datetime.now(timezone.utc).strftime("%Y/%m/%d/%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y/%m/%d/%H%M%S")
         key = f"{self.prefix}{tenant_id}/{timestamp}.jsonl"
 
         payload = "\n".join(json.dumps(m, default=str) for m in memories)
@@ -79,7 +79,7 @@ class S3Archiver:
                     Metadata={
                         "tenant_id": tenant_id,
                         "memory_count": str(len(memories)),
-                        "archived_at": datetime.now(timezone.utc).isoformat(),
+                        "archived_at": datetime.now(UTC).isoformat(),
                     },
                 )
                 logger.info("Archived to S3", bucket=self.bucket, key=key, count=len(memories))
@@ -113,7 +113,7 @@ class S3Archiver:
             resp = client.get_object(Bucket=self.bucket, Key=bucket_key)
             content = resp["Body"].read().decode("utf-8")
         else:
-            with open(key, "r") as f:
+            with open(key) as f:
                 content = f.read()
 
         return [json.loads(line) for line in content.strip().split("\n") if line]
@@ -122,7 +122,7 @@ class S3Archiver:
 async def find_archivable_memories() -> dict[str, list[dict]]:
     """Find deleted memories ready for archival, grouped by tenant."""
     from sqlalchemy import text
-    cutoff = datetime.now(timezone.utc) - timedelta(days=ARCHIVE_AFTER_DAYS)
+    cutoff = datetime.now(UTC) - timedelta(days=ARCHIVE_AFTER_DAYS)
 
     async with get_db_session() as session:
         result = await session.execute(

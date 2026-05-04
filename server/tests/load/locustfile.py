@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import os
 import random
+from typing import Any
 
 from locust import HttpUser, between, events, task
 
@@ -49,13 +50,13 @@ _QUERIES = [
 
 
 @events.test_start.add_listener
-def on_test_start(environment, **kwargs):
+def on_test_start(environment: Any, **kwargs: Any) -> None:
     print(f"[Locust] Load test starting against {environment.host}")
     print(f"[Locust] Using API key: {_API_KEY[:20]}...")
 
 
 @events.test_stop.add_listener
-def on_test_stop(environment, **kwargs):
+def on_test_stop(environment: Any, **kwargs: Any) -> None:
     stats = environment.stats.total
     print("\n[Locust] Test complete.")
     print(f"  Requests:  {stats.num_requests}")
@@ -70,12 +71,12 @@ class KyrosUser(HttpUser):
 
     wait_time = between(0.01, 0.05)
 
-    def on_start(self):
+    def on_start(self) -> None:
         """Pick a random agent for this virtual user."""
         self.agent_id = random.choice(_AGENTS)
 
     @task(35)
-    def remember(self):
+    def remember(self) -> None:
         """Store an episodic memory."""
         self.client.post(
             "/v1/memory/episodic/remember",
@@ -89,7 +90,7 @@ class KyrosUser(HttpUser):
         )
 
     @task(35)
-    def recall(self):
+    def recall(self) -> None:
         """Recall relevant memories."""
         self.client.post(
             "/v1/memory/episodic/recall",
@@ -103,7 +104,7 @@ class KyrosUser(HttpUser):
         )
 
     @task(10)
-    def store_fact(self):
+    def store_fact(self) -> None:
         """Store a semantic fact."""
         subjects = ["user", "project", "company", "system"]
         predicates = ["prefers", "uses", "requires", "has"]
@@ -122,7 +123,7 @@ class KyrosUser(HttpUser):
         )
 
     @task(10)
-    def query_facts(self):
+    def query_facts(self) -> None:
         """Query the semantic knowledge graph."""
         self.client.post(
             "/v1/memory/semantic/query",
@@ -136,7 +137,7 @@ class KyrosUser(HttpUser):
         )
 
     @task(5)
-    def match_procedure(self):
+    def match_procedure(self) -> None:
         """Find a matching procedure."""
         tasks = ["deploy the application", "send an email", "parse a CSV file", "run tests"]
         self.client.post(
@@ -151,6 +152,6 @@ class KyrosUser(HttpUser):
         )
 
     @task(5)
-    def health_check(self):
+    def health_check(self) -> None:
         """Health check — should always be fast."""
         self.client.get("/health", name="/health")

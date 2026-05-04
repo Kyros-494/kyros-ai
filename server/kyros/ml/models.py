@@ -10,7 +10,6 @@ without touching source code:
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 import httpx
 
@@ -39,7 +38,7 @@ async def call_llm(
     prompt: str,
     system_prompt: str = "You are a helpful assistant.",
     temperature: float = 0.1,
-    provider: Optional[str] = None,
+    provider: str | None = None,
     timeout: float = 60.0,
 ) -> str:
     """Universal LLM caller. Auto-detects provider from available API keys.

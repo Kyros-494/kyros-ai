@@ -15,9 +15,9 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import text
 
-from kyros.intelligence.compression import CompressionEngine, MIN_MEMORIES_TO_COMPRESS, HistoryCard
-from kyros.storage.postgres import get_db_session, get_db_session_for_tenant
+from kyros.intelligence.compression import MIN_MEMORIES_TO_COMPRESS, CompressionEngine, HistoryCard
 from kyros.logging import get_logger
+from kyros.storage.postgres import get_db_session, get_db_session_for_tenant
 
 logger = get_logger("kyros.intelligence.scheduler")
 

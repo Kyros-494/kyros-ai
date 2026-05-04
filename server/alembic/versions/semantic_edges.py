@@ -6,9 +6,10 @@ Connects facts based on cosine similarity of their embeddings.
 Revision ID: e05_semantic_edges
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0011"
 down_revision = "0010"

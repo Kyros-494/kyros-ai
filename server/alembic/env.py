@@ -6,9 +6,10 @@ import asyncio
 import sys
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
 
 # Import all models so Alembic can detect schema changes
 from kyros.models import Base  # noqa: F401 — registers all ORM models

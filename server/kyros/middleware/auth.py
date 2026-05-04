@@ -17,6 +17,7 @@ Security notes:
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 
@@ -181,10 +182,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
             # Cache negative result to prevent DB hammering on invalid keys
             if redis is not None:
-                try:
+                with contextlib.suppress(Exception):
                     await redis.set(_cache_key(key_hash), "null", ex=60)
-                except Exception:
-                    pass
             return self._error(
                 status.HTTP_401_UNAUTHORIZED,
                 "invalid_api_key",

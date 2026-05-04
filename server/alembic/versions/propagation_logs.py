@@ -5,9 +5,10 @@ Adds the semantic_propagation_logs table for auditing belief propagation updates
 Revision ID: e11_propagation_logs
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0012"
 down_revision = "0011"

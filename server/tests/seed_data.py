@@ -12,6 +12,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import uuid
+
 from sqlalchemy import text
 
 from kyros.config import get_settings
@@ -25,7 +27,6 @@ from kyros.schemas.memory import (
 from kyros.services.memory_service import MemoryService
 from kyros.storage.postgres import get_db_session
 from kyros.storage.redis_cache import MemoryCache, close_redis, get_redis
-import uuid
 
 
 async def get_or_create_tenant(name: str) -> uuid.UUID:
@@ -42,7 +43,9 @@ async def get_or_create_tenant(name: str) -> uuid.UUID:
     async with get_db_session() as session:
         await session.execute(
             text("""
-            INSERT INTO tenants (id, name, email, api_key_hash, plan, is_active, created_at, updated_at)
+            INSERT INTO tenants (
+                id, name, email, api_key_hash, plan, is_active, created_at, updated_at
+            )
             VALUES (:id, :name, :email, :hash, 'free', true, NOW(), NOW())
             ON CONFLICT DO NOTHING
             """),
@@ -98,7 +101,12 @@ async def seed_all() -> None:
             "Deploy to Production",
             "Steps to deploy the application to AWS ECS production environment",
             "devops",
-            [{"action": "run_tests"}, {"action": "build_docker"}, {"action": "push_ecr"}, {"action": "update_ecs"}],
+            [
+                {"action": "run_tests"},
+                {"action": "build_docker"},
+                {"action": "push_ecr"},
+                {"action": "update_ecs"},
+            ],
         ),
         (
             "Send Transactional Email",
@@ -122,7 +130,11 @@ async def seed_all() -> None:
             "Onboard New User",
             "Create account, send welcome email, and provision default resources",
             "user_management",
-            [{"action": "create_account"}, {"action": "send_welcome"}, {"action": "provision_resources"}],
+            [
+                {"action": "create_account"},
+                {"action": "send_welcome"},
+                {"action": "provision_resources"},
+            ],
         ),
     ]
     proc_ids = []
@@ -139,7 +151,9 @@ async def seed_all() -> None:
         successes = 5 - i  # first proc has most successes
         for _ in range(successes):
             await service.report_outcome(
-                tenant_id, OutcomeRequest(procedure_id=pid, success=True, duration_ms=100.0 + i * 20)
+                tenant_id, OutcomeRequest(
+                    procedure_id=pid, success=True, duration_ms=100.0 + i * 20
+                )
             )
         if i > 0:
             await service.report_outcome(
@@ -153,7 +167,10 @@ async def seed_all() -> None:
         tenant_id,
         RememberRequest(
             agent_id=agent,
-            content="User reported the deployment pipeline was failing due to missing KYROS_DATABASE_URL env var",
+            content=(
+            "User reported the deployment pipeline was failing due to "
+            "missing KYROS_DATABASE_URL env var"
+        ),
             importance=0.9,
         ),
     )

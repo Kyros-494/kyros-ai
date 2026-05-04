@@ -7,8 +7,8 @@ If you need request throttling, configure it at the reverse proxy level
 
 from __future__ import annotations
 
-import pytest
 import httpx
+import pytest
 
 
 class TestAuthentication:
@@ -19,7 +19,7 @@ class TestAuthentication:
         with httpx.Client(base_url=base_url, timeout=10.0) as c:
             yield c
 
-    def test_missing_api_key_returns_401(self, client):
+    def test_missing_api_key_returns_401(self, client) -> None:
         """Request without X-API-Key header should return 401."""
         resp = client.post(
             "/v1/memory/episodic/recall",
@@ -28,7 +28,7 @@ class TestAuthentication:
         assert resp.status_code == 401
         assert resp.json()["error"] == "missing_api_key"
 
-    def test_invalid_api_key_returns_401(self, client):
+    def test_invalid_api_key_returns_401(self, client) -> None:
         """Request with an unknown API key should return 401."""
         resp = client.post(
             "/v1/memory/episodic/recall",
@@ -38,7 +38,7 @@ class TestAuthentication:
         assert resp.status_code == 401
         assert resp.json()["error"] == "invalid_api_key"
 
-    def test_wrong_format_api_key_returns_401(self, client):
+    def test_wrong_format_api_key_returns_401(self, client) -> None:
         """API key not starting with mk_live_ or mk_test_ should return 401."""
         resp = client.post(
             "/v1/memory/episodic/recall",
@@ -48,7 +48,7 @@ class TestAuthentication:
         assert resp.status_code == 401
         assert resp.json()["error"] == "invalid_api_key_format"
 
-    def test_too_short_api_key_returns_401(self, client):
+    def test_too_short_api_key_returns_401(self, client) -> None:
         """API key with suffix shorter than 16 chars should return 401."""
         resp = client.post(
             "/v1/memory/episodic/recall",
@@ -57,18 +57,18 @@ class TestAuthentication:
         )
         assert resp.status_code == 401
 
-    def test_health_does_not_require_auth(self, client):
+    def test_health_does_not_require_auth(self, client) -> None:
         """GET /health should work without any API key."""
         resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
 
-    def test_docs_does_not_require_auth(self, client):
+    def test_docs_does_not_require_auth(self, client) -> None:
         """GET /docs should work without any API key."""
         resp = client.get("/docs")
         assert resp.status_code == 200
 
-    def test_valid_test_key_is_accepted(self, client, default_headers):
+    def test_valid_test_key_is_accepted(self, client, default_headers) -> None:
         """A valid mk_test_ key should be accepted in non-production."""
         resp = client.post(
             "/v1/memory/episodic/recall",

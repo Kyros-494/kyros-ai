@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-    func,
     Boolean,
     Column,
     DateTime,
@@ -18,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
@@ -82,11 +82,11 @@ class EpisodicMemory(Base):
     role = Column(String(50), nullable=True)
     session_id = Column(String(255), nullable=True)
     embedding = Column(Vector(384), nullable=False)
-    
+
     # F01, F02: Dual Embeddings for Portability
     embedding_secondary = Column(Vector(1536), nullable=True)
     embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L6-v2")
-    
+
     metadata_ = Column("metadata", JSONB, nullable=False, default=dict)
     importance = Column(Float, nullable=False, default=0.5)
     compression_level = Column(Integer, nullable=False, default=0)
@@ -127,11 +127,11 @@ class SemanticMemory(Base):
     object = Column(Text, nullable=False)
     confidence = Column(Float, nullable=False, default=1.0)
     embedding = Column(Vector(384), nullable=False)
-    
+
     # F01, F02: Dual Embeddings for Portability
     embedding_secondary = Column(Vector(1536), nullable=True)
     embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L6-v2")
-    
+
     source_type = Column(String(50), nullable=False, default="explicit")
     # B01: Ebbinghaus Decay Engine columns
     freshness_score = Column(Float, nullable=False, default=1.0)
@@ -171,11 +171,11 @@ class ProceduralMemory(Base):
     task_type = Column(String(255), nullable=False)
     steps = Column(JSONB, nullable=False)
     embedding = Column(Vector(384), nullable=False)
-    
+
     # F01, F02: Dual Embeddings for Portability
     embedding_secondary = Column(Vector(1536), nullable=True)
     embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L6-v2")
-    
+
     success_count = Column(Integer, nullable=False, default=0)
     failure_count = Column(Integer, nullable=False, default=0)
     avg_duration_ms = Column(Float, nullable=True)
@@ -230,7 +230,7 @@ class UsageEvent(Base):
 
 class MemoryAuditLog(Base):
     """Append-only audit log for cryptographic Merkle roots.
-    
+
     Used to prove the state of an agent's memory at any given point in time.
     Provides immutable evidence of memory integrity.
     """
@@ -255,7 +255,7 @@ class MemoryAuditLog(Base):
 
 class CausalEdge(Base):
     """A causal relationship between two memories (WHY something happened).
-    
+
     Creates a directed graph of memories: from_memory_id -(relation)-> to_memory_id.
     Usually: cause -(causes)-> effect, or decision -(based_on)-> observation.
     """
@@ -264,16 +264,16 @@ class CausalEdge(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    
+
     # We use String/UUID for from/to because they can point to any memory table
     # (episodic, semantic, procedural)
     from_memory_id = Column(UUID(as_uuid=True), nullable=False)
     to_memory_id = Column(UUID(as_uuid=True), nullable=False)
-    
+
     relation = Column(String(100), nullable=False, default="causes")  # 'causes', 'motivates', 'prevents'
     confidence = Column(Float, nullable=False, default=1.0)
     description = Column(Text, nullable=True)  # Human-readable explanation of the causality
-    
+
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     __table_args__ = (
@@ -290,7 +290,7 @@ class CausalEdge(Base):
 
 class SemanticEdge(Base):
     """A semantic relationship between two facts in semantic memory.
-    
+
     Used for Belief Propagation: if the confidence of from_fact changes,
     the confidence of to_fact is automatically updated based on their relatedness.
     """
@@ -299,13 +299,13 @@ class SemanticEdge(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
     tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    
+
     from_fact_id = Column(UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False)
     to_fact_id = Column(UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False)
-    
+
     # Cosine similarity between the embeddings of the two facts
     relatedness_score = Column(Float, nullable=False)
-    
+
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     __table_args__ = (
@@ -328,14 +328,14 @@ class SemanticPropagationLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     agent_id = Column(UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False)
-    
+
     fact_id = Column(UUID(as_uuid=True), ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False)
     triggered_by_fact_id = Column(UUID(as_uuid=True), nullable=False)
-    
+
     old_confidence = Column(Float, nullable=False)
     new_confidence = Column(Float, nullable=False)
     depth = Column(Integer, nullable=False)
-    
+
     created_at = Column(DateTime, nullable=False, server_default=func.now())
 
     __table_args__ = (

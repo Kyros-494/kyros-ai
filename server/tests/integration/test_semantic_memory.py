@@ -1,14 +1,18 @@
 """E55 — Integration tests: store fact, contradiction resolution."""
 
-import pytest
+from collections.abc import Generator
+
 import httpx
+import pytest
 
 
 class TestSemanticMemory:
     """Integration tests for semantic fact storage and contradiction resolution."""
 
     @pytest.fixture
-    def client(self, base_url, default_headers):
+    def client(
+        self, base_url: str, default_headers: dict[str, str]
+    ) -> Generator[httpx.Client, None, None]:
         with httpx.Client(base_url=base_url, headers=default_headers, timeout=30.0) as c:
             yield c
 

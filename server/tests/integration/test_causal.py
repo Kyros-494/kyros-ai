@@ -9,10 +9,13 @@ Tests the full causal engine:
 
 from __future__ import annotations
 
+
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import text
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from kyros.intelligence.causal import store_causal_edges, traverse_causal_chain
 
@@ -20,7 +23,7 @@ from kyros.intelligence.causal import store_causal_edges, traverse_causal_chain
 class TestCausalGraph:
 
     @pytest.mark.asyncio
-    async def test_explicit_causal_chain_upstream_traversal(self, db_session):
+    async def test_explicit_causal_chain_upstream_traversal(self, db_session: AsyncSession) -> None:
         """Traversing upstream from C should find B and A as causes."""
         tenant_id = uuid4()
         agent_id = uuid4()
@@ -30,11 +33,17 @@ class TestCausalGraph:
 
         # Seed tenant and agent
         await db_session.execute(
-            text("INSERT INTO tenants (id, name, email, api_key_hash, created_at) VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO tenants (id, name, email, api_key_hash, created_at) "
+                "VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": tenant_id, "n": "test", "e": f"{tenant_id.hex[:8]}@t.com", "h": tenant_id.hex},
         )
         await db_session.execute(
-            text("INSERT INTO agents (id, tenant_id, external_id, created_at) VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO agents (id, tenant_id, external_id, created_at) "
+                "VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": agent_id, "tid": tenant_id, "eid": f"agent-{agent_id.hex[:8]}"},
         )
 
@@ -74,7 +83,7 @@ class TestCausalGraph:
         assert str(mem_a_id) in from_ids
 
     @pytest.mark.asyncio
-    async def test_explicit_causal_chain_downstream_traversal(self, db_session):
+    async def test_explicit_causal_chain_downstream_traversal(self, db_session: AsyncSession) -> None:
         """Traversing downstream from A should find B and C as effects."""
         tenant_id = uuid4()
         agent_id = uuid4()
@@ -83,11 +92,17 @@ class TestCausalGraph:
         mem_c_id = uuid4()
 
         await db_session.execute(
-            text("INSERT INTO tenants (id, name, email, api_key_hash, created_at) VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO tenants (id, name, email, api_key_hash, created_at) "
+                "VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": tenant_id, "n": "test2", "e": f"{tenant_id.hex[:8]}@t.com", "h": tenant_id.hex},
         )
         await db_session.execute(
-            text("INSERT INTO agents (id, tenant_id, external_id, created_at) VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO agents (id, tenant_id, external_id, created_at) "
+                "VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": agent_id, "tid": tenant_id, "eid": f"agent-{agent_id.hex[:8]}"},
         )
 
@@ -120,7 +135,7 @@ class TestCausalGraph:
         assert str(mem_c_id) in to_ids
 
     @pytest.mark.asyncio
-    async def test_traverse_nonexistent_memory_returns_empty(self, db_session):
+    async def test_traverse_nonexistent_memory_returns_empty(self, db_session: AsyncSession) -> None:
         """Traversing a memory that doesn't exist should return empty graph, not crash."""
         agent_id = uuid4()
         fake_memory_id = uuid4()
@@ -130,7 +145,7 @@ class TestCausalGraph:
         assert graph == {"nodes": [], "edges": []}
 
     @pytest.mark.asyncio
-    async def test_store_duplicate_edges_are_idempotent(self, db_session):
+    async def test_store_duplicate_edges_are_idempotent(self, db_session: AsyncSession) -> None:
         """Storing the same edge twice should not raise an error (ON CONFLICT DO NOTHING)."""
         tenant_id = uuid4()
         agent_id = uuid4()
@@ -138,16 +153,23 @@ class TestCausalGraph:
         mem_b_id = uuid4()
 
         await db_session.execute(
-            text("INSERT INTO tenants (id, name, email, api_key_hash, created_at) VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO tenants (id, name, email, api_key_hash, created_at) "
+                "VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": tenant_id, "n": "test3", "e": f"{tenant_id.hex[:8]}@t.com", "h": tenant_id.hex},
         )
         await db_session.execute(
-            text("INSERT INTO agents (id, tenant_id, external_id, created_at) VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO agents (id, tenant_id, external_id, created_at) "
+                "VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": agent_id, "tid": tenant_id, "eid": f"agent-{agent_id.hex[:8]}"},
         )
         for mid, content in [(mem_a_id, "Event A"), (mem_b_id, "Event B")]:
             await db_session.execute(
-                text("INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"),
+                text("INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"
+                ),
                 {"id": mid, "aid": agent_id, "tid": tenant_id, "c": content, "emb": [0.3] * 384},
             )
 
@@ -158,7 +180,7 @@ class TestCausalGraph:
         await store_causal_edges(tenant_id, agent_id, edge)
 
     @pytest.mark.asyncio
-    async def test_max_depth_limits_traversal(self, db_session):
+    async def test_max_depth_limits_traversal(self, db_session: AsyncSession) -> None:
         """max_depth=1 should only return direct neighbors, not transitive ones."""
         tenant_id = uuid4()
         agent_id = uuid4()
@@ -167,16 +189,23 @@ class TestCausalGraph:
         mem_c_id = uuid4()
 
         await db_session.execute(
-            text("INSERT INTO tenants (id, name, email, api_key_hash, created_at) VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO tenants (id, name, email, api_key_hash, created_at) "
+                "VALUES (:id, :n, :e, :h, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": tenant_id, "n": "test4", "e": f"{tenant_id.hex[:8]}@t.com", "h": tenant_id.hex},
         )
         await db_session.execute(
-            text("INSERT INTO agents (id, tenant_id, external_id, created_at) VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"),
+            text(
+                "INSERT INTO agents (id, tenant_id, external_id, created_at) "
+                "VALUES (:id, :tid, :eid, NOW()) ON CONFLICT DO NOTHING"
+            ),
             {"id": agent_id, "tid": tenant_id, "eid": f"agent-{agent_id.hex[:8]}"},
         )
         for mid, content in [(mem_a_id, "A"), (mem_b_id, "B"), (mem_c_id, "C")]:
             await db_session.execute(
-                text("INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"),
+                text("INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"
+                ),
                 {"id": mid, "aid": agent_id, "tid": tenant_id, "c": content, "emb": [0.4] * 384},
             )
 
