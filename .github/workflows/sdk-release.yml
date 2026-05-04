@@ -94,7 +94,6 @@ jobs:
 
       - name: Run tests
         run: npm test
-        continue-on-error: true
 
       - name: Publish to npm
         run: npm publish --access public

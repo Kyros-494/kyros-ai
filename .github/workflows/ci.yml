@@ -29,18 +29,15 @@ jobs:
 
       - name: Lint production code (ruff)
         run: uv run ruff check kyros/ alembic/
-        continue-on-error: true  # 156 acceptable errors, won't block CI
         
       - name: Lint tests (relaxed rules)
         run: uv run ruff check tests/ --select E,F,W --ignore E501
-        continue-on-error: true
 
       - name: Format check (ruff)
         run: uv run ruff format --check .
 
       - name: Type check (mypy)
         run: uv run mypy kyros/
-        continue-on-error: true  # 21 type errors in existing code, won't block CI
 
       - name: Unit tests
         run: uv run pytest tests/unit/ -v --tb=short
@@ -98,7 +95,6 @@ jobs:
 
       - name: Integration tests
         run: uv run pytest tests/integration/ -v --tb=short -m "not slow" --ignore=tests/integration/test_proxy.py
-        continue-on-error: true  # 39 tests fail due to missing running server and DB connection issues
 
   # ─── Python SDK: lint + type check + tests ───
   sdk-python:
@@ -122,11 +118,9 @@ jobs:
 
       - name: Lint (ruff)
         run: uv run ruff check kyros/
-        continue-on-error: true  # Auto-fixable errors, won't block CI
 
       - name: Type check (mypy)
         run: uv run mypy kyros/
-        continue-on-error: true  # Type errors in upstream code, won't block CI
 
       - name: Tests
         run: uv run pytest -v --tb=short
@@ -156,4 +150,3 @@ jobs:
 
       - name: Tests
         run: npm test -- --passWithNoTests
-        continue-on-error: true  # Tests require running server
