@@ -80,9 +80,9 @@ class KyrosClient:
                 "KYROS_API_KEY environment variable."
             )
 
-        self.base_url = (
-            base_url or os.getenv("KYROS_BASE_URL") or "https://api.kyros.ai"
-        ).rstrip("/")
+        self.base_url = (base_url or os.getenv("KYROS_BASE_URL") or "https://api.kyros.ai").rstrip(
+            "/"
+        )
         self.timeout = timeout
 
         self._client = httpx.Client(

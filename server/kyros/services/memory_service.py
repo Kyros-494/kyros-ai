@@ -5,6 +5,7 @@ import json
 import os
 import time
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
@@ -219,7 +220,10 @@ class MemoryService:
         )
 
     async def recall(self, tenant_id: UUID | None, request: RecallRequest) -> RecallResponse:
-        """Retrieve relevant memories via hybrid search (similarity + recency + importance + freshness)."""
+        """Retrieve relevant memories via hybrid search.
+
+        Uses similarity + recency + importance + freshness scoring.
+        """
         start = time.monotonic()
         tenant_id_required = self._require_tenant_id(tenant_id)
         query_embedding = self.embedder.embed(request.query)
@@ -240,11 +244,11 @@ class MemoryService:
                 "agent_id": agent_id,
                 "min_rel": request.min_relevance,
                 "k": request.k,
-                "w_sim": W_SIM,
-                "w_recency": W_RECENCY,
-                "w_importance": W_IMPORTANCE,
-                "w_freshness": W_FRESHNESS,
-                "half_life": HALF_LIFE_HOURS,
+                "w_sim": w_sim,
+                "w_recency": w_recency,
+                "w_importance": w_importance,
+                "w_freshness": w_freshness,
+                "half_life": half_life_hours,
                 "query_vec": query_embedding,
             }
 
@@ -308,7 +312,7 @@ class MemoryService:
                     metadata=row.metadata or {},
                     # B09: Freshness fields in recall response
                     freshness_score=round(float(row.freshness_score), 4),
-                    freshness_warning=row.freshness_score < FRESHNESS_WARNING_THRESHOLD,
+                    freshness_warning=row.freshness_score < freshness_warning_threshold,
                     memory_category=row.memory_category,
                     causal_ancestry=causal_ancestry,
                 )

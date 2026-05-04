@@ -84,7 +84,7 @@ async def _do_update_merkle_root(agent_id: UUID, tenant_id: UUID) -> str:
             {"episodic_memories", "semantic_memories", "procedural_memories"}
         )
         for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
-            assert table in _ALLOWED_TABLES, f"Unexpected table name: {table}"  # safety guard
+            assert table in _allowed_tables, f"Unexpected table name: {table}"  # safety guard
             result = await session.execute(
                 text(f"""
                 SELECT merkle_leaf

@@ -48,9 +48,7 @@ async def query_facts(request: Request, body: RecallRequest) -> RecallResponse:
 
 
 @router.get("/graph/{agent_id}")
-async def get_semantic_graph(
-    agent_id: str, request: Request, limit: int = 100
-) -> dict[str, any]:
+async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100) -> dict[str, any]:
     """Return the agent's semantic belief graph for frontend rendering (D3/Cytoscape)."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)

@@ -19,9 +19,7 @@ logger = get_logger("kyros.api.procedural")
 
 
 @router.post("/store", status_code=201, response_model=StoreProcedureResponse)
-async def store_procedure(
-    request: Request, body: StoreProcedureRequest
-) -> StoreProcedureResponse:
+async def store_procedure(request: Request, body: StoreProcedureRequest) -> StoreProcedureResponse:
     """Store a learned procedure (workflow, tool-call sequence)."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -38,9 +36,7 @@ async def store_procedure(
 
 
 @router.post("/match", response_model=ProceduralMatchResponse)
-async def match_procedure(
-    request: Request, body: MatchProcedureRequest
-) -> ProceduralMatchResponse:
+async def match_procedure(request: Request, body: MatchProcedureRequest) -> ProceduralMatchResponse:
     """Find the best matching procedure for a task description.
 
     Results are ranked by: 0.60 × cosine_similarity + 0.40 × success_rate

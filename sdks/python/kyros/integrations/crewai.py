@@ -13,8 +13,7 @@ try:
     from pydantic import BaseModel, Field
 except ImportError as e:
     raise ImportError(
-        "crewai is required for the CrewAI integration. "
-        "Install it with: pip install crewai"
+        "crewai is required for the CrewAI integration. Install it with: pip install crewai"
     ) from e
 
 
