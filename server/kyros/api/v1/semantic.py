@@ -1,5 +1,7 @@
 """Semantic memory routes — store and query facts (knowledge graph)."""
 
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -14,7 +16,7 @@ logger = get_logger("kyros.api.semantic")
 
 
 @router.post("/facts", response_model=FactResult, status_code=201)
-async def store_fact(request: Request, body: StoreFactRequest):
+async def store_fact(request: Request, body: StoreFactRequest) -> FactResult:
     """Store a semantic fact (subject-predicate-object triple) with contradiction detection."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -31,7 +33,7 @@ async def store_fact(request: Request, body: StoreFactRequest):
 
 
 @router.post("/query", response_model=RecallResponse)
-async def query_facts(request: Request, body: RecallRequest):
+async def query_facts(request: Request, body: RecallRequest) -> RecallResponse:
     """Query the semantic knowledge graph via natural language."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -48,7 +50,7 @@ async def query_facts(request: Request, body: RecallRequest):
 
 
 @router.get("/graph/{agent_id}")
-async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100):
+async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100) -> dict[str, Any]:
     """Return the agent's semantic belief graph for frontend rendering (D3/Cytoscape)."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -73,11 +75,13 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100):
             edges = []
             node_ids: set[str] = set()
             for row in result.fetchall():
-                edges.append({
-                    "source": str(row.from_fact_id),
-                    "target": str(row.to_fact_id),
-                    "relatedness": row.relatedness_score,
-                })
+                edges.append(
+                    {
+                        "source": str(row.from_fact_id),
+                        "target": str(row.to_fact_id),
+                        "relatedness": row.relatedness_score,
+                    }
+                )
                 node_ids.add(str(row.from_fact_id))
                 node_ids.add(str(row.to_fact_id))
 
@@ -92,11 +96,13 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100):
                     {"ids": list(node_ids)},
                 )
                 for r in res.fetchall():
-                    nodes.append({
-                        "id": str(r.id),
-                        "label": f"{r.subject} {r.predicate} {r.object}",
-                        "confidence": r.confidence,
-                    })
+                    nodes.append(
+                        {
+                            "id": str(r.id),
+                            "label": f"{r.subject} {r.predicate} {r.object}",
+                            "confidence": r.confidence,
+                        }
+                    )
 
         return {"agent_id": agent_id, "nodes": nodes, "edges": edges}
 

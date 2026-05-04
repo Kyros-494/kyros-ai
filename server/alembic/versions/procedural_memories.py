@@ -4,6 +4,7 @@ Revision ID: 0004
 Revises: 0003
 Create Date: 2026-04-25
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -22,8 +23,18 @@ def upgrade() -> None:
     op.create_table(
         "procedural_memories",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("agent_id", UUID(as_uuid=True), sa.ForeignKey("agents.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("tenant_id", UUID(as_uuid=True), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "agent_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("agents.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "tenant_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("name", sa.String(500), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
         sa.Column("task_type", sa.String(255), nullable=False),
@@ -31,7 +42,9 @@ def upgrade() -> None:
         sa.Column("embedding", Vector(384), nullable=False),
         # F01, F02: Dual Embeddings for Portability
         sa.Column("embedding_secondary", Vector(1536), nullable=True),
-        sa.Column("embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L6-v2"),
+        sa.Column(
+            "embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L6-v2"
+        ),
         sa.Column("success_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("failure_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("avg_duration_ms", sa.Float(), nullable=True),

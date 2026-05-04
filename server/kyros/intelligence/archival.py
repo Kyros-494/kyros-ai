@@ -19,6 +19,7 @@ import json
 import os
 import time
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from kyros.logging import get_logger
 from kyros.storage.postgres import get_db_session
@@ -41,11 +42,12 @@ class S3Archiver:
         self.prefix = prefix
         self._client = None
 
-    def _get_client(self):
+    def _get_client(self) -> Any:
         """Lazy-init S3 client."""
         if self._client is None:
             try:
                 import boto3
+
                 self._client = boto3.client("s3")
             except ImportError:
                 logger.warning("boto3 not installed, archival will use local fallback")
@@ -122,6 +124,7 @@ class S3Archiver:
 async def find_archivable_memories() -> dict[str, list[dict]]:
     """Find deleted memories ready for archival, grouped by tenant."""
     from sqlalchemy import text
+
     cutoff = datetime.now(UTC) - timedelta(days=ARCHIVE_AFTER_DAYS)
 
     async with get_db_session() as session:
@@ -144,18 +147,20 @@ async def find_archivable_memories() -> dict[str, list[dict]]:
             tid = str(row.tenant_id)
             if tid not in by_tenant:
                 by_tenant[tid] = []
-            by_tenant[tid].append({
-                "memory_id": str(row.id),
-                "agent_id": str(row.agent_id),
-                "content": row.content,
-                "content_type": row.content_type,
-                "role": row.role,
-                "session_id": row.session_id,
-                "importance": row.importance,
-                "metadata": row.metadata,
-                "created_at": row.created_at.isoformat() if row.created_at else None,
-                "deleted_at": row.deleted_at.isoformat() if row.deleted_at else None,
-            })
+            by_tenant[tid].append(
+                {
+                    "memory_id": str(row.id),
+                    "agent_id": str(row.agent_id),
+                    "content": row.content,
+                    "content_type": row.content_type,
+                    "role": row.role,
+                    "session_id": row.session_id,
+                    "importance": row.importance,
+                    "metadata": row.metadata,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                    "deleted_at": row.deleted_at.isoformat() if row.deleted_at else None,
+                }
+            )
 
         return by_tenant
 
@@ -163,6 +168,7 @@ async def find_archivable_memories() -> dict[str, list[dict]]:
 async def hard_delete_archived(memory_ids: list[str]) -> int:
     """Permanently remove archived memories from the database."""
     from sqlalchemy import text
+
     if not memory_ids:
         return 0
 
@@ -175,7 +181,7 @@ async def hard_delete_archived(memory_ids: list[str]) -> int:
     return len(memory_ids)
 
 
-async def archive_deleted_memories():
+async def archive_deleted_memories() -> None:
     """Run one archival cycle: find deleted → S3 → hard delete."""
     start = time.monotonic()
     logger.info("Starting archival cycle")

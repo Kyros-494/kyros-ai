@@ -10,8 +10,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "0012"
-down_revision = "0011"
+revision = "0010"
+down_revision = "0009"
 branch_labels = None
 depends_on = None
 
@@ -20,8 +20,18 @@ def upgrade() -> None:
     op.create_table(
         "semantic_propagation_logs",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("agent_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("agents.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("fact_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "agent_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("agents.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "fact_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("semantic_memories.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("triggered_by_fact_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("old_confidence", sa.Float(), nullable=False),
         sa.Column("new_confidence", sa.Float(), nullable=False),

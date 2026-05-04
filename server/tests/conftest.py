@@ -17,7 +17,9 @@ if _server_root not in sys.path:
     sys.path.insert(0, _server_root)
 
 # Ensure required settings exist even when .env is not present in CI/local test runs.
-os.environ.setdefault("KYROS_DATABASE_URL", "postgresql+asyncpg://kyros:test@localhost:5432/kyros_test")
+os.environ.setdefault(
+    "KYROS_DATABASE_URL", "postgresql+asyncpg://kyros:test@localhost:5432/kyros_test"
+)
 os.environ.setdefault("KYROS_REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("KYROS_JWT_SECRET_KEY", "ci-test-secret-key-minimum-32-chars")
 

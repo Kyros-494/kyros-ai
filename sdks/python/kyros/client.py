@@ -4,7 +4,7 @@ Mirrors the TypeScript SDK API surface using httpx.
 """
 
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import httpx
 
@@ -57,8 +57,8 @@ class KyrosClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
         timeout: float = 30.0,
     ) -> None:
         """Initialize Kyros client.
@@ -76,12 +76,13 @@ class KyrosClient:
         self.api_key = api_key or os.getenv("KYROS_API_KEY")
         if not self.api_key:
             raise AuthenticationError(
-                "No API key provided. Pass api_key parameter or set KYROS_API_KEY environment variable."
+                "No API key provided. Pass api_key parameter or set "
+                "KYROS_API_KEY environment variable."
             )
 
-        self.base_url = (
-            base_url or os.getenv("KYROS_BASE_URL") or "https://api.kyros.ai"
-        ).rstrip("/")
+        self.base_url = (base_url or os.getenv("KYROS_BASE_URL") or "https://api.kyros.ai").rstrip(
+            "/"
+        )
         self.timeout = timeout
 
         self._client = httpx.Client(
@@ -110,7 +111,7 @@ class KyrosClient:
         self,
         method: str,
         path: str,
-        json: Optional[Dict[str, Any]] = None,
+        json: dict[str, Any] | None = None,
     ) -> Any:
         """Make HTTP request to Kyros API.
 
@@ -197,10 +198,10 @@ class KyrosClient:
         agent_id: str,
         content: str,
         content_type: ContentType = "text",
-        role: Optional[str] = None,
-        session_id: Optional[str] = None,
+        role: str | None = None,
+        session_id: str | None = None,
         importance: float = 0.5,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> RememberResponse:
         """Store an episodic memory.
 
@@ -246,10 +247,10 @@ class KyrosClient:
         self,
         agent_id: str,
         query: str,
-        memory_type: Optional[MemoryType] = None,
+        memory_type: MemoryType | None = None,
         k: int = 10,
         min_relevance: float = 0.0,
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         include_causal_ancestry: bool = False,
     ) -> RecallResponse:
         """Recall memories using semantic search.
@@ -398,8 +399,8 @@ class KyrosClient:
         name: str,
         description: str,
         task_type: str,
-        steps: List[Dict[str, Any]],
-        metadata: Optional[Dict[str, Any]] = None,
+        steps: list[dict[str, Any]],
+        metadata: dict[str, Any] | None = None,
     ) -> ProcedureResponse:
         """Store a procedure (workflow, skill, etc.).
 
@@ -483,7 +484,7 @@ class KyrosClient:
         self,
         procedure_id: str,
         success: bool,
-        duration_ms: Optional[int] = None,
+        duration_ms: int | None = None,
     ) -> ProcedureOutcomeResponse:
         """Report the outcome of a procedure execution.
 
@@ -558,7 +559,7 @@ class KyrosClient:
         self,
         agent_id: str,
         data: ExportData,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Import memories for an agent.
 
         Args:
@@ -619,7 +620,7 @@ class KyrosClient:
 
     # ─── Advanced Features ────────────────────────────────────────────────────
 
-    def get_staleness_report(self, agent_id: str) -> Dict[str, Any]:
+    def get_staleness_report(self, agent_id: str) -> dict[str, Any]:
         """Get staleness report for agent's memories.
 
         Args:
@@ -630,7 +631,7 @@ class KyrosClient:
         """
         return self._request("GET", f"/v1/admin/staleness-report/{agent_id}")
 
-    def get_decay_rates(self) -> Dict[str, Any]:
+    def get_decay_rates(self) -> dict[str, Any]:
         """Get current decay rates for memory categories.
 
         Returns:
@@ -638,7 +639,7 @@ class KyrosClient:
         """
         return self._request("GET", "/v1/admin/decay-rates")
 
-    def set_decay_rates(self, rates: Dict[str, float]) -> Dict[str, Any]:
+    def set_decay_rates(self, rates: dict[str, float]) -> dict[str, Any]:
         """Set decay rates for memory categories.
 
         Args:
@@ -649,7 +650,7 @@ class KyrosClient:
         """
         return self._request("PUT", "/v1/admin/decay-rates", json={"rates": rates})
 
-    def get_memory_proof(self, memory_id: str) -> Dict[str, Any]:
+    def get_memory_proof(self, memory_id: str) -> dict[str, Any]:
         """Get cryptographic integrity proof for a memory.
 
         Args:
@@ -660,7 +661,7 @@ class KyrosClient:
         """
         return self._request("GET", f"/v1/admin/memory/{memory_id}/proof")
 
-    def audit_integrity(self, agent_id: str) -> Dict[str, Any]:
+    def audit_integrity(self, agent_id: str) -> dict[str, Any]:
         """Audit integrity of all memories for an agent.
 
         Args:
@@ -676,7 +677,7 @@ class KyrosClient:
         agent_id: str,
         memory_id: str,
         max_depth: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get causal explanation for a memory.
 
         Args:
@@ -704,7 +705,7 @@ class KyrosClient:
         from_model: str,
         to_model: str,
         strategy: str = "translate",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Migrate embeddings from one model to another.
 
         Args:

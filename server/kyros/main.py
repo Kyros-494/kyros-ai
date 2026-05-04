@@ -6,10 +6,11 @@ import asyncio
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from kyros.api.v1 import admin, causal, episodic, procedural, search, semantic, trust
 from kyros.config import get_settings
@@ -121,9 +122,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # ─── CORS origins ─────────────────────────────
 _raw_origins = getattr(settings, "allowed_origins", "*")
 _cors_origins: list[str] | str = (
-    [o.strip() for o in _raw_origins.split(",") if o.strip()]
-    if _raw_origins != "*"
-    else ["*"]
+    [o.strip() for o in _raw_origins.split(",") if o.strip()] if _raw_origins != "*" else ["*"]
 )
 
 app = FastAPI(
@@ -137,6 +136,7 @@ app = FastAPI(
 
 
 # ─── Global exception handlers ─────────────────
+
 
 @app.exception_handler(ValueError)
 async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
@@ -174,7 +174,7 @@ app.add_middleware(AuthMiddleware)
 
 # ─── Request ID ───────────────────────────────
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def add_security_headers(request: Request, call_next: Any) -> Response:
     """Apply baseline response hardening headers."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -183,13 +183,15 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "0"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     if settings.environment == "production":
-        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
     return response
 
 
 # ─── Request ID ───────────────────────────────
 @app.middleware("http")
-async def add_request_id(request: Request, call_next):
+async def add_request_id(request: Request, call_next: Any) -> Response:
     """Attach a unique X-Request-ID to every request for distributed tracing."""
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     request.state.request_id = request_id
@@ -199,25 +201,26 @@ async def add_request_id(request: Request, call_next):
 
 
 # ─── Routes ────────────────────────────────────
-app.include_router(episodic.router,   prefix="/v1/memory/episodic",   tags=["Episodic Memory"])
-app.include_router(semantic.router,   prefix="/v1/memory/semantic",   tags=["Semantic Memory"])
+app.include_router(episodic.router, prefix="/v1/memory/episodic", tags=["Episodic Memory"])
+app.include_router(semantic.router, prefix="/v1/memory/semantic", tags=["Semantic Memory"])
 app.include_router(procedural.router, prefix="/v1/memory/procedural", tags=["Procedural Memory"])
-app.include_router(search.router,     prefix="/v1/search",            tags=["Search"])
-app.include_router(admin.router,      prefix="/v1/admin",             tags=["Admin"])
-app.include_router(causal.router,     prefix="/v1/memory/causal",     tags=["Causal Memory"])
-app.include_router(trust.router,      prefix="/v1/trust",             tags=["Trust"])
+app.include_router(search.router, prefix="/v1/search", tags=["Search"])
+app.include_router(admin.router, prefix="/v1/admin", tags=["Admin"])
+app.include_router(causal.router, prefix="/v1/memory/causal", tags=["Causal Memory"])
+app.include_router(trust.router, prefix="/v1/trust", tags=["Trust"])
 
 
 # ─── Health Checks ─────────────────────────────
 
+
 @app.get("/health", tags=["System"])
-async def health_check():
+async def health_check() -> dict[str, str]:
     """Liveness probe — returns OK if the process is running."""
     return {"status": "ok", "version": "0.1.0", "environment": settings.environment}
 
 
 @app.get("/health/ready", tags=["System"])
-async def readiness_check(request: Request):
+async def readiness_check(request: Request) -> JSONResponse:
     """Readiness probe — checks all dependencies before accepting traffic."""
     checks: dict[str, str] = {}
     healthy = True
@@ -226,6 +229,7 @@ async def readiness_check(request: Request):
         from sqlalchemy import text
 
         from kyros.storage.postgres import get_db_session
+
         async with get_db_session() as session:
             await session.execute(text("SELECT 1"))
         checks["postgres"] = "ok"

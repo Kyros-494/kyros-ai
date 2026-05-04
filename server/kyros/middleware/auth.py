@@ -43,13 +43,15 @@ _MIN_KEY_SUFFIX_LEN = 16
 _AUTH_CACHE_TTL = settings.auth_cache_ttl
 
 # Endpoints that bypass authentication entirely
-PUBLIC_PATHS = frozenset({
-    "/health",
-    "/health/ready",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-})
+PUBLIC_PATHS = frozenset(
+    {
+        "/health",
+        "/health/ready",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+    }
+)
 
 
 def hash_api_key(api_key: str) -> str:
@@ -73,9 +75,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     Cache miss falls through to DB and populates the cache.
     """
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
 
         # Skip auth for public endpoints and doc sub-paths
@@ -101,7 +101,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
 
         prefix = "mk_live_" if api_key.startswith("mk_live_") else "mk_test_"
-        suffix = api_key[len(prefix):]
+        suffix = api_key[len(prefix) :]
         if len(suffix) < _MIN_KEY_SUFFIX_LEN:
             return self._error(
                 status.HTTP_401_UNAUTHORIZED,
@@ -157,10 +157,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         try:
             async with get_db_session() as session:
                 result = await session.execute(
-                    text(
-                        "SELECT id, plan, is_active FROM tenants "
-                        "WHERE api_key_hash = :key_hash"
-                    ),
+                    text("SELECT id, plan, is_active FROM tenants WHERE api_key_hash = :key_hash"),
                     {"key_hash": key_hash},
                 )
                 tenant = result.fetchone()
@@ -208,11 +205,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
             try:
                 await redis.set(
                     _cache_key(key_hash),
-                    json.dumps({
-                        "id": str(tenant.id),
-                        "plan": tenant.plan,
-                        "is_active": tenant.is_active,
-                    }),
+                    json.dumps(
+                        {
+                            "id": str(tenant.id),
+                            "plan": tenant.plan,
+                            "is_active": tenant.is_active,
+                        }
+                    ),
                     ex=_AUTH_CACHE_TTL,
                 )
             except Exception:

@@ -35,15 +35,11 @@ MIN_MEMORIES_PER_AGENT = 50
 async def get_tenants_with_policies() -> list[dict]:
     """Fetch all active tenants with their plan info."""
     async with get_db_session() as session:
-        result = await session.execute(
-            text("SELECT id, plan FROM tenants WHERE is_active = true")
-        )
+        result = await session.execute(text("SELECT id, plan FROM tenants WHERE is_active = true"))
         return [{"tenant_id": row.id, "plan": row.plan} for row in result.fetchall()]
 
 
-async def find_forgettable_memories(
-    tenant_id: UUID, retention_days: int
-) -> list[dict]:
+async def find_forgettable_memories(tenant_id: UUID, retention_days: int) -> list[dict]:
     """Find memories eligible for forgetting.
 
     Uses a single aggregated query to avoid N+1 per-agent COUNT queries.

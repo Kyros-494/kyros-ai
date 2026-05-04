@@ -33,7 +33,9 @@ class Settings(BaseSettings):
     redis_url: str = Field(..., description="Redis connection URL")
 
     # ── Auth ─────────────────────────────────────────────────────────────
-    jwt_secret_key: str = Field(..., min_length=32, description="HS256 signing secret — must be ≥32 chars")
+    jwt_secret_key: str = Field(
+        ..., min_length=32, description="HS256 signing secret — must be ≥32 chars"
+    )
     jwt_algorithm: str = Field(default="HS256")
     jwt_expiry_minutes: int = Field(default=60, ge=1)
     # How long to cache auth lookups in Redis (seconds). Revoked keys take this long to propagate.
@@ -45,7 +47,9 @@ class Settings(BaseSettings):
     # Optional secondary embedding model for cross-model portability (F01/F02).
     # When set, every memory write also populates embedding_secondary.
     # Example: KYROS_SECONDARY_EMBEDDING_MODEL=text-embedding-3-small
-    secondary_embedding_model: str = Field(default="", description="Optional second embedding model name")
+    secondary_embedding_model: str = Field(
+        default="", description="Optional second embedding model name"
+    )
 
     # ── Stripe (optional — only required for billing) ────────────────────
     stripe_api_key: str = Field(default="")
@@ -116,7 +120,9 @@ class Settings(BaseSettings):
         weak_secret_markers = ("change-me", "example", "test-secret", "dev")
         secret_lower = self.jwt_secret_key.lower()
         if any(marker in secret_lower for marker in weak_secret_markers):
-            raise ValueError("jwt_secret_key appears to be a placeholder; set a strong production secret")
+            raise ValueError(
+                "jwt_secret_key appears to be a placeholder; set a strong production secret"
+            )
 
         return self
 

@@ -26,6 +26,7 @@ class EmbeddingModel:
     ) -> None:
         try:
             from sentence_transformers import SentenceTransformer
+
             self.model = SentenceTransformer(model_name)
             self.model_name = model_name
             self.dimension = self.model.get_sentence_embedding_dimension()
@@ -49,6 +50,7 @@ class EmbeddingModel:
         if secondary_model_name:
             try:
                 from sentence_transformers import SentenceTransformer
+
                 self.secondary_model = SentenceTransformer(secondary_model_name)
                 self.secondary_model_name = secondary_model_name
                 self.secondary_dimension = self.secondary_model.get_sentence_embedding_dimension()

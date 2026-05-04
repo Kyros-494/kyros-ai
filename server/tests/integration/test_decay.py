@@ -28,6 +28,7 @@ def _now() -> datetime:
 
 # ─── B05: Freshness Formula ───────────────────
 
+
 class TestFreshnessCalculation:
     def test_brand_new_memory_is_fully_fresh(self) -> None:
         now = _now()
@@ -75,6 +76,7 @@ class TestFreshnessCalculation:
 
 # ─── B04: Decay Config ────────────────────────
 
+
 class TestDecayConfig:
     def test_default_rates_exist(self) -> None:
         assert "market_data" in DEFAULT_DECAY_RATES
@@ -99,6 +101,7 @@ class TestDecayConfig:
 
 
 # ─── Freshness Status Classification ──────────
+
 
 class TestFreshnessEvaluation:
     def test_new_memory_is_fresh(self) -> None:
@@ -134,6 +137,7 @@ class TestFreshnessEvaluation:
 
 # ─── B06: Auto-Categorisation ─────────────────
 
+
 class TestAutoCategorisation:
     def test_detects_pricing(self) -> None:
         cat = auto_categorise("The product costs $49 per month with a pricing tier structure.")
@@ -158,6 +162,7 @@ class TestAutoCategorisation:
 
 # ─── Decay Rate Assignment ────────────────────
 
+
 class TestDecayRateAssignment:
     def test_assigns_correct_rate_for_category(self) -> None:
         rate = assign_decay_rate("market_data")
@@ -173,6 +178,7 @@ class TestDecayRateAssignment:
 
 
 # ─── Batch Update ─────────────────────────────
+
 
 class TestBatchUpdate:
     def test_batch_updates_freshness(self) -> None:

@@ -32,27 +32,25 @@ from datetime import UTC, datetime
 
 DEFAULT_DECAY_RATES: dict[str, float] = {
     # ── Episodic categories ──
-    "general":           0.020,   # half-life ~35 days (conversations, events)
-    "conversation":      0.025,   # half-life ~28 days (chat turns)
-    "observation":       0.015,   # half-life ~46 days (agent observations)
-    "decision":          0.010,   # half-life ~69 days (decisions persist longer)
-    "meeting":           0.020,   # half-life ~35 days (meeting notes)
-
+    "general": 0.020,  # half-life ~35 days (conversations, events)
+    "conversation": 0.025,  # half-life ~28 days (chat turns)
+    "observation": 0.015,  # half-life ~46 days (agent observations)
+    "decision": 0.010,  # half-life ~69 days (decisions persist longer)
+    "meeting": 0.020,  # half-life ~35 days (meeting notes)
     # ── Semantic categories ──
-    "fact":              0.005,   # half-life ~139 days (general facts)
-    "user_preference":   0.020,   # half-life ~35 days (preferences change)
-    "user_identity":     0.001,   # half-life ~693 days (names, emails rarely change)
-    "company_structure": 0.005,   # half-life ~139 days (org charts)
-    "market_data":       0.500,   # half-life ~1.4 days (prices, rates)
-    "product_pricing":   0.100,   # half-life ~7 days (pricing changes)
-    "regulatory_rule":   0.001,   # half-life ~693 days (regulations are stable)
-    "technical_spec":    0.010,   # half-life ~69 days (specs evolve slowly)
-
+    "fact": 0.005,  # half-life ~139 days (general facts)
+    "user_preference": 0.020,  # half-life ~35 days (preferences change)
+    "user_identity": 0.001,  # half-life ~693 days (names, emails rarely change)
+    "company_structure": 0.005,  # half-life ~139 days (org charts)
+    "market_data": 0.500,  # half-life ~1.4 days (prices, rates)
+    "product_pricing": 0.100,  # half-life ~7 days (pricing changes)
+    "regulatory_rule": 0.001,  # half-life ~693 days (regulations are stable)
+    "technical_spec": 0.010,  # half-life ~69 days (specs evolve slowly)
     # ── Procedural categories ──
-    "workflow":          0.010,   # half-life ~69 days (workflows evolve)
-    "api_usage":         0.050,   # half-life ~14 days (APIs change often)
-    "deployment":        0.030,   # half-life ~23 days (infra changes)
-    "troubleshooting":   0.020,   # half-life ~35 days (solutions may expire)
+    "workflow": 0.010,  # half-life ~69 days (workflows evolve)
+    "api_usage": 0.050,  # half-life ~14 days (APIs change often)
+    "deployment": 0.030,  # half-life ~23 days (infra changes)
+    "troubleshooting": 0.020,  # half-life ~35 days (solutions may expire)
 }
 
 
@@ -67,7 +65,7 @@ class DecayConfig:
     custom_rates: dict[str, float] = field(default_factory=dict)
     freshness_warning_threshold: float = 0.40  # Alert when freshness < 40%
     freshness_critical_threshold: float = 0.15  # Critical when freshness < 15%
-    auto_archive_threshold: float = 0.05        # Auto-archive when freshness < 5%
+    auto_archive_threshold: float = 0.05  # Auto-archive when freshness < 5%
 
     def get_rate(self, category: str) -> float:
         """Get decay rate for a category, with tenant override support.
@@ -91,6 +89,7 @@ class DecayConfig:
 
 
 # ─── B05: Freshness Score Formula ─────────────
+
 
 def calculate_freshness(
     created_at: datetime,
@@ -138,7 +137,7 @@ class FreshnessResult:
     age_days: float
     decay_rate: float
     half_life_days: float
-    status: str                # "fresh", "warning", "critical", "stale"
+    status: str  # "fresh", "warning", "critical", "stale"
     category: str
 
 
@@ -246,12 +245,14 @@ def batch_freshness_update(
             now=now,
         )
 
-        updates.append({
-            "id": mem.get("id"),
-            "new_freshness": result.freshness_score,
-            "status": result.status,
-            "should_warn": result.status == "warning",
-            "should_archive": result.status == "stale",
-        })
+        updates.append(
+            {
+                "id": mem.get("id"),
+                "new_freshness": result.freshness_score,
+                "status": result.status,
+                "should_warn": result.status == "warning",
+                "should_archive": result.status == "stale",
+            }
+        )
 
     return updates

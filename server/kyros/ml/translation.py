@@ -21,9 +21,11 @@ logger = get_logger("kyros.ml.translation")
 
 # ─── F05: Embedding Model Registry ────────────
 
+
 @dataclass
 class EmbeddingModelConfig:
     """Metadata for a supported embedding model."""
+
     name: str
     dimension: int
     provider: str  # "local" | "openai" | "gemini" | "voyage"
@@ -50,6 +52,7 @@ MODEL_REGISTRY: dict[str, EmbeddingModelConfig] = {
 
 # ─── F06: Cross-Model Training Data Collector ─
 
+
 class CrossModelDatasetCollector:
     """Collects paired dataset of texts embedded by multiple models.
 
@@ -61,10 +64,12 @@ class CrossModelDatasetCollector:
 
     def collect_pair(self, text: str, embeddings: dict[str, list[float]]) -> None:
         """Store a text and its embeddings from various models."""
-        self.dataset.append({
-            "text_preview": text[:50],
-            "embeddings": embeddings,
-        })
+        self.dataset.append(
+            {
+                "text_preview": text[:50],
+                "embeddings": embeddings,
+            }
+        )
 
     def save(self, filepath: str) -> None:
         """Persist the collected dataset to a JSON file."""
@@ -78,6 +83,7 @@ class CrossModelDatasetCollector:
 
 
 # ─── F07 & F08: Translation Networks ──────────
+
 
 class EmbeddingTranslator:
     """Translates vector embeddings from one model space to another.
@@ -93,7 +99,9 @@ class EmbeddingTranslator:
 
     def _ensure_models_loaded(self) -> None:
         if not self._weights_loaded:
-            logger.info("Translation network weights not trained — using dimension projection fallback")
+            logger.info(
+                "Translation network weights not trained — using dimension projection fallback"
+            )
             self._weights_loaded = True
 
     def translate_linear(
@@ -144,6 +152,7 @@ class EmbeddingTranslator:
 
 # ─── F09: Translation Accuracy Benchmark ──────
 
+
 def benchmark_translation_accuracy(
     translator: EmbeddingTranslator,
     test_dataset: list[dict],
@@ -186,7 +195,10 @@ def benchmark_translation_accuracy(
             predicted = translator.translate_linear(source_vec, source_model, target_model)
 
         min_len = min(len(predicted), len(actual_target_vec))
-        mse = sum((p - a) ** 2 for p, a in zip(predicted[:min_len], actual_target_vec[:min_len], strict=True))
+        mse = sum(
+            (p - a) ** 2
+            for p, a in zip(predicted[:min_len], actual_target_vec[:min_len], strict=True)
+        )
         total_loss += mse / max(min_len, 1)
 
     avg_loss = total_loss / len(test_dataset)
