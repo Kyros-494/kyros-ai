@@ -142,7 +142,7 @@ class CompressionEngine:
             selected = sentences[:max_sentences]
             return ". ".join(selected) + "." if selected else ""
 
-        elif level == 2:
+        if level == 2:
             # L2: Merge paragraphs, extract key points
             all_text = " ".join(contents)
             sentences = [s.strip() for s in all_text.split(". ") if len(s.strip()) > 15]
@@ -150,13 +150,12 @@ class CompressionEngine:
             keep = max(3, len(sentences) // 5)
             return ". ".join(sentences[:keep]) + "." if sentences else ""
 
-        else:
-            # L3: Final card — extremely concise
-            all_text = " ".join(contents)
-            sentences = [s.strip() for s in all_text.split(". ") if len(s.strip()) > 15]
-            keep = max(2, len(sentences) // 10)
-            header = f"Agent history ({len(memories)} sources): "
-            return header + ". ".join(sentences[:keep]) + "."
+        # L3: Final card — extremely concise
+        all_text = " ".join(contents)
+        sentences = [s.strip() for s in all_text.split(". ") if len(s.strip()) > 15]
+        keep = max(2, len(sentences) // 10)
+        header = f"Agent history ({len(memories)} sources): "
+        return header + ". ".join(sentences[:keep]) + "."
 
     def _llm_compress(self, memories: list[dict], level: int, provider: str) -> str:
         """LLM-based compression (production quality).
@@ -197,13 +196,12 @@ Summary:"""
         try:
             if provider == "openai":
                 return self._call_openai(prompt)
-            elif provider == "anthropic":
+            if provider == "anthropic":
                 return self._call_anthropic(prompt)
-            else:
-                logger.warning(
-                    "Unknown LLM provider, falling back to extractive", provider=provider
-                )
-                return self._extractive_compress(memories, level)
+            logger.warning(
+                "Unknown LLM provider, falling back to extractive", provider=provider
+            )
+            return self._extractive_compress(memories, level)
         except Exception as e:
             logger.error("LLM compression failed, falling back to extractive", error=str(e))
             return self._extractive_compress(memories, level)
