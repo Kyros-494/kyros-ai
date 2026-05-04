@@ -1,22 +1,25 @@
 [project]
 name = "kyros-sdk"
 version = "0.1.0"
-description = "Python SDK for Kyros AI Memory System"
-requires-python = ">=3.10"
+description = "Python SDK for Kyros — persistent memory for AI agents"
 readme = "README.md"
-license = {text = "Apache-2.0"}
+requires-python = ">=3.11"
+license = { text = "MIT" }
 authors = [
-    {name = "Kyros Team"}
+    { name = "Kyros", email = "kyros.494@gmail.com" }
 ]
+keywords = ["ai", "memory", "agents", "llm", "rag", "vector-database"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
+
 dependencies = [
     "httpx>=0.27.0",
     "pydantic>=2.0.0",
@@ -26,14 +29,32 @@ dependencies = [
 dev = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.23.0",
-    "ruff>=0.4.0",
-    "mypy>=1.9.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.6.0",
+    "mypy>=1.11.0",
+    "types-httpx",
+]
+
+# Framework integrations (optional)
+langchain = ["langchain-core>=0.3.0"]
+llama-index = ["llama-index-core>=0.11.0"]
+autogen = ["pyautogen>=0.2.0"]
+crewai = ["crewai>=0.1.0"]
+
+# All integrations
+all = [
+    "langchain-core>=0.3.0",
+    "llama-index-core>=0.11.0",
+    "pyautogen>=0.2.0",
+    "crewai>=0.1.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/kyros-ai"
+Homepage = "https://kyros.ai"
 Documentation = "https://docs.kyros.ai"
-Repository = "https://github.com/yourusername/kyros-ai"
+Repository = "https://github.com/Kyros-494/kyros-ai"
+Issues = "https://github.com/Kyros-494/kyros-ai/issues"
+Changelog = "https://github.com/Kyros-494/kyros-ai/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]
@@ -43,24 +64,26 @@ build-backend = "hatchling.build"
 packages = ["kyros"]
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ANN"]
 ignore = [
+    "ANN101",  # Missing type annotation for self
+    "ANN102",  # Missing type annotation for cls
     "ANN401",  # Dynamically typed expressions (Any)
 ]
 
-[tool.ruff.lint.per-file-ignores]
-"kyros/integrations/*.py" = [
-    "SIM105",  # contextlib.suppress - try/except is clearer for best-effort operations
-]
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 strict = true
-ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -68,3 +91,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+addopts = "-ra -q --tb=short"
+markers = [
+    "integration: integration tests requiring live server",
+    "unit: fast isolated unit tests",
+]

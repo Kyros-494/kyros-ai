@@ -1,1 +1,1 @@
-"""Kyros Python SDK Tests."""
+"""Kyros Python SDK tests."""

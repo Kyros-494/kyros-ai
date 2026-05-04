@@ -1,0 +1,55 @@
+name: Generate Release Notes
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-release-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: notes
+        uses: release-drafter/release-drafter@v6
+        with:
+          config-name: release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update CHANGELOG
+        run: |
+          # Extract version from tag
+          VERSION="${{ github.event.release.tag_name }}"
+          DATE=$(date +%Y-%m-%d)
+          
+          # Create changelog entry
+          cat > /tmp/changelog-entry.md << EOF
+          ## [$VERSION] - $DATE
+          
+          ${{ github.event.release.body }}
+          
+          EOF
+          
+          # Prepend to CHANGELOG.md
+          if [ -f CHANGELOG.md ]; then
+            cat /tmp/changelog-entry.md CHANGELOG.md > /tmp/new-changelog.md
+            mv /tmp/new-changelog.md CHANGELOG.md
+          else
+            mv /tmp/changelog-entry.md CHANGELOG.md
+          fi
+
+      - name: Commit changelog
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add CHANGELOG.md
+          git commit -m "docs: update CHANGELOG for ${{ github.event.release.tag_name }}" || exit 0
+          git push

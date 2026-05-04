@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/Kyros-494/kyros-ai/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: Documentation
+    url: https://docs.kyros.ai
+    about: Read the comprehensive documentation
+  - name: Security Issue
+    url: https://github.com/Kyros-494/kyros-ai/security/advisories/new
+    about: Report security vulnerabilities privately (do not create public issues)

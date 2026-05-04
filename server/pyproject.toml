@@ -16,7 +16,7 @@ dependencies = [
     "alembic>=1.14.0,<2.0.0",
     "pgvector>=0.3.0,<1.0.0",
     # Cache
-    "redis[hiredis]>=5.2.0,<6.0.0",
+    "redis[hiredis]>=5.2.0,<8.0.0",
     # HTTP client
     "httpx>=0.28.0,<1.0.0",
     # ML / Embeddings
@@ -117,3 +117,7 @@ filterwarnings = [
     "ignore::DeprecationWarning:asyncpg",
     "ignore::PendingDeprecationWarning",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "alembic/versions"]
+skips = ["B101", "B601"]  # B101: assert_used, B601: paramiko_calls
