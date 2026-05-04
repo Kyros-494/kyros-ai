@@ -96,3 +96,7 @@ filterwarnings = [
     "ignore::DeprecationWarning:asyncpg",
     "ignore::PendingDeprecationWarning",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "alembic/versions"]
+skips = ["B101", "B601"]  # B101: assert_used, B601: paramiko_calls
