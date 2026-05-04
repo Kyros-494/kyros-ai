@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
   // Compress responses
   compress: true,
 
+  // Enable standalone output for Docker
+  output: 'standalone',
+
   // Security headers applied to all routes
   async headers() {
     return [
