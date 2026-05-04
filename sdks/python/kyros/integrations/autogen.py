@@ -6,15 +6,13 @@ Requires: pip install pyautogen kyros-sdk
 from __future__ import annotations
 
 import contextlib
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from kyros import KyrosClient
-
+from kyros import KyrosClient
 from kyros.exceptions import KyrosError
 
 
-def inject_kyros_memory(agent: Any, client: "KyrosClient", agent_id: str, k: int = 10) -> None:
+def inject_kyros_memory(agent: Any, client: KyrosClient, agent_id: str, k: int = 10) -> None:
     """Wrap an AutoGen agent to automatically store and recall messages using Kyros.
 
     Patches the agent's `receive` method to:

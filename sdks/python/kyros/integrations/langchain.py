@@ -5,11 +5,9 @@ Requires: pip install langchain-core kyros-sdk
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from kyros import KyrosClient
-
+from kyros import KyrosClient
 from kyros.exceptions import KyrosError
 
 try:
@@ -34,7 +32,7 @@ class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
         chain = ConversationChain(llm=llm, memory=memory)
     """
 
-    client: "KyrosClient"
+    client: KyrosClient
     agent_id: str
     memory_key: str = "history"
     k: int = 10  # Number of memories to retrieve per turn

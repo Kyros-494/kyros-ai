@@ -1,0 +1,13 @@
+# Trivy Ignore File
+# This file contains CVEs that are intentionally ignored in security scans
+
+# CVE-2024-23342: Minerva timing attack on P-256 in python-ecdsa
+# Severity: HIGH
+# Status: No fix available - python-ecdsa maintainers consider side-channel attacks out of scope
+# Reference: https://nvd.nist.gov/vuln/detail/cve-2024-23342
+# Reference: https://github.com/tlsfuzzer/python-ecdsa/security/advisories/GHSA-wj6h-64fc-37mp
+# Justification: This is a transitive dependency via python-jose[cryptography].
+#                The vulnerability requires local access to measure timing differences.
+#                The project maintainers have stated this is out of scope and no patch exists.
+#                Risk is accepted as the attack requires privileged local access.
+CVE-2024-23342

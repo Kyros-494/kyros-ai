@@ -5,11 +5,7 @@ Requires: pip install crewai kyros-sdk
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from kyros import KyrosClient
-
+from kyros import KyrosClient
 from kyros.exceptions import KyrosError
 
 try:
@@ -39,7 +35,7 @@ class KyrosRecallTool(BaseTool):  # type: ignore[misc]
     )
     args_schema: type[BaseModel] = _RecallInput
 
-    client: "KyrosClient"
+    client: KyrosClient
     agent_id: str
     k: int = 10
 
@@ -66,7 +62,7 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
     )
     args_schema: type[BaseModel] = _RememberInput
 
-    client: "KyrosClient"
+    client: KyrosClient
     agent_id: str
 
     class Config:
@@ -80,7 +76,7 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
             return f"Memory storage failed: {e!s}"
 
 
-def get_kyros_tools(client: "KyrosClient", agent_id: str, k: int = 10) -> list[BaseTool]:
+def get_kyros_tools(client: KyrosClient, agent_id: str, k: int = 10) -> list[BaseTool]:
     """Get a list of Kyros memory tools ready to pass to a CrewAI agent.
 
     Usage:
