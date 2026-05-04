@@ -172,9 +172,19 @@ class CompressionEngine:
         joined = "\n- ".join(contents)
 
         level_instructions = {
-            1: "Summarise these conversation turns into ONE paragraph. Preserve key facts, decisions, and user preferences.",
-            2: "Summarise these paragraph summaries into a single page. Focus on overarching themes, important decisions, and recurring patterns.",
-            3: "Create a concise history card from these summaries. This should be a brief profile capturing the most important information about the agent's interactions.",
+            1: (
+                "Summarise these conversation turns into ONE paragraph. "
+                "Preserve key facts, decisions, and user preferences."
+            ),
+            2: (
+                "Summarise these paragraph summaries into a single page. "
+                "Focus on overarching themes, important decisions, and recurring patterns."
+            ),
+            3: (
+                "Create a concise history card from these summaries. "
+                "This should be a brief profile capturing the most important information "
+                "about the agent's interactions."
+            ),
         }
 
         prompt = f"""{level_instructions.get(level, level_instructions[1])}
@@ -220,7 +230,10 @@ Summary:"""
                     "messages": [
                         {
                             "role": "system",
-                            "content": "You are a concise summariser. Output only the summary, no preamble.",
+                            "content": (
+                                "You are a concise summariser. "
+                                "Output only the summary, no preamble."
+                            ),
                         },
                         {"role": "user", "content": prompt},
                     ],

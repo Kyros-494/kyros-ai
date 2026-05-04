@@ -41,7 +41,7 @@ class S3Archiver:
         self.prefix = prefix
         self._client = None
 
-    def _get_client(self):
+    def _get_client(self) -> Any:
         """Lazy-init S3 client."""
         if self._client is None:
             try:
@@ -180,7 +180,7 @@ async def hard_delete_archived(memory_ids: list[str]) -> int:
     return len(memory_ids)
 
 
-async def archive_deleted_memories():
+async def archive_deleted_memories() -> None:
     """Run one archival cycle: find deleted → S3 → hard delete."""
     start = time.monotonic()
     logger.info("Starting archival cycle")

@@ -69,19 +69,19 @@ class KyrosMemory(BaseMemory):  # type: ignore[misc]
 
     def put(self, message: ChatMessage) -> None:
         """Store a message as an episodic memory."""
+        import contextlib
+
         content = message.content
         if not isinstance(content, str):
             content = str(content)
         if not content.strip():
             return
 
-        try:
+        with contextlib.suppress(KyrosError):
             self.client.remember(
                 self.agent_id,
                 content,
             )
-        except KyrosError:
-            pass  # Best-effort
 
     def set(self, messages: list[ChatMessage]) -> None:
         """Store a batch of messages."""

@@ -14,7 +14,7 @@ logger = get_logger("kyros.api.semantic")
 
 
 @router.post("/facts", response_model=FactResult, status_code=201)
-async def store_fact(request: Request, body: StoreFactRequest):
+async def store_fact(request: Request, body: StoreFactRequest) -> FactResult:
     """Store a semantic fact (subject-predicate-object triple) with contradiction detection."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -31,7 +31,7 @@ async def store_fact(request: Request, body: StoreFactRequest):
 
 
 @router.post("/query", response_model=RecallResponse)
-async def query_facts(request: Request, body: RecallRequest):
+async def query_facts(request: Request, body: RecallRequest) -> RecallResponse:
     """Query the semantic knowledge graph via natural language."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -48,7 +48,9 @@ async def query_facts(request: Request, body: RecallRequest):
 
 
 @router.get("/graph/{agent_id}")
-async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100):
+async def get_semantic_graph(
+    agent_id: str, request: Request, limit: int = 100
+) -> dict[str, any]:
     """Return the agent's semantic belief graph for frontend rendering (D3/Cytoscape)."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)

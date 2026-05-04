@@ -80,7 +80,7 @@ async def _do_update_merkle_root(agent_id: UUID, tenant_id: UUID) -> str:
     async with get_db_session_for_tenant(str(tenant_id)) as session:
         # Collect all active memory leaves across all three tables, ordered
         # deterministically so the tree is reproducible.
-        _ALLOWED_TABLES = frozenset(
+        _allowed_tables = frozenset(
             {"episodic_memories", "semantic_memories", "procedural_memories"}
         )
         for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:

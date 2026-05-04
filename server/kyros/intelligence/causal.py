@@ -121,7 +121,8 @@ async def store_causal_edges(
     """Store explicit causal edges in the graph database.
 
     Args:
-        edges: List of dicts containing from_memory_id, to_memory_id, relation, confidence, description.
+        edges: List of dicts containing from_memory_id, to_memory_id, relation,
+                    confidence, description.
     """
     stored_edges = []
     now = datetime.now(UTC).replace(tzinfo=None)
@@ -215,13 +216,15 @@ async def traverse_causal_chain(
             result = await session.execute(
                 text("""
                 WITH RECURSIVE causal_tree AS (
-                    SELECT from_memory_id, to_memory_id, relation, confidence, description, 1 as depth
+                    SELECT from_memory_id, to_memory_id, relation,
+                    confidence, description, 1 as depth
                     FROM causal_edges
                     WHERE to_memory_id = :start_id AND agent_id = :agent_id
 
                     UNION ALL
 
-                    SELECT ce.from_memory_id, ce.to_memory_id, ce.relation, ce.confidence, ce.description, ct.depth + 1
+                    SELECT ce.from_memory_id, ce.to_memory_id, ce.relation,
+                           ce.confidence, ce.description, ct.depth + 1
                     FROM causal_edges ce
                     JOIN causal_tree ct ON ce.to_memory_id = ct.from_memory_id
                     WHERE ce.agent_id = :agent_id AND ct.depth < :max_depth
@@ -248,13 +251,15 @@ async def traverse_causal_chain(
             result = await session.execute(
                 text("""
                 WITH RECURSIVE causal_tree AS (
-                    SELECT from_memory_id, to_memory_id, relation, confidence, description, 1 as depth
+                    SELECT from_memory_id, to_memory_id, relation,
+                    confidence, description, 1 as depth
                     FROM causal_edges
                     WHERE from_memory_id = :start_id AND agent_id = :agent_id
 
                     UNION ALL
 
-                    SELECT ce.from_memory_id, ce.to_memory_id, ce.relation, ce.confidence, ce.description, ct.depth + 1
+                    SELECT ce.from_memory_id, ce.to_memory_id, ce.relation,
+                           ce.confidence, ce.description, ct.depth + 1
                     FROM causal_edges ce
                     JOIN causal_tree ct ON ce.from_memory_id = ct.to_memory_id
                     WHERE ce.agent_id = :agent_id AND ct.depth < :max_depth

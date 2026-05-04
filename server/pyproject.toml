@@ -61,6 +61,9 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ANN"]
 ignore = [
     "ANN401",  # Dynamically typed expressions (Any)
     "B008",    # Do not perform function calls in default arguments (FastAPI Depends)
+    "ANN001",  # Missing type annotation for function argument
+    "SIM105",  # Use contextlib.suppress (existing code uses try/except/pass)
+    "E402",    # Module level import not at top (some imports after config)
 ]
 
 [tool.ruff.lint.per-file-ignores]

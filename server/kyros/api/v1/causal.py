@@ -23,7 +23,7 @@ class CausalExplainRequest(BaseModel):
 
 
 @router.post("/explain")
-async def explain_memory(request: Request, body: CausalExplainRequest):
+async def explain_memory(request: Request, body: CausalExplainRequest) -> dict[str, any]:
     """Explain why a memory happened (causal chain traversal)."""
     from kyros.intelligence.causal import traverse_causal_chain
 
@@ -47,10 +47,10 @@ async def explain_memory(request: Request, body: CausalExplainRequest):
         )
     except SQLAlchemyError as e:
         logger.error("DB error in explain_memory", error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
     except Exception as e:
         logger.error("Unexpected error in explain_memory", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
     if not graph["nodes"]:
         raise HTTPException(status_code=404, detail="Memory not found or has no causal links")
@@ -67,7 +67,7 @@ class CausalFrequencyRequest(BaseModel):
 
 
 @router.post("/frequent-causes")
-async def frequent_causes(request: Request, body: CausalFrequencyRequest):
+async def frequent_causes(request: Request, body: CausalFrequencyRequest) -> dict[str, any]:
     """Analyze what causes a specific type of event across all memories."""
     from kyros.intelligence.causal import analyze_causal_frequencies
 
@@ -86,16 +86,16 @@ async def frequent_causes(request: Request, body: CausalFrequencyRequest):
         )
     except SQLAlchemyError as e:
         logger.error("DB error in frequent_causes", error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
     except Exception as e:
         logger.error("Unexpected error in frequent_causes", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
     return {"agent_id": body.agent_id, **result}
 
 
 @router.get("/graph/{agent_id}")
-async def get_causal_graph(agent_id: str, request: Request, limit: int = 100):
+async def get_causal_graph(agent_id: str, request: Request, limit: int = 100) -> dict[str, any]:
     """Return the agent's causal graph for D3/Cytoscape frontend rendering."""
     if limit < 1 or limit > 1000:
         raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
@@ -150,9 +150,9 @@ async def get_causal_graph(agent_id: str, request: Request, limit: int = 100):
 
     except SQLAlchemyError as e:
         logger.error("DB error in get_causal_graph", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
     except Exception as e:
         logger.error("Unexpected error in get_causal_graph", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
     return {"agent_id": agent_id, "nodes": nodes, "edges": edges}

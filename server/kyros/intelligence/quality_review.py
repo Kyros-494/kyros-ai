@@ -50,7 +50,9 @@ def generate_synthetic_memories(count: int) -> list[dict]:
             topic=random.choice(topics),
             action=random.choice(actions),
             time=random.randint(50, 5000),
-            preference=f"prefers {random.choice(['dark mode', 'light mode', 'Python', 'TypeScript'])}",
+            preference=(
+                f"prefers {random.choice(['dark mode', 'light mode', 'Python', 'TypeScript'])}"
+            ),
             operation=random.choice(actions),
             error=f"timeout after {random.randint(10, 60)}s",
             company=random.choice(companies),

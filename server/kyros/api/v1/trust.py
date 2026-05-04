@@ -10,7 +10,7 @@ router = APIRouter()
 
 
 @router.get("/status")
-async def get_trust_status():
+async def get_trust_status() -> dict[str, any]:
     """Return the current trust and compliance status of the platform.
 
     Update the compliance fields to reflect your actual certification status

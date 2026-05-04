@@ -1,7 +1,5 @@
 """Kyros SDK exception classes."""
 
-from typing import Optional
-
 
 class KyrosError(Exception):
     """Base exception for all Kyros SDK errors."""
@@ -9,8 +7,8 @@ class KyrosError(Exception):
     def __init__(
         self,
         message: str,
-        status_code: Optional[int] = None,
-        error_code: Optional[str] = None,
+        status_code: int | None = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize KyrosError.
 
@@ -41,7 +39,7 @@ class AuthenticationError(KyrosError):
         self,
         message: str = "Authentication failed",
         status_code: int = 401,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize AuthenticationError.
 
@@ -62,7 +60,7 @@ class RateLimitError(KyrosError):
         limit: int = 0,
         remaining: int = 0,
         reset_at: int = 0,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize RateLimitError.
 
@@ -82,7 +80,10 @@ class RateLimitError(KyrosError):
     def __str__(self) -> str:
         """Return string representation with rate limit details."""
         base = super().__str__()
-        return f"{base} (limit={self.limit}, remaining={self.remaining}, retry_after={self.retry_after}s)"
+        return (
+            f"{base} (limit={self.limit}, remaining={self.remaining}, "
+            f"retry_after={self.retry_after}s)"
+        )
 
 
 class NotFoundError(KyrosError):
@@ -91,7 +92,7 @@ class NotFoundError(KyrosError):
     def __init__(
         self,
         message: str = "Resource not found",
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize NotFoundError.
 
@@ -108,7 +109,7 @@ class ValidationError(KyrosError):
     def __init__(
         self,
         message: str = "Validation error",
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize ValidationError.
 
@@ -126,7 +127,7 @@ class ServerError(KyrosError):
         self,
         message: str = "Internal server error",
         status_code: int = 500,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ) -> None:
         """Initialize ServerError.
 
@@ -144,7 +145,7 @@ class TimeoutError(KyrosError):
     def __init__(
         self,
         message: str = "Request timed out",
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ) -> None:
         """Initialize TimeoutError.
 
@@ -168,7 +169,7 @@ class ConnectionError(KyrosError):
     def __init__(
         self,
         message: str = "Connection failed",
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
     ) -> None:
         """Initialize ConnectionError.
 

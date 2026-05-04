@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -31,7 +32,7 @@ def _utcnow() -> datetime:
 
 
 @router.get("/summarise/{agent_id}")
-async def summarise(agent_id: str, request: Request):
+async def summarise(agent_id: str, request: Request) -> dict[str, Any]:
     """Get the compressed history card for an agent."""
     from kyros.intelligence.compression import CompressionEngine
 
@@ -56,7 +57,7 @@ async def summarise(agent_id: str, request: Request):
             rows = result.fetchall()
     except SQLAlchemyError as e:
         logger.error("DB error in summarise", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
     if not rows:
         return {
@@ -81,7 +82,7 @@ async def summarise(agent_id: str, request: Request):
         card = engine.compress_agent_memories(raw_memories)
     except Exception as e:
         logger.error("Compression failed", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Compression failed")
+        raise HTTPException(status_code=500, detail="Compression failed") from e
 
     return {
         "agent_id": agent_id,
@@ -97,7 +98,7 @@ async def summarise(agent_id: str, request: Request):
 
 
 @router.get("/export/{agent_id}", response_model=ExportResponse)
-async def export_memories(agent_id: str, request: Request):
+async def export_memories(agent_id: str, request: Request) -> ExportResponse:
     """Export all memories for an agent as JSON."""
     if not agent_id.strip():
         raise HTTPException(status_code=400, detail="agent_id must not be blank")
@@ -107,14 +108,14 @@ async def export_memories(agent_id: str, request: Request):
     try:
         return await service.export_memories(tenant_id, agent_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except SQLAlchemyError as e:
         logger.error("DB error in export_memories", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
 
 @router.post("/import/{agent_id}")
-async def import_memories(agent_id: str, request: Request):
+async def import_memories(agent_id: str, request: Request) -> dict[str, Any]:
     """Import memories from JSON into an agent."""
     if not agent_id.strip():
         raise HTTPException(status_code=400, detail="agent_id must not be blank")
@@ -125,7 +126,7 @@ async def import_memories(agent_id: str, request: Request):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from None
 
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="Request body must be a JSON object")
@@ -133,17 +134,17 @@ async def import_memories(agent_id: str, request: Request):
     try:
         return await service.import_memories(tenant_id, agent_id, body)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except SQLAlchemyError as e:
         logger.error("DB error in import_memories", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
 
 # ─── B11: Staleness Report ────────────────────
 
 
 @router.get("/staleness-report/{agent_id}")
-async def staleness_report(agent_id: str, request: Request):
+async def staleness_report(agent_id: str, request: Request) -> dict[str, Any]:
     """Get a comprehensive staleness report for an agent."""
     from kyros.intelligence.decay import DecayConfig
     from kyros.intelligence.decay_service import generate_staleness_report
@@ -161,14 +162,14 @@ async def staleness_report(agent_id: str, request: Request):
         return await generate_staleness_report(agent_id_internal, config)
     except SQLAlchemyError as e:
         logger.error("DB error in staleness_report", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
 
 # ─── B14: Decay Rate Configuration ───────────
 
 
 @router.get("/decay-rates")
-async def get_decay_rates(request: Request):
+async def get_decay_rates(request: Request) -> dict[str, Any]:
     """Get the current decay rate configuration."""
     from kyros.intelligence.decay import DEFAULT_DECAY_RATES, DecayConfig
 
@@ -190,12 +191,12 @@ async def get_decay_rates(request: Request):
 
 
 @router.put("/decay-rates")
-async def update_decay_rates(request: Request):
+async def update_decay_rates(request: Request) -> dict[str, Any]:
     """Update tenant-specific decay rates (half_life_days → decay_rate)."""
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from None
 
     rates_input = body.get("rates", {})
     if not isinstance(rates_input, dict):
@@ -205,11 +206,11 @@ async def update_decay_rates(request: Request):
     for category, half_life_days in rates_input.items():
         try:
             hl = float(half_life_days)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as e:
             raise HTTPException(
                 status_code=400,
                 detail=f"half_life_days for '{category}' must be a number",
-            )
+            ) from e
         if hl <= 0:
             raise HTTPException(
                 status_code=400,
@@ -231,7 +232,7 @@ async def update_decay_rates(request: Request):
 
 
 @router.get("/memory/{memory_id}/proof")
-async def get_memory_proof(memory_id: str, request: Request):
+async def get_memory_proof(memory_id: str, request: Request) -> dict[str, Any]:
     """Get the cryptographic Merkle proof for a specific memory."""
     from kyros.intelligence.integrity import MerkleTree
 
@@ -281,7 +282,7 @@ async def get_memory_proof(memory_id: str, request: Request):
         raise
     except SQLAlchemyError as e:
         logger.error("DB error in get_memory_proof", memory_id=memory_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
     if not leaf_hashes:
         raise HTTPException(status_code=404, detail="No active memories found for this agent")
@@ -310,7 +311,7 @@ async def get_memory_proof(memory_id: str, request: Request):
 
 
 @router.post("/agent/{agent_id}/audit")
-async def audit_integrity(agent_id: str, request: Request):
+async def audit_integrity(agent_id: str, request: Request) -> dict[str, Any]:
     """Verify the cryptographic integrity of all memories for an agent."""
     from kyros.intelligence.integrity_service import verify_agent_integrity
 
@@ -326,7 +327,7 @@ async def audit_integrity(agent_id: str, request: Request):
         tampered = await verify_agent_integrity(agent_id_internal)
     except SQLAlchemyError as e:
         logger.error("DB error in audit_integrity", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
     return {
         "agent_id": agent_id,
@@ -340,7 +341,7 @@ async def audit_integrity(agent_id: str, request: Request):
 
 
 @router.get("/agent/{agent_id}/compliance-export")
-async def compliance_export(agent_id: str, request: Request, days: int = 90):
+async def compliance_export(agent_id: str, request: Request, days: int = 90) -> dict[str, Any]:
     """Export the immutable audit log for an agent for the past N days."""
     if not agent_id.strip():
         raise HTTPException(status_code=400, detail="agent_id must not be blank")
@@ -366,7 +367,7 @@ async def compliance_export(agent_id: str, request: Request, days: int = 90):
             rows = result.fetchall()
     except SQLAlchemyError as e:
         logger.error("DB error in compliance_export", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
     logs = [
         {
@@ -400,7 +401,9 @@ class MigrationRequest(BaseModel):
 
 
 @router.post("/agent/{agent_id}/migrate-embeddings")
-async def migrate_embeddings(agent_id: str, request: Request, body: MigrationRequest):
+async def migrate_embeddings(
+    agent_id: str, request: Request, body: MigrationRequest
+) -> dict[str, Any]:
     """Migrate all agent memory embeddings to a new embedding model space."""
     import asyncio
 
@@ -415,7 +418,10 @@ async def migrate_embeddings(agent_id: str, request: Request, body: MigrationReq
     if body.to_model not in MODEL_REGISTRY:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported target model: {body.to_model!r}. Supported: {list(MODEL_REGISTRY.keys())}",
+            detail=(
+                f"Unsupported target model: {body.to_model!r}. "
+                f"Supported: {list(MODEL_REGISTRY.keys())}"
+            ),
         )
 
     service = get_memory_service(request)
@@ -426,7 +432,7 @@ async def migrate_embeddings(agent_id: str, request: Request, body: MigrationReq
             agent_id_internal = await service._resolve_agent(session, tenant_id, agent_id)
     except SQLAlchemyError as e:
         logger.error("DB error resolving agent for migration", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
     async def _run_migration() -> None:
         translator = EmbeddingTranslator()
@@ -512,7 +518,7 @@ async def hard_delete_agent_memories(
     agent_id: str,
     request: Request,
     background_tasks: BackgroundTasks,
-):
+) -> dict[str, Any]:
     """GDPR 'Right to be Forgotten' — hard delete all memories for an agent."""
     if not agent_id.strip():
         raise HTTPException(status_code=400, detail="agent_id must not be blank")
@@ -551,7 +557,7 @@ async def hard_delete_agent_memories(
             )
     except SQLAlchemyError as e:
         logger.error("DB error in hard_delete_agent_memories", agent_id=agent_id, error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
     timestamp = _utcnow().isoformat()
     raw_cert = (

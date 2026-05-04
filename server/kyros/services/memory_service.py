@@ -74,7 +74,7 @@ class MemoryService:
             raise ValueError("tenant_id is required for memory operations")
         return tenant_id
 
-    def _run_task(self, coro, name: str):
+    def _run_task(self, coro: Any, name: str) -> None:
         """Helper to run a fire-and-forget task with error logging.
 
         Uses the global tracked task registry from main.py when available
@@ -224,12 +224,12 @@ class MemoryService:
         tenant_id_required = self._require_tenant_id(tenant_id)
         query_embedding = self.embedder.embed(request.query)
 
-        W_SIM = 0.50
-        W_RECENCY = 0.20
-        W_IMPORTANCE = 0.15
-        W_FRESHNESS = 0.15
-        HALF_LIFE_HOURS = 168.0
-        FRESHNESS_WARNING_THRESHOLD = 0.40
+        w_sim = 0.50
+        w_recency = 0.20
+        w_importance = 0.15
+        w_freshness = 0.15
+        half_life_hours = 168.0
+        freshness_warning_threshold = 0.40
 
         async with get_db_session_for_tenant(tenant_id_required) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
@@ -591,7 +591,8 @@ class MemoryService:
                        (
                            0.60 * (1 - (embedding <=> :query_vec))
                          + 0.40 * CASE WHEN (success_count + failure_count) > 0
-                                              THEN success_count::float / (success_count + failure_count)
+                                              THEN success_count::float /
+                                                   (success_count + failure_count)
                                               ELSE 0.5
                                          END
                        ) AS weighted_score

@@ -130,7 +130,10 @@ async def update_all_freshness_scores(
                   AND ABS(
                     freshness_score - GREATEST(
                         0.0,
-                        LEAST(1.0, EXP(-decay_rate * EXTRACT(EPOCH FROM (:now - created_at)) / 86400.0))
+                        LEAST(
+                            1.0,
+                            EXP(-decay_rate * EXTRACT(EPOCH FROM (:now - created_at)) / 86400.0)
+                        )
                     )
                   ) > 0.001
                 """),
@@ -406,7 +409,8 @@ async def flag_stale_for_reverification(
             result = await session.execute(
                 text(f"""
                 UPDATE {table}
-                SET metadata = COALESCE(metadata, '{{}}'::jsonb) || '{{"needs_reverification": true}}'::jsonb
+                SET metadata = COALESCE(metadata, '{{}}'::jsonb) ||
+                               '{{"needs_reverification": true}}'::jsonb
                 WHERE agent_id = :aid
                   AND deleted_at IS NULL
                   AND freshness_score < :threshold

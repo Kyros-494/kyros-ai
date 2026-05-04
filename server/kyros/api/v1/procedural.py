@@ -19,24 +19,28 @@ logger = get_logger("kyros.api.procedural")
 
 
 @router.post("/store", status_code=201, response_model=StoreProcedureResponse)
-async def store_procedure(request: Request, body: StoreProcedureRequest):
+async def store_procedure(
+    request: Request, body: StoreProcedureRequest
+) -> StoreProcedureResponse:
     """Store a learned procedure (workflow, tool-call sequence)."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
     try:
         return await service.store_procedure(tenant_id, body)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except SQLAlchemyError as e:
         logger.error("DB error in store_procedure", error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
     except Exception as e:
         logger.error("Unexpected error in store_procedure", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/match", response_model=ProceduralMatchResponse)
-async def match_procedure(request: Request, body: MatchProcedureRequest):
+async def match_procedure(
+    request: Request, body: MatchProcedureRequest
+) -> ProceduralMatchResponse:
     """Find the best matching procedure for a task description.
 
     Results are ranked by: 0.60 × cosine_similarity + 0.40 × success_rate
@@ -46,27 +50,27 @@ async def match_procedure(request: Request, body: MatchProcedureRequest):
     try:
         return await service.match_procedure(tenant_id, body)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except SQLAlchemyError as e:
         logger.error("DB error in match_procedure", error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
     except Exception as e:
         logger.error("Unexpected error in match_procedure", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 @router.post("/outcome", response_model=OutcomeResponse)
-async def report_outcome(request: Request, body: OutcomeRequest):
+async def report_outcome(request: Request, body: OutcomeRequest) -> OutcomeResponse:
     """Report success/failure for a procedure (reinforcement signal)."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
     try:
         return await service.report_outcome(tenant_id, body)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except SQLAlchemyError as e:
         logger.error("DB error in report_outcome", error=str(e))
-        raise HTTPException(status_code=503, detail="Database error, please retry")
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
     except Exception as e:
         logger.error("Unexpected error in report_outcome", error=str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
