@@ -58,5 +58,5 @@ jobs:
         working-directory: server
         run: |
           pip install pip-audit
-          pip install -e .
-          pip-audit --strict --desc --skip-editable
+          pip install .
+          pip-audit --strict --desc
