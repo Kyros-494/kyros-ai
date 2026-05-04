@@ -9,11 +9,13 @@ Tests the full causal engine:
 
 from __future__ import annotations
 
+
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from kyros.intelligence.causal import store_causal_edges, traverse_causal_chain
 
