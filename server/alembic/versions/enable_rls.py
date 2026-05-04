@@ -73,19 +73,20 @@ def upgrade() -> None:
                 "Generate a strong password with: openssl rand -base64 32"
             )
 
-    # Use parameterized query to safely pass password
+    # Use direct SQL to create role (DO blocks don't support parameters)
     connection = op.get_bind()
-    connection.execute(
-        text(
-            "DO $$ "
-            "BEGIN "
-            "  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'kyros_app') THEN "
-            "    EXECUTE format('CREATE ROLE kyros_app LOGIN PASSWORD %L', :password); "
-            "  END IF; "
-            "END $$"
-        ),
-        {"password": app_password},
-    )
+
+    # Escape single quotes in password for SQL
+    escaped_password = app_password.replace("'", "''")
+
+    # Check if role exists
+    result = connection.execute(
+        text("SELECT 1 FROM pg_roles WHERE rolname = 'kyros_app'")
+    ).fetchone()
+
+    if not result:
+        # Create role with escaped password
+        connection.execute(text(f"CREATE ROLE kyros_app LOGIN PASSWORD '{escaped_password}'"))
 
     for table in RLS_TABLES:
         op.execute(f"GRANT SELECT, INSERT, UPDATE, DELETE ON {table} TO kyros_app")
