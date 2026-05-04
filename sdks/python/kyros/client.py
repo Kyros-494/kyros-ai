@@ -4,7 +4,7 @@ Mirrors the TypeScript SDK API surface using httpx.
 """
 
 import os
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -575,10 +575,13 @@ class KyrosClient:
             result = client.import_memories(agent_id="agent-456", data=export)
             ```
         """
-        return self._request(
-            "POST",
-            f"/v1/admin/import/{agent_id}",
-            json=data.model_dump(),
+        return cast(
+            dict[str, Any],
+            self._request(
+                "POST",
+                f"/v1/admin/import/{agent_id}",
+                json=data.model_dump(),
+            ),
         )
 
     # ─── Unified Search ───────────────────────────────────────────────────────
@@ -629,7 +632,10 @@ class KyrosClient:
         Returns:
             Staleness report with decay statistics
         """
-        return self._request("GET", f"/v1/admin/staleness-report/{agent_id}")
+        return cast(
+            dict[str, Any],
+            self._request("GET", f"/v1/admin/staleness-report/{agent_id}"),
+        )
 
     def get_decay_rates(self) -> dict[str, Any]:
         """Get current decay rates for memory categories.
@@ -637,7 +643,7 @@ class KyrosClient:
         Returns:
             Decay rates configuration
         """
-        return self._request("GET", "/v1/admin/decay-rates")
+        return cast(dict[str, Any], self._request("GET", "/v1/admin/decay-rates"))
 
     def set_decay_rates(self, rates: dict[str, float]) -> dict[str, Any]:
         """Set decay rates for memory categories.
@@ -648,7 +654,10 @@ class KyrosClient:
         Returns:
             Updated decay rates configuration
         """
-        return self._request("PUT", "/v1/admin/decay-rates", json={"rates": rates})
+        return cast(
+            dict[str, Any],
+            self._request("PUT", "/v1/admin/decay-rates", json={"rates": rates}),
+        )
 
     def get_memory_proof(self, memory_id: str) -> dict[str, Any]:
         """Get cryptographic integrity proof for a memory.
@@ -659,7 +668,10 @@ class KyrosClient:
         Returns:
             Integrity proof with hash and Merkle tree data
         """
-        return self._request("GET", f"/v1/admin/memory/{memory_id}/proof")
+        return cast(
+            dict[str, Any],
+            self._request("GET", f"/v1/admin/memory/{memory_id}/proof"),
+        )
 
     def audit_integrity(self, agent_id: str) -> dict[str, Any]:
         """Audit integrity of all memories for an agent.
@@ -670,7 +682,10 @@ class KyrosClient:
         Returns:
             Audit report with verification results
         """
-        return self._request("POST", f"/v1/admin/agent/{agent_id}/audit")
+        return cast(
+            dict[str, Any],
+            self._request("POST", f"/v1/admin/agent/{agent_id}/audit"),
+        )
 
     def explain(
         self,
@@ -688,15 +703,18 @@ class KyrosClient:
         Returns:
             Causal explanation with ancestry chain
         """
-        return self._request(
-            "POST",
-            "/v1/memory/causal/explain",
-            json={
-                "agent_id": agent_id,
-                "memory_id": memory_id,
-                "max_depth": max_depth,
-                "direction": "causes",
-            },
+        return cast(
+            dict[str, Any],
+            self._request(
+                "POST",
+                "/v1/memory/causal/explain",
+                json={
+                    "agent_id": agent_id,
+                    "memory_id": memory_id,
+                    "max_depth": max_depth,
+                    "direction": "causes",
+                },
+            ),
         )
 
     def migrate_embeddings(
@@ -717,12 +735,16 @@ class KyrosClient:
         Returns:
             Migration result with statistics
         """
-        return self._request(
-            "POST",
-            f"/v1/admin/agent/{agent_id}/migrate-embeddings",
-            json={
-                "from_model": from_model,
-                "to_model": to_model,
-                "strategy": strategy,
-            },
+        return cast(
+            dict[str, Any],
+            self._request(
+                "POST",
+                f"/v1/admin/agent/{agent_id}/migrate-embeddings",
+                json={
+                    "from_model": from_model,
+                    "to_model": to_model,
+                    "strategy": strategy,
+                },
+            ),
+        )
         )

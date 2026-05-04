@@ -125,7 +125,7 @@ jobs:
           done
           
           # If we get here, server failed to start
-          echo "❌ Server failed to start within 30 seconds"
+          echo " Server failed to start within 30 seconds"
           echo "=== Server logs ==="
           cat server.log
           exit 1

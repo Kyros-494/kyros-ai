@@ -5,9 +5,11 @@ Requires: pip install llama-index-core kyros-sdk
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
-from kyros import Client
+if TYPE_CHECKING:
+    from kyros import KyrosClient
+
 from kyros.exceptions import KyrosError
 
 try:
@@ -24,16 +26,16 @@ class KyrosMemory(BaseMemory):  # type: ignore[misc]
     """Kyros-backed persistent memory for LlamaIndex agents.
 
     Usage:
-        from kyros import Client
+        from kyros import KyrosClient
         from kyros.integrations.llama_index import KyrosMemory
 
-        client = Client(api_key="mk_live_...")
+        client = KyrosClient(api_key="mk_live_...")
         memory = KyrosMemory.from_defaults(client=client, agent_id="my-agent")
 
         agent = ReActAgent.from_tools(tools, memory=memory)
     """
 
-    client: Client
+    client: "KyrosClient"
     agent_id: str
     k: int = 10
 
@@ -41,7 +43,7 @@ class KyrosMemory(BaseMemory):  # type: ignore[misc]
         arbitrary_types_allowed = True
 
     @classmethod
-    def from_defaults(cls, client: Client, agent_id: str, k: int = 10) -> KyrosMemory:
+    def from_defaults(cls, client: "KyrosClient", agent_id: str, k: int = 10) -> "KyrosMemory":
         """Create a KyrosMemory instance with sensible defaults."""
         return cls(client=client, agent_id=agent_id, k=k)
 
