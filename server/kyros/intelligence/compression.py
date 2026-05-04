@@ -198,9 +198,7 @@ Summary:"""
                 return self._call_openai(prompt)
             if provider == "anthropic":
                 return self._call_anthropic(prompt)
-            logger.warning(
-                "Unknown LLM provider, falling back to extractive", provider=provider
-            )
+            logger.warning("Unknown LLM provider, falling back to extractive", provider=provider)
             return self._extractive_compress(memories, level)
         except Exception as e:
             logger.error("LLM compression failed, falling back to extractive", error=str(e))
