@@ -26,6 +26,8 @@ dependencies = [
     # Auth
     "python-jose[cryptography]>=3.3.0,<4.0.0",
     "passlib[bcrypt]>=1.7.4,<2.0.0",
+    # Security - explicit constraint to avoid CVE-2024-23342
+    "ecdsa>=0.19.3,<1.0.0",
     # Logging
     "structlog>=24.4.0,<26.0.0",
     # Utilities
