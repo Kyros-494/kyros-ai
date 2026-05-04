@@ -18,7 +18,6 @@ from kyros.intelligence.integrity import (
 
 
 class TestMemoryStamping:
-
     def test_stamp_memory_generates_consistent_hash(self) -> None:
         """A stamp generated from the same inputs should always verify correctly."""
         content = "The user's secret key is 12345"
@@ -95,7 +94,6 @@ class TestMemoryStamping:
 
 
 class TestMerkleTree:
-
     def test_merkle_tree_construction_and_proof(self) -> None:
         """A 4-leaf tree should produce a valid proof for any leaf."""
         leaves = [
@@ -167,10 +165,12 @@ class TestMerkleTree:
     def test_proof_path_length_is_log2(self) -> None:
         """Proof path length should be ceil(log2(n)) for n leaves."""
         import math
+
         for n in [2, 4, 8, 16]:
             leaves = [hash_content(f"m{i}", f"n{i}") for i in range(n)]
             tree = MerkleTree(leaves)
             proof = tree.get_proof(0)
             expected_depth = int(math.log2(n))
-            assert len(proof.proof_path) == expected_depth, \
+            assert len(proof.proof_path) == expected_depth, (
                 f"Expected depth {expected_depth} for {n} leaves, got {len(proof.proof_path)}"
+            )

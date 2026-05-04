@@ -38,16 +38,17 @@ _CATEGORY_PATTERNS: list[tuple[list[str], str]] = [
     (["stock", "market", "trade", "exchange", "forex", "index"], "market_data"),
     (["email", "phone", "address", "name is", "born", "age"], "user_identity"),
     (["prefer", "like", "want", "love", "hate", "favorite", "colour", "color"], "user_preference"),
-    (["company", "org", "team", "manager", "report", "department", "ceo", "cto"], "company_structure"),
+    (
+        ["company", "org", "team", "manager", "report", "department", "ceo", "cto"],
+        "company_structure",
+    ),
     (["regulation", "law", "compliance", "gdpr", "hipaa", "soc2", "legal"], "regulatory_rule"),
     (["api", "endpoint", "sdk", "library", "version", "deprecated"], "technical_spec"),
-
     # Procedural categories
     (["step", "first", "then", "next", "finally", "how to", "install", "deploy"], "workflow"),
     (["run", "execute", "command", "curl", "docker", "build"], "deployment"),
     (["error", "bug", "fix", "debug", "traceback", "exception"], "troubleshooting"),
     (["api call", "request", "response", "http", "post", "get"], "api_usage"),
-
     # Episodic categories
     (["meeting", "standup", "sync", "retro", "review"], "meeting"),
     (["decided", "agreed", "voted", "approved", "rejected"], "decision"),
@@ -86,6 +87,7 @@ def auto_categorise(content: str, default: str = "general") -> str:
 
 
 # ─── B07: Background Freshness Updater ─────────
+
 
 async def update_all_freshness_scores(
     tenant_id: UUID | None = None,
@@ -168,6 +170,7 @@ async def update_all_freshness_scores(
 
 # ─── B10: Stale Memory Detection ──────────────
 
+
 async def get_stale_memories(
     agent_id: UUID,
     threshold: float = 0.40,
@@ -223,17 +226,21 @@ async def get_stale_memories(
                 elif hasattr(row, "name"):
                     content_preview = row.name
 
-                stale_memories.append({
-                    "memory_id": str(row.id),
-                    "memory_type": mem_type,
-                    "content_preview": content_preview,
-                    "freshness_score": round(row.freshness_score, 4),
-                    "category": row.memory_category or "general",
-                    "decay_rate": row.decay_rate,
-                    "status": status,
-                    "created_at": row.created_at.isoformat() if row.created_at else None,
-                    "half_life_days": round(math.log(2) / row.decay_rate, 1) if row.decay_rate > 0 else None,
-                })
+                stale_memories.append(
+                    {
+                        "memory_id": str(row.id),
+                        "memory_type": mem_type,
+                        "content_preview": content_preview,
+                        "freshness_score": round(row.freshness_score, 4),
+                        "category": row.memory_category or "general",
+                        "decay_rate": row.decay_rate,
+                        "status": status,
+                        "created_at": row.created_at.isoformat() if row.created_at else None,
+                        "half_life_days": round(math.log(2) / row.decay_rate, 1)
+                        if row.decay_rate > 0
+                        else None,
+                    }
+                )
 
     # Sort all results by freshness (most stale first)
     stale_memories.sort(key=lambda m: m["freshness_score"])
@@ -241,6 +248,7 @@ async def get_stale_memories(
 
 
 # ─── B11: Staleness Report ────────────────────
+
 
 async def generate_staleness_report(
     agent_id: UUID,
@@ -318,6 +326,7 @@ def _generate_recommendations(stale: list[dict], by_category: dict[str, int]) ->
 
 # ─── B12: Webhook Events for Staleness ─────────
 
+
 async def check_and_emit_staleness_webhooks(
     agent_id: UUID,
     webhook_url: str | None = None,
@@ -354,6 +363,7 @@ async def check_and_emit_staleness_webhooks(
         if webhook_url:
             try:
                 import httpx
+
                 async with httpx.AsyncClient(timeout=5.0) as client:
                     await client.post(webhook_url, json=event)
                     logger.debug("Staleness webhook sent", memory_id=mem["memory_id"])
@@ -371,6 +381,7 @@ async def check_and_emit_staleness_webhooks(
 
 
 # ─── B13: Re-verification Workflow ─────────────
+
 
 async def flag_stale_for_reverification(
     agent_id: UUID,

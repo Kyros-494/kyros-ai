@@ -80,7 +80,9 @@ async def _do_update_merkle_root(agent_id: UUID, tenant_id: UUID) -> str:
     async with get_db_session_for_tenant(str(tenant_id)) as session:
         # Collect all active memory leaves across all three tables, ordered
         # deterministically so the tree is reproducible.
-        _ALLOWED_TABLES = frozenset({"episodic_memories", "semantic_memories", "procedural_memories"})
+        _ALLOWED_TABLES = frozenset(
+            {"episodic_memories", "semantic_memories", "procedural_memories"}
+        )
         for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
             assert table in _ALLOWED_TABLES, f"Unexpected table name: {table}"  # safety guard
             result = await session.execute(
@@ -142,6 +144,7 @@ async def _do_update_merkle_root(agent_id: UUID, tenant_id: UUID) -> str:
 
 # ─── C09: Tamper Detection ────────────────────
 
+
 async def verify_agent_integrity(agent_id: UUID) -> list[dict]:
     """Verify all memories for an agent match their stored content hashes.
 
@@ -151,8 +154,8 @@ async def verify_agent_integrity(agent_id: UUID) -> list[dict]:
     tampered: list[dict] = []
 
     tables = [
-        ("episodic_memories",   "content"),
-        ("semantic_memories",   "subject || ' ' || predicate || ' ' || object"),
+        ("episodic_memories", "content"),
+        ("semantic_memories", "subject || ' ' || predicate || ' ' || object"),
         ("procedural_memories", "name || ': ' || description"),
     ]
 
@@ -177,12 +180,14 @@ async def verify_agent_integrity(agent_id: UUID) -> list[dict]:
                         timestamp=row.created_at.isoformat() if row.created_at else None,
                     )
                     if not is_valid:
-                        tampered.append({
-                            "memory_id": str(row.id),
-                            "table": table,
-                            "expected_hash": row.content_hash,
-                            "merkle_root": row.merkle_root,
-                        })
+                        tampered.append(
+                            {
+                                "memory_id": str(row.id),
+                                "table": table,
+                                "expected_hash": row.content_hash,
+                                "merkle_root": row.merkle_root,
+                            }
+                        )
     except Exception as e:
         logger.error("Integrity verification failed", agent_id=str(agent_id), error=str(e))
         return []
@@ -201,21 +206,26 @@ async def verify_agent_integrity(agent_id: UUID) -> list[dict]:
 async def _emit_tamper_webhooks(agent_id: UUID, tampered: list[dict]) -> None:
     """Fire security webhooks for each tampered memory (C13)."""
     import os
+
     webhook_url = os.environ.get("KYROS_SECURITY_WEBHOOK_URL")
     if not webhook_url:
         return
 
     try:
         import httpx
+
         async with httpx.AsyncClient(timeout=5.0) as client:
             for mem in tampered:
-                await client.post(webhook_url, json={
-                    "event": "security.memory_tampered",
-                    "agent_id": str(agent_id),
-                    "memory_id": mem["memory_id"],
-                    "expected_hash": mem["expected_hash"],
-                    "merkle_root": mem["merkle_root"],
-                    "timestamp": datetime.now(UTC).isoformat(),
-                })
+                await client.post(
+                    webhook_url,
+                    json={
+                        "event": "security.memory_tampered",
+                        "agent_id": str(agent_id),
+                        "memory_id": mem["memory_id"],
+                        "expected_hash": mem["expected_hash"],
+                        "merkle_root": mem["merkle_root"],
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    },
+                )
     except Exception as e:
         logger.error("Failed to send tamper webhook", error=str(e))

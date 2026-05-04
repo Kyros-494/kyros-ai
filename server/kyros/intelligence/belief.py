@@ -24,6 +24,7 @@ _MAX_QUEUE_SIZE = 10_000
 
 # ─── E02 & E03: Fact Relationship Indexer ─────
 
+
 async def index_fact_relationships(
     tenant_id: UUID | None,
     agent_id: UUID,
@@ -46,6 +47,7 @@ async def index_fact_relationships(
         raise ValueError("tenant_id is required for belief indexing")
 
     from kyros.storage.postgres import get_db_session_for_tenant
+
     async with get_db_session_for_tenant(str(tenant_id)) as session:
         result = await session.execute(
             text("""
@@ -75,14 +77,28 @@ async def index_fact_relationships(
         for row in related_facts:
             sim = float(row.sim)
             # Both directions (undirected graph)
-            edge_rows.append({
-                "id": uuid4(), "agent_id": agent_id, "tenant_id": tenant_id,
-                "from_id": fact_id, "to_id": row.id, "sim": sim, "now": now,
-            })
-            edge_rows.append({
-                "id": uuid4(), "agent_id": agent_id, "tenant_id": tenant_id,
-                "from_id": row.id, "to_id": fact_id, "sim": sim, "now": now,
-            })
+            edge_rows.append(
+                {
+                    "id": uuid4(),
+                    "agent_id": agent_id,
+                    "tenant_id": tenant_id,
+                    "from_id": fact_id,
+                    "to_id": row.id,
+                    "sim": sim,
+                    "now": now,
+                }
+            )
+            edge_rows.append(
+                {
+                    "id": uuid4(),
+                    "agent_id": agent_id,
+                    "tenant_id": tenant_id,
+                    "from_id": row.id,
+                    "to_id": fact_id,
+                    "sim": sim,
+                    "now": now,
+                }
+            )
 
         await session.execute(
             text("""
@@ -104,6 +120,7 @@ async def index_fact_relationships(
 
 
 # ─── E06 & E08: Loopy Belief Propagation ──────
+
 
 async def run_belief_propagation(
     agent_id: UUID,
@@ -207,25 +224,29 @@ async def run_belief_propagation(
                     continue
 
                 db_updates.append({"b_id": neighbor_id, "b_conf": new_conf, "b_now": now})
-                log_inserts.append({
-                    "id": uuid4(),
-                    "agent_id": agent_id,
-                    "fact_id": neighbor_id,
-                    "triggered_by_fact_id": current_id,
-                    "old_confidence": old_conf,
-                    "new_confidence": new_conf,
-                    "depth": depth + 1,
-                    "created_at": now,
-                })
-                updates.append({
-                    "fact_id": str(neighbor_id),
-                    "statement": f"{row.subject} {row.predicate} {row.object}",
-                    "old_confidence": round(old_conf, 4),
-                    "new_confidence": round(new_conf, 4),
-                    "delta": round(actual_delta, 4),
-                    "depth": depth + 1,
-                    "triggered_by": str(current_id),
-                })
+                log_inserts.append(
+                    {
+                        "id": uuid4(),
+                        "agent_id": agent_id,
+                        "fact_id": neighbor_id,
+                        "triggered_by_fact_id": current_id,
+                        "old_confidence": old_conf,
+                        "new_confidence": new_conf,
+                        "depth": depth + 1,
+                        "created_at": now,
+                    }
+                )
+                updates.append(
+                    {
+                        "fact_id": str(neighbor_id),
+                        "statement": f"{row.subject} {row.predicate} {row.object}",
+                        "old_confidence": round(old_conf, 4),
+                        "new_confidence": round(new_conf, 4),
+                        "delta": round(actual_delta, 4),
+                        "depth": depth + 1,
+                        "triggered_by": str(current_id),
+                    }
+                )
 
                 visited.add(neighbor_id)
                 queue.append((neighbor_id, actual_delta, depth + 1))

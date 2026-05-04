@@ -28,7 +28,9 @@ async def explain_memory(request: Request, body: CausalExplainRequest):
     from kyros.intelligence.causal import traverse_causal_chain
 
     if body.direction not in ("causes", "effects", "both"):
-        raise HTTPException(status_code=400, detail="direction must be 'causes', 'effects', or 'both'")
+        raise HTTPException(
+            status_code=400, detail="direction must be 'causes', 'effects', or 'both'"
+        )
 
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)
@@ -58,7 +60,9 @@ async def explain_memory(request: Request, body: CausalExplainRequest):
 
 class CausalFrequencyRequest(BaseModel):
     agent_id: str
-    theme: str = Field(..., min_length=1, description="The effect to analyze (e.g., 'customer churn')")
+    theme: str = Field(
+        ..., min_length=1, description="The effect to analyze (e.g., 'customer churn')"
+    )
     limit: int = Field(default=50, ge=1, le=200)
 
 
@@ -116,13 +120,15 @@ async def get_causal_graph(agent_id: str, request: Request, limit: int = 100):
             edges = []
             node_ids: set[str] = set()
             for row in result.fetchall():
-                edges.append({
-                    "source": str(row.from_memory_id),
-                    "target": str(row.to_memory_id),
-                    "relation": row.relation,
-                    "confidence": row.confidence,
-                    "description": row.description,
-                })
+                edges.append(
+                    {
+                        "source": str(row.from_memory_id),
+                        "target": str(row.to_memory_id),
+                        "relation": row.relation,
+                        "confidence": row.confidence,
+                        "description": row.description,
+                    }
+                )
                 node_ids.add(str(row.from_memory_id))
                 node_ids.add(str(row.to_memory_id))
 
@@ -134,11 +140,13 @@ async def get_causal_graph(agent_id: str, request: Request, limit: int = 100):
                         {"ids": list(node_ids)},
                     )
                     for r in res.fetchall():
-                        nodes.append({
-                            "id": str(r.id),
-                            "label": r.content[:50] + ("..." if len(r.content) > 50 else ""),
-                            "full_content": r.content,
-                        })
+                        nodes.append(
+                            {
+                                "id": str(r.id),
+                                "label": r.content[:50] + ("..." if len(r.content) > 50 else ""),
+                                "full_content": r.content,
+                            }
+                        )
 
     except SQLAlchemyError as e:
         logger.error("DB error in get_causal_graph", agent_id=agent_id, error=str(e))

@@ -137,12 +137,16 @@ class TestProceduralMemory:
         # Give #1 high success rate
         pid1 = r1.json()["procedure_id"]
         for _ in range(5):
-            client.post("/v1/memory/procedural/outcome", json={"procedure_id": pid1, "success": True})
+            client.post(
+                "/v1/memory/procedural/outcome", json={"procedure_id": pid1, "success": True}
+            )
 
         # Give #2 low success rate
         pid2 = r2.json()["procedure_id"]
         for _ in range(5):
-            client.post("/v1/memory/procedural/outcome", json={"procedure_id": pid2, "success": False})
+            client.post(
+                "/v1/memory/procedural/outcome", json={"procedure_id": pid2, "success": False}
+            )
 
         # Match — #1 should rank higher due to success rate
         match_resp = client.post(

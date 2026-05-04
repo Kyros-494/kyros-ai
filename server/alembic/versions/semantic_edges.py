@@ -21,13 +21,33 @@ def upgrade() -> None:
     op.create_table(
         "semantic_edges",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("agent_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("agents.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("tenant_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("from_fact_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("to_fact_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("semantic_memories.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "agent_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("agents.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "tenant_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "from_fact_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("semantic_memories.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "to_fact_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("semantic_memories.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("relatedness_score", sa.Float(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
-        sa.UniqueConstraint("from_fact_id", "to_fact_id", name="uq_semantic_edge")
+        sa.UniqueConstraint("from_fact_id", "to_fact_id", name="uq_semantic_edge"),
     )
     op.create_index("ix_sem_edge_agent", "semantic_edges", ["agent_id"])
     op.create_index("ix_sem_edge_from", "semantic_edges", ["from_fact_id"])

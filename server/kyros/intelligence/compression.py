@@ -24,8 +24,8 @@ logger = get_logger("kyros.intelligence.compression")
 
 # ─── Configuration ─────────────────────────────
 
-BATCH_SIZE_L1 = 20        # Raw memories per L1 paragraph
-BATCH_SIZE_L2 = 5         # L1 paragraphs per L2 page
+BATCH_SIZE_L1 = 20  # Raw memories per L1 paragraph
+BATCH_SIZE_L2 = 5  # L1 paragraphs per L2 page
 MIN_MEMORIES_TO_COMPRESS = 100  # Don't compress agents with fewer
 COMPRESSION_BACKEND = os.environ.get("KYROS_COMPRESSION_BACKEND", "extractive")
 
@@ -33,6 +33,7 @@ COMPRESSION_BACKEND = os.environ.get("KYROS_COMPRESSION_BACKEND", "extractive")
 @dataclass
 class CompressionResult:
     """Output of a compression operation."""
+
     summary: str
     input_count: int
     output_level: int
@@ -43,6 +44,7 @@ class CompressionResult:
 @dataclass
 class HistoryCard:
     """The final L3 summary — a complete agent history in one card."""
+
     agent_id: str
     summary: str
     memory_count: int
@@ -78,8 +80,11 @@ class CompressionEngine:
 
         if not memories:
             return CompressionResult(
-                summary="", input_count=0, output_level=target_level,
-                compression_ratio=0.0, latency_ms=0.0,
+                summary="",
+                input_count=0,
+                output_level=target_level,
+                compression_ratio=0.0,
+                latency_ms=0.0,
             )
 
         if self.backend == "extractive":
@@ -185,7 +190,9 @@ Summary:"""
             elif provider == "anthropic":
                 return self._call_anthropic(prompt)
             else:
-                logger.warning("Unknown LLM provider, falling back to extractive", provider=provider)
+                logger.warning(
+                    "Unknown LLM provider, falling back to extractive", provider=provider
+                )
                 return self._extractive_compress(memories, level)
         except Exception as e:
             logger.error("LLM compression failed, falling back to extractive", error=str(e))
@@ -211,7 +218,10 @@ Summary:"""
                 json={
                     "model": os.environ.get("KYROS_OPENAI_MODEL", "gpt-4o-mini"),
                     "messages": [
-                        {"role": "system", "content": "You are a concise summariser. Output only the summary, no preamble."},
+                        {
+                            "role": "system",
+                            "content": "You are a concise summariser. Output only the summary, no preamble.",
+                        },
                         {"role": "user", "content": prompt},
                     ],
                     "max_tokens": 500,
@@ -253,9 +263,7 @@ Summary:"""
 
     # ─── Hierarchical Compression Pipeline ─────
 
-    def compress_agent_memories(
-        self, raw_memories: list[dict]
-    ) -> HistoryCard:
+    def compress_agent_memories(self, raw_memories: list[dict]) -> HistoryCard:
         """Run the full L1→L2→L3 compression pipeline.
 
         Args:

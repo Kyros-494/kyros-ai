@@ -4,6 +4,7 @@ Revision ID: 0001
 Revises: None
 Create Date: 2026-04-25
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -40,7 +41,12 @@ def upgrade() -> None:
     op.create_table(
         "agents",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("tenant_id", UUID(as_uuid=True), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "tenant_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("external_id", sa.String(255), nullable=False),
         sa.Column("display_name", sa.String(255), nullable=True),
         sa.Column("metadata", JSONB, nullable=False, server_default="{}"),
@@ -50,7 +56,9 @@ def upgrade() -> None:
 
     # Performance indexes for agents
     op.create_index("ix_agents_tenant_id", "agents", ["tenant_id"])
-    op.create_index("ix_agents_tenant_external", "agents", ["tenant_id", "external_id"], unique=True)
+    op.create_index(
+        "ix_agents_tenant_external", "agents", ["tenant_id", "external_id"], unique=True
+    )
     op.create_index("ix_agents_created_at", "agents", ["created_at"])
 
 

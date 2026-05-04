@@ -58,19 +58,23 @@ def generate_synthetic_memories(count: int) -> list[dict]:
             tool=random.choice(tools),
             params=f"query='{random.choice(topics)}'",
             result=f"200 OK, {random.randint(1, 50)} results",
-            feedback=random.choice(["Great!", "Could be faster", "Love the new feature", "Needs improvement"]),
+            feedback=random.choice(
+                ["Great!", "Could be faster", "Love the new feature", "Needs improvement"]
+            ),
             plan=random.choice(["free", "pro", "team"]),
-            date=f"2026-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
+            date=f"2026-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}",
         )
         try:
             content = template.format(**fmt_kwargs)
         except KeyError:
             content = f"Memory item {i}: synthetic test data."
-        memories.append({
-            "content": content,
-            "importance": round(random.uniform(0.1, 1.0), 2),
-            "created_at": datetime.now(UTC).isoformat(),
-        })
+        memories.append(
+            {
+                "content": content,
+                "importance": round(random.uniform(0.1, 1.0), 2),
+                "created_at": datetime.now(UTC).isoformat(),
+            }
+        )
 
     return memories
 
@@ -98,7 +102,9 @@ def run_quality_review() -> None:
         result = engine.compress_batch(memories, target_level=1)
 
         print(f"## Review #{review_num}")
-        print(f"- **Input**: {batch_size} memories ({sum(len(m['content']) for m in memories)} chars)")
+        print(
+            f"- **Input**: {batch_size} memories ({sum(len(m['content']) for m in memories)} chars)"
+        )
         print(f"- **Output**: {len(result.summary)} chars")
         print(f"- **Ratio**: {result.compression_ratio}:1")
         print(f"- **Latency**: {result.latency_ms}ms")
@@ -139,7 +145,7 @@ def run_quality_review() -> None:
     avg_ratio = total_ratio / NUM_REVIEWS if NUM_REVIEWS > 0 else 0
     print("## Summary")
     print(f"- **Average ratio**: {avg_ratio:.1f}:1")
-    print(f"- **Pass rate**: {passing}/{NUM_REVIEWS} ({100*passing/NUM_REVIEWS:.0f}%)")
+    print(f"- **Pass rate**: {passing}/{NUM_REVIEWS} ({100 * passing / NUM_REVIEWS:.0f}%)")
     print("- **Target**: 20:1 compression ratio")
 
 

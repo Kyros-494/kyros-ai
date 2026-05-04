@@ -57,6 +57,7 @@ Format:
 
 # ─── D04: Causal Extractor Service ────────────
 
+
 async def extract_and_store_causal_edges(
     tenant_id: UUID | None,
     agent_id: UUID,
@@ -80,10 +81,7 @@ async def extract_and_store_causal_edges(
         return []
 
     # Format context
-    context_str = "\n".join(
-        f"- ID: {m['id']}\n  Content: {m['content']}"
-        for m in recent_memories
-    )
+    context_str = "\n".join(f"- ID: {m['id']}\n  Content: {m['content']}" for m in recent_memories)
 
     prompt = CAUSAL_EXTRACTION_PROMPT.format(
         new_id=str(new_memory_id),
@@ -113,6 +111,7 @@ async def extract_and_store_causal_edges(
 
 
 # ─── D05: Store Causal Edges ──────────────────
+
 
 async def store_causal_edges(
     tenant_id: UUID | None,
@@ -170,6 +169,7 @@ async def store_causal_edges(
 
 # ─── D06: Causal Chain Traversal ──────────────
 
+
 async def traverse_causal_chain(
     agent_id: UUID,
     memory_id: UUID,
@@ -197,7 +197,7 @@ async def traverse_causal_chain(
         for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
             result = await session.execute(
                 text(f"SELECT id, content FROM {table} WHERE id = :id AND agent_id = :agent_id"),
-                {"id": memory_id, "agent_id": agent_id}
+                {"id": memory_id, "agent_id": agent_id},
             )
             row = result.fetchone()
             if row:
@@ -228,18 +228,20 @@ async def traverse_causal_chain(
                 )
                 SELECT * FROM causal_tree
                 """),
-                {"start_id": memory_id, "agent_id": agent_id, "max_depth": max_depth}
+                {"start_id": memory_id, "agent_id": agent_id, "max_depth": max_depth},
             )
             for row in result.fetchall():
-                edges.append({
-                    "from": str(row.from_memory_id),
-                    "to": str(row.to_memory_id),
-                    "relation": row.relation,
-                    "confidence": row.confidence,
-                    "description": row.description,
-                    "direction": "upstream",
-                    "depth": row.depth
-                })
+                edges.append(
+                    {
+                        "from": str(row.from_memory_id),
+                        "to": str(row.to_memory_id),
+                        "relation": row.relation,
+                        "confidence": row.confidence,
+                        "description": row.description,
+                        "direction": "upstream",
+                        "depth": row.depth,
+                    }
+                )
 
         if direction in ("effects", "both"):
             # Find what this memory caused (downstream)
@@ -259,18 +261,20 @@ async def traverse_causal_chain(
                 )
                 SELECT * FROM causal_tree
                 """),
-                {"start_id": memory_id, "agent_id": agent_id, "max_depth": max_depth}
+                {"start_id": memory_id, "agent_id": agent_id, "max_depth": max_depth},
             )
             for row in result.fetchall():
-                edges.append({
-                    "from": str(row.from_memory_id),
-                    "to": str(row.to_memory_id),
-                    "relation": row.relation,
-                    "confidence": row.confidence,
-                    "description": row.description,
-                    "direction": "downstream",
-                    "depth": row.depth
-                })
+                edges.append(
+                    {
+                        "from": str(row.from_memory_id),
+                        "to": str(row.to_memory_id),
+                        "relation": row.relation,
+                        "confidence": row.confidence,
+                        "description": row.description,
+                        "direction": "downstream",
+                        "depth": row.depth,
+                    }
+                )
 
         # Fetch missing node contents
         missing_nodes = set()
@@ -285,7 +289,7 @@ async def traverse_causal_chain(
             for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
                 result = await session.execute(
                     text(f"SELECT id, content FROM {table} WHERE id = ANY(:ids::uuid[])"),
-                    {"ids": missing_ids}
+                    {"ids": missing_ids},
                 )
                 for row in result.fetchall():
                     nodes[str(row.id)] = {"id": str(row.id), "content": row.content}
@@ -297,6 +301,7 @@ async def traverse_causal_chain(
 
 
 # ─── D09: Causal Frequency Analysis ───────────
+
 
 async def analyze_causal_frequencies(
     agent_id: UUID,
@@ -323,11 +328,7 @@ async def analyze_causal_frequencies(
             ORDER BY sim DESC
             LIMIT :limit
             """),
-            {
-                "agent_id": agent_id,
-                "embedding": query_embedding,
-                "limit": limit
-            }
+            {"agent_id": agent_id, "embedding": query_embedding, "limit": limit},
         )
         effect_memories = result.fetchall()
 
@@ -383,6 +384,5 @@ async def analyze_causal_frequencies(
         "theme": effect_theme,
         "analyzed_effects_count": len(effect_memories),
         "total_causes_found": len(all_causes),
-        "causes": frequencies
+        "causes": frequencies,
     }
-

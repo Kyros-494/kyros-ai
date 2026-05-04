@@ -40,6 +40,7 @@ def _parse_dt(value: str | None) -> datetime:
     except (ValueError, AttributeError):
         return datetime.now(UTC).replace(tzinfo=None)
 
+
 from kyros.schemas.memory import (
     ExportResponse,
     FactResult,
@@ -81,6 +82,7 @@ class MemoryService:
         """
         try:
             from kyros.main import create_background_task
+
             return create_background_task(coro)
         except ImportError:
             pass
@@ -150,9 +152,11 @@ class MemoryService:
                 WHERE agent_id = :agent_id AND deleted_at IS NULL AND id != :mem_id
                 ORDER BY created_at DESC LIMIT 5
                 """),
-                {"agent_id": agent_id, "mem_id": memory_id}
+                {"agent_id": agent_id, "mem_id": memory_id},
             )
-            recent_memories = [{"id": str(r.id), "content": r.content} for r in recent_res.fetchall()]
+            recent_memories = [
+                {"id": str(r.id), "content": r.content} for r in recent_res.fetchall()
+            ]
 
         # Update cache (fire-and-forget, non-blocking)
         await self.cache.cache_episodic_memory(
@@ -163,28 +167,30 @@ class MemoryService:
         )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(
-            update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle"
-        )
+        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
 
         # D07: Store explicit causal edges if provided
         explicit_edges = []
         if request.cause_memory_id:
-            explicit_edges.append({
-                "from_memory_id": request.cause_memory_id,
-                "to_memory_id": str(memory_id),
-                "relation": "causes",
-                "confidence": 1.0,
-                "description": "Explicitly defined by user"
-            })
+            explicit_edges.append(
+                {
+                    "from_memory_id": request.cause_memory_id,
+                    "to_memory_id": str(memory_id),
+                    "relation": "causes",
+                    "confidence": 1.0,
+                    "description": "Explicitly defined by user",
+                }
+            )
         if request.effect_memory_id:
-            explicit_edges.append({
-                "from_memory_id": str(memory_id),
-                "to_memory_id": request.effect_memory_id,
-                "relation": "causes",
-                "confidence": 1.0,
-                "description": "Explicitly defined by user"
-            })
+            explicit_edges.append(
+                {
+                    "from_memory_id": str(memory_id),
+                    "to_memory_id": request.effect_memory_id,
+                    "relation": "causes",
+                    "confidence": 1.0,
+                    "description": "Explicitly defined by user",
+                }
+            )
 
         if explicit_edges:
             self._run_task(
@@ -212,9 +218,7 @@ class MemoryService:
             created_at=now,
         )
 
-    async def recall(
-        self, tenant_id: UUID | None, request: RecallRequest
-    ) -> RecallResponse:
+    async def recall(self, tenant_id: UUID | None, request: RecallRequest) -> RecallResponse:
         """Retrieve relevant memories via hybrid search (similarity + recency + importance + freshness)."""
         start = time.monotonic()
         tenant_id_required = self._require_tenant_id(tenant_id)
@@ -286,10 +290,7 @@ class MemoryService:
             if request.include_causal_ancestry:
                 try:
                     causal_ancestry_graph = await traverse_causal_chain(
-                        agent_id=agent_id,
-                        memory_id=row.id,
-                        max_depth=3,
-                        direction="causes"
+                        agent_id=agent_id, memory_id=row.id, max_depth=3, direction="causes"
                     )
                     if causal_ancestry_graph and causal_ancestry_graph.get("edges"):
                         causal_ancestry = causal_ancestry_graph["edges"]
@@ -329,8 +330,7 @@ class MemoryService:
         async with get_db_session_for_tenant(tenant_id_required) as session:
             # We need the agent_id to update the merkle root
             result = await session.execute(
-                text("SELECT agent_id FROM episodic_memories WHERE id = :id"),
-                {"id": memory_id}
+                text("SELECT agent_id FROM episodic_memories WHERE id = :id"), {"id": memory_id}
             )
             row = result.fetchone()
             if not row:
@@ -347,13 +347,9 @@ class MemoryService:
             )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(
-            update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle"
-        )
+        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
 
-    async def store_fact(
-        self, tenant_id: UUID | None, request: StoreFactRequest
-    ) -> FactResult:
+    async def store_fact(self, tenant_id: UUID | None, request: StoreFactRequest) -> FactResult:
         """Store a semantic fact with automatic contradiction detection."""
         tenant_id_required = self._require_tenant_id(tenant_id)
         fact_text = f"{request.subject} {request.predicate} {request.object}"
@@ -426,9 +422,7 @@ class MemoryService:
         )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(
-            update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle"
-        )
+        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
 
         # E02: Index semantic relationships asynchronously
         self._run_task(
@@ -479,7 +473,12 @@ class MemoryService:
                 ORDER BY similarity DESC
                 LIMIT :k
                 """),
-                {"agent_id": agent_id, "min_rel": request.min_relevance, "k": request.k, "query_vec": query_embedding},
+                {
+                    "agent_id": agent_id,
+                    "min_rel": request.min_relevance,
+                    "k": request.k,
+                    "query_vec": query_embedding,
+                },
             )
             rows = result.fetchall()
 
@@ -555,9 +554,7 @@ class MemoryService:
             )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(
-            update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle"
-        )
+        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
 
         return StoreProcedureResponse(
             procedure_id=procedure_id,
@@ -694,7 +691,9 @@ class MemoryService:
     ) -> ExportResponse:
         """Export all memories for an agent as structured JSON."""
         tenant_id_required = self._require_tenant_id(tenant_id)
-        now = datetime.now(UTC).replace(tzinfo=None)  # naive UTC for TIMESTAMP WITHOUT TIME ZONE columns
+        now = datetime.now(UTC).replace(
+            tzinfo=None
+        )  # naive UTC for TIMESTAMP WITHOUT TIME ZONE columns
 
         async with get_db_session_for_tenant(tenant_id_required) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, agent_external_id)
@@ -918,6 +917,7 @@ class MemoryService:
         cached = await self.cache.get_agent_id(tenant_id, external_id)
         if cached:
             from uuid import UUID as _UUID
+
             return _UUID(cached)
 
         # Cold path: DB lookup or insert

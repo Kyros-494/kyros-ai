@@ -73,11 +73,13 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100):
             edges = []
             node_ids: set[str] = set()
             for row in result.fetchall():
-                edges.append({
-                    "source": str(row.from_fact_id),
-                    "target": str(row.to_fact_id),
-                    "relatedness": row.relatedness_score,
-                })
+                edges.append(
+                    {
+                        "source": str(row.from_fact_id),
+                        "target": str(row.to_fact_id),
+                        "relatedness": row.relatedness_score,
+                    }
+                )
                 node_ids.add(str(row.from_fact_id))
                 node_ids.add(str(row.to_fact_id))
 
@@ -92,11 +94,13 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100):
                     {"ids": list(node_ids)},
                 )
                 for r in res.fetchall():
-                    nodes.append({
-                        "id": str(r.id),
-                        "label": f"{r.subject} {r.predicate} {r.object}",
-                        "confidence": r.confidence,
-                    })
+                    nodes.append(
+                        {
+                            "id": str(r.id),
+                            "label": f"{r.subject} {r.predicate} {r.object}",
+                            "confidence": r.confidence,
+                        }
+                    )
 
         return {"agent_id": agent_id, "nodes": nodes, "edges": edges}
 

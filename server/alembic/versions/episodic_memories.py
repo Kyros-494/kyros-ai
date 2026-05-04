@@ -4,6 +4,7 @@ Revision ID: 0002
 Revises: 0001
 Create Date: 2026-04-25
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -25,8 +26,18 @@ def upgrade() -> None:
     op.create_table(
         "episodic_memories",
         sa.Column("id", UUID(as_uuid=True), primary_key=True),
-        sa.Column("agent_id", UUID(as_uuid=True), sa.ForeignKey("agents.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("tenant_id", UUID(as_uuid=True), sa.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "agent_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("agents.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "tenant_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("tenants.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("content_type", sa.String(50), nullable=False, server_default="text"),
         sa.Column("role", sa.String(50), nullable=True),
@@ -34,7 +45,9 @@ def upgrade() -> None:
         sa.Column("embedding", Vector(384), nullable=False),
         # F01, F02: Dual Embeddings for Portability
         sa.Column("embedding_secondary", Vector(1536), nullable=True),
-        sa.Column("embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L6-v2"),
+        sa.Column(
+            "embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L6-v2"
+        ),
         sa.Column("metadata", JSONB, nullable=False, server_default="{}"),
         sa.Column("importance", sa.Float(), nullable=False, server_default="0.5"),
         sa.Column("compression_level", sa.Integer(), nullable=False, server_default="0"),

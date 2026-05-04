@@ -26,12 +26,12 @@ engine = create_async_engine(
     # pool_pre_ping adds a round-trip on every checkout — disabled in favour of
     # pool_recycle which handles stale connections without the per-request cost.
     pool_pre_ping=False,
-    pool_recycle=1800,           # recycle connections every 30 min
-    pool_timeout=30,             # raise after 30s waiting for a connection
+    pool_recycle=1800,  # recycle connections every 30 min
+    pool_timeout=30,  # raise after 30s waiting for a connection
     echo=settings.debug,
     connect_args={
         "command_timeout": 60,
-        "timeout": 10,           # connection acquisition timeout
+        "timeout": 10,  # connection acquisition timeout
     },
 )
 
@@ -47,6 +47,7 @@ async_session_factory = async_sessionmaker(
 @event.listens_for(engine.sync_engine, "connect")
 def _register_pgvector(dbapi_connection, connection_record) -> None:
     from pgvector.asyncpg import register_vector
+
     dbapi_connection.run_async(lambda conn: register_vector(conn))
 
 
@@ -95,9 +96,7 @@ async def get_db_session_for_tenant(tenant_id: str) -> AsyncGenerator[AsyncSessi
 
         # SET LOCAL does not support bound parameters in asyncpg
         # Safe to use f-string after UUID validation
-        await session.execute(
-            text(f"SET LOCAL kyros.current_tenant_id = '{tid}'")
-        )
+        await session.execute(text(f"SET LOCAL kyros.current_tenant_id = '{tid}'"))
         yield session
         await session.commit()
     except SQLAlchemyError:

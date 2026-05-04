@@ -21,7 +21,6 @@ from kyros.intelligence.causal import store_causal_edges, traverse_causal_chain
 
 
 class TestCausalGraph:
-
     @pytest.mark.asyncio
     async def test_explicit_causal_chain_upstream_traversal(self, db_session: AsyncSession) -> None:
         """Traversing upstream from C should find B and A as causes."""
@@ -60,13 +59,29 @@ class TestCausalGraph:
                 VALUES (:id, :aid, :tid, :content, :emb, NOW())
                 ON CONFLICT DO NOTHING
                 """),
-                {"id": mid, "aid": agent_id, "tid": tenant_id, "content": content, "emb": [0.1] * 384},
+                {
+                    "id": mid,
+                    "aid": agent_id,
+                    "tid": tenant_id,
+                    "content": content,
+                    "emb": [0.1] * 384,
+                },
             )
 
         # Store causal edges: A → B → C
         edges = [
-            {"from_memory_id": str(mem_a_id), "to_memory_id": str(mem_b_id), "relation": "causes", "description": "Click triggers survey"},
-            {"from_memory_id": str(mem_b_id), "to_memory_id": str(mem_c_id), "relation": "causes", "description": "Survey prompts reply"},
+            {
+                "from_memory_id": str(mem_a_id),
+                "to_memory_id": str(mem_b_id),
+                "relation": "causes",
+                "description": "Click triggers survey",
+            },
+            {
+                "from_memory_id": str(mem_b_id),
+                "to_memory_id": str(mem_c_id),
+                "relation": "causes",
+                "description": "Survey prompts reply",
+            },
         ]
         stored = await store_causal_edges(tenant_id, agent_id, edges)
         assert len(stored) == 2, f"Expected 2 stored edges, got {len(stored)}"
@@ -83,7 +98,9 @@ class TestCausalGraph:
         assert str(mem_a_id) in from_ids
 
     @pytest.mark.asyncio
-    async def test_explicit_causal_chain_downstream_traversal(self, db_session: AsyncSession) -> None:
+    async def test_explicit_causal_chain_downstream_traversal(
+        self, db_session: AsyncSession
+    ) -> None:
         """Traversing downstream from A should find B and C as effects."""
         tenant_id = uuid4()
         agent_id = uuid4()
@@ -118,12 +135,28 @@ class TestCausalGraph:
                 VALUES (:id, :aid, :tid, :content, :emb, NOW())
                 ON CONFLICT DO NOTHING
                 """),
-                {"id": mid, "aid": agent_id, "tid": tenant_id, "content": content, "emb": [0.2] * 384},
+                {
+                    "id": mid,
+                    "aid": agent_id,
+                    "tid": tenant_id,
+                    "content": content,
+                    "emb": [0.2] * 384,
+                },
             )
 
         edges = [
-            {"from_memory_id": str(mem_a_id), "to_memory_id": str(mem_b_id), "relation": "causes", "description": "A causes B"},
-            {"from_memory_id": str(mem_b_id), "to_memory_id": str(mem_c_id), "relation": "causes", "description": "B causes C"},
+            {
+                "from_memory_id": str(mem_a_id),
+                "to_memory_id": str(mem_b_id),
+                "relation": "causes",
+                "description": "A causes B",
+            },
+            {
+                "from_memory_id": str(mem_b_id),
+                "to_memory_id": str(mem_c_id),
+                "relation": "causes",
+                "description": "B causes C",
+            },
         ]
         await store_causal_edges(tenant_id, agent_id, edges)
 
@@ -135,7 +168,9 @@ class TestCausalGraph:
         assert str(mem_c_id) in to_ids
 
     @pytest.mark.asyncio
-    async def test_traverse_nonexistent_memory_returns_empty(self, db_session: AsyncSession) -> None:
+    async def test_traverse_nonexistent_memory_returns_empty(
+        self, db_session: AsyncSession
+    ) -> None:
         """Traversing a memory that doesn't exist should return empty graph, not crash."""
         agent_id = uuid4()
         fake_memory_id = uuid4()
@@ -168,12 +203,20 @@ class TestCausalGraph:
         )
         for mid, content in [(mem_a_id, "Event A"), (mem_b_id, "Event B")]:
             await db_session.execute(
-                text("INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"
+                text(
+                    "INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"
                 ),
                 {"id": mid, "aid": agent_id, "tid": tenant_id, "c": content, "emb": [0.3] * 384},
             )
 
-        edge = [{"from_memory_id": str(mem_a_id), "to_memory_id": str(mem_b_id), "relation": "causes", "description": "test"}]
+        edge = [
+            {
+                "from_memory_id": str(mem_a_id),
+                "to_memory_id": str(mem_b_id),
+                "relation": "causes",
+                "description": "test",
+            }
+        ]
 
         # Store twice — should not raise
         await store_causal_edges(tenant_id, agent_id, edge)
@@ -204,14 +247,25 @@ class TestCausalGraph:
         )
         for mid, content in [(mem_a_id, "A"), (mem_b_id, "B"), (mem_c_id, "C")]:
             await db_session.execute(
-                text("INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"
+                text(
+                    "INSERT INTO episodic_memories (id, agent_id, tenant_id, content, embedding, created_at) VALUES (:id, :aid, :tid, :c, :emb, NOW()) ON CONFLICT DO NOTHING"
                 ),
                 {"id": mid, "aid": agent_id, "tid": tenant_id, "c": content, "emb": [0.4] * 384},
             )
 
         edges = [
-            {"from_memory_id": str(mem_a_id), "to_memory_id": str(mem_b_id), "relation": "causes", "description": "A→B"},
-            {"from_memory_id": str(mem_b_id), "to_memory_id": str(mem_c_id), "relation": "causes", "description": "B→C"},
+            {
+                "from_memory_id": str(mem_a_id),
+                "to_memory_id": str(mem_b_id),
+                "relation": "causes",
+                "description": "A→B",
+            },
+            {
+                "from_memory_id": str(mem_b_id),
+                "to_memory_id": str(mem_c_id),
+                "relation": "causes",
+                "description": "B→C",
+            },
         ]
         await store_causal_edges(tenant_id, agent_id, edges)
 

@@ -29,6 +29,7 @@ def _utcnow() -> datetime:
 
 # ─── Summarise ────────────────────────────────
 
+
 @router.get("/summarise/{agent_id}")
 async def summarise(agent_id: str, request: Request):
     """Get the compressed history card for an agent."""
@@ -94,6 +95,7 @@ async def summarise(agent_id: str, request: Request):
 
 # ─── Export / Import ──────────────────────────
 
+
 @router.get("/export/{agent_id}", response_model=ExportResponse)
 async def export_memories(agent_id: str, request: Request):
     """Export all memories for an agent as JSON."""
@@ -139,6 +141,7 @@ async def import_memories(agent_id: str, request: Request):
 
 # ─── B11: Staleness Report ────────────────────
 
+
 @router.get("/staleness-report/{agent_id}")
 async def staleness_report(agent_id: str, request: Request):
     """Get a comprehensive staleness report for an agent."""
@@ -162,6 +165,7 @@ async def staleness_report(agent_id: str, request: Request):
 
 
 # ─── B14: Decay Rate Configuration ───────────
+
 
 @router.get("/decay-rates")
 async def get_decay_rates(request: Request):
@@ -224,6 +228,7 @@ async def update_decay_rates(request: Request):
 
 
 # ─── C10: Memory Proof ────────────────────────
+
 
 @router.get("/memory/{memory_id}/proof")
 async def get_memory_proof(memory_id: str, request: Request):
@@ -303,6 +308,7 @@ async def get_memory_proof(memory_id: str, request: Request):
 
 # ─── C11: Agent Integrity Audit ───────────────
 
+
 @router.post("/agent/{agent_id}/audit")
 async def audit_integrity(agent_id: str, request: Request):
     """Verify the cryptographic integrity of all memories for an agent."""
@@ -331,6 +337,7 @@ async def audit_integrity(agent_id: str, request: Request):
 
 
 # ─── C17: Compliance Export ───────────────────
+
 
 @router.get("/agent/{agent_id}/compliance-export")
 async def compliance_export(agent_id: str, request: Request, days: int = 90):
@@ -381,6 +388,7 @@ async def compliance_export(agent_id: str, request: Request, days: int = 90):
 
 
 # ─── F10–F12: Cross-Model Migration ──────────
+
 
 class MigrationRequest(BaseModel):
     from_model: str = Field(..., min_length=1, max_length=100)
@@ -482,6 +490,7 @@ async def migrate_embeddings(agent_id: str, request: Request, body: MigrationReq
 
     try:
         from kyros.main import create_background_task
+
         create_background_task(_run_migration())
     except ImportError:
         asyncio.create_task(_run_migration())
@@ -496,6 +505,7 @@ async def migrate_embeddings(agent_id: str, request: Request, body: MigrationReq
 
 
 # ─── H07: GDPR Hard Delete ────────────────────
+
 
 @router.delete("/agent/{agent_id}/memories")
 async def hard_delete_agent_memories(

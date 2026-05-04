@@ -18,6 +18,7 @@ SECURITY NOTE: The database password for kyros_app role must be set via
 environment variable KYROS_DB_APP_PASSWORD before running this migration.
 Never hardcode passwords in migration files.
 """
+
 import os
 from collections.abc import Sequence
 
@@ -59,7 +60,7 @@ def upgrade() -> None:
 
     # Create a dedicated app role that respects RLS.
     # Password must be provided via environment variable for security.
-    app_password = os.environ.get('KYROS_DB_APP_PASSWORD')
+    app_password = os.environ.get("KYROS_DB_APP_PASSWORD")
     if not app_password:
         raise ValueError(
             "KYROS_DB_APP_PASSWORD environment variable must be set before running this migration. "
@@ -77,7 +78,7 @@ def upgrade() -> None:
             "  END IF; "
             "END $$"
         ),
-        {"password": app_password}
+        {"password": app_password},
     )
 
     for table in RLS_TABLES:
