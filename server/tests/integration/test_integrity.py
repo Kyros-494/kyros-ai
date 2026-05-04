@@ -9,7 +9,6 @@ Tests the full tamper-detection cycle:
 
 from __future__ import annotations
 
-
 from kyros.intelligence.integrity import (
     MerkleTree,
     hash_content,
@@ -20,7 +19,7 @@ from kyros.intelligence.integrity import (
 
 class TestMemoryStamping:
 
-    def test_stamp_memory_generates_consistent_hash(self):
+    def test_stamp_memory_generates_consistent_hash(self) -> None:
         """A stamp generated from the same inputs should always verify correctly."""
         content = "The user's secret key is 12345"
         stamp = stamp_memory(content, metadata={"source": "api"}, timestamp="2026-01-01T00:00:00")
@@ -38,7 +37,7 @@ class TestMemoryStamping:
         )
         assert is_valid is True
 
-    def test_tampered_content_fails_verification(self):
+    def test_tampered_content_fails_verification(self) -> None:
         """Changing the content after stamping should fail verification."""
         content = "The user's secret key is 12345"
         stamp = stamp_memory(content)
@@ -50,7 +49,7 @@ class TestMemoryStamping:
         )
         assert is_valid is False
 
-    def test_tampered_metadata_fails_verification(self):
+    def test_tampered_metadata_fails_verification(self) -> None:
         """Changing the metadata after stamping should fail verification."""
         content = "Safe memory"
         stamp = stamp_memory(content, metadata={"role": "user"})
@@ -63,7 +62,7 @@ class TestMemoryStamping:
         )
         assert is_valid is False
 
-    def test_wrong_nonce_fails_verification(self):
+    def test_wrong_nonce_fails_verification(self) -> None:
         """Using a different nonce should fail verification."""
         content = "Sensitive data"
         stamp = stamp_memory(content)
@@ -75,13 +74,13 @@ class TestMemoryStamping:
         )
         assert is_valid is False
 
-    def test_empty_content_can_be_stamped(self):
+    def test_empty_content_can_be_stamped(self) -> None:
         """Stamping empty content should not raise — it's a valid edge case."""
         stamp = stamp_memory("")
         assert stamp.content_hash
         assert stamp.nonce
 
-    def test_stamp_is_deterministic_given_same_nonce(self):
+    def test_stamp_is_deterministic_given_same_nonce(self) -> None:
         """Two stamps with the same nonce and content should produce the same hash."""
         content = "Deterministic test"
         stamp1 = stamp_memory(content, timestamp="2026-01-01T00:00:00")
@@ -97,7 +96,7 @@ class TestMemoryStamping:
 
 class TestMerkleTree:
 
-    def test_merkle_tree_construction_and_proof(self):
+    def test_merkle_tree_construction_and_proof(self) -> None:
         """A 4-leaf tree should produce a valid proof for any leaf."""
         leaves = [
             hash_content("mem1", "nonce1"),
@@ -117,7 +116,7 @@ class TestMerkleTree:
             assert proof.root_hash == root
             assert MerkleTree.verify_proof(proof) is True, f"Proof for leaf {i} failed"
 
-    def test_invalid_proof_fails(self):
+    def test_invalid_proof_fails(self) -> None:
         """A tampered proof should fail verification."""
         leaves = [hash_content("mem1", "n1"), hash_content("mem2", "n2")]
         tree = MerkleTree(leaves)
@@ -127,7 +126,7 @@ class TestMerkleTree:
         proof.leaf_hash = hash_content("malicious_content", "n1")
         assert MerkleTree.verify_proof(proof) is False
 
-    def test_single_leaf_tree(self):
+    def test_single_leaf_tree(self) -> None:
         """A tree with a single leaf should still produce a valid proof."""
         leaves = [hash_content("only_memory", "nonce")]
         tree = MerkleTree(leaves)
@@ -137,7 +136,7 @@ class TestMerkleTree:
         proof = tree.get_proof(0)
         assert MerkleTree.verify_proof(proof) is True
 
-    def test_odd_number_of_leaves(self):
+    def test_odd_number_of_leaves(self) -> None:
         """Trees with an odd number of leaves should be handled correctly."""
         leaves = [hash_content(f"mem{i}", f"n{i}") for i in range(5)]
         tree = MerkleTree(leaves)
@@ -149,19 +148,23 @@ class TestMerkleTree:
             proof = tree.get_proof(i)
             assert MerkleTree.verify_proof(proof) is True, f"Proof for leaf {i} failed in odd tree"
 
-    def test_different_content_produces_different_hashes(self):
+    def test_different_content_produces_different_hashes(self) -> None:
         """Two different contents should never produce the same hash."""
         h1 = hash_content("content_a", "same_nonce")
         h2 = hash_content("content_b", "same_nonce")
         assert h1 != h2
 
-    def test_same_content_different_nonce_produces_different_hashes(self):
-        """Same content with different nonces should produce different hashes (prevents rainbow tables)."""
+    def test_same_content_different_nonce_produces_different_hashes(self) -> None:
+        """
+        Same content with different nonces should produce different hashes.
+
+        This prevents rainbow table attacks.
+        """
         h1 = hash_content("same_content", "nonce_1")
         h2 = hash_content("same_content", "nonce_2")
         assert h1 != h2
 
-    def test_proof_path_length_is_log2(self):
+    def test_proof_path_length_is_log2(self) -> None:
         """Proof path length should be ceil(log2(n)) for n leaves."""
         import math
         for n in [2, 4, 8, 16]:

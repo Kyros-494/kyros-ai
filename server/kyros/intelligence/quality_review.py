@@ -11,9 +11,9 @@ Usage:
 from __future__ import annotations
 
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from kyros.intelligence.compression import CompressionEngine, BATCH_SIZE_L1
+from kyros.intelligence.compression import BATCH_SIZE_L1, CompressionEngine
 from kyros.logging import get_logger
 
 logger = get_logger("kyros.intelligence.quality_review")
@@ -69,18 +69,18 @@ def generate_synthetic_memories(count: int) -> list[dict]:
         memories.append({
             "content": content,
             "importance": round(random.uniform(0.1, 1.0), 2),
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         })
 
     return memories
 
 
-def run_quality_review():
+def run_quality_review() -> None:
     """Generate compression summaries for quality review."""
     engine = CompressionEngine()
 
     print("# Compression Quality Review Report")
-    print(f"Generated: {datetime.now(timezone.utc).isoformat()}")
+    print(f"Generated: {datetime.now(UTC).isoformat()}")
     print(f"Backend: {engine.backend}")
     print(f"Batch size: {BATCH_SIZE_L1}")
     print(f"Reviews: {NUM_REVIEWS}")

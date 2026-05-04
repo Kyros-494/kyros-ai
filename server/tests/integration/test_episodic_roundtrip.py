@@ -6,15 +6,19 @@ Requires: docker-compose up (Postgres + Redis + server running)
 
 from __future__ import annotations
 
-import pytest
+from collections.abc import Generator
+
 import httpx
+import pytest
 
 
 class TestEpisodicRoundTrip:
     """Full lifecycle: remember → recall → verify → forget → verify gone."""
 
     @pytest.fixture
-    def client(self, base_url, default_headers):
+    def client(
+        self, base_url: str, default_headers: dict[str, str]
+    ) -> Generator[httpx.Client, None, None]:
         with httpx.Client(base_url=base_url, headers=default_headers, timeout=30.0) as c:
             yield c
 

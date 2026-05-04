@@ -32,7 +32,7 @@ class MemoryCache:
     SUMMARY_TTL = 1800
     AGENT_ID_TTL = 3600  # 1 hour — agent IDs are stable
 
-    def __init__(self, redis_client: redis.Redis):
+    def __init__(self, redis_client: redis.Redis) -> None:
         self.redis = redis_client
 
     async def get_agent_id(self, tenant_id: UUID, external_id: str) -> str | None:

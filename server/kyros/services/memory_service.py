@@ -4,17 +4,21 @@ import asyncio
 import json
 import os
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
 
+from kyros.intelligence.belief import index_fact_relationships, run_belief_propagation
+from kyros.intelligence.causal import (
+    extract_and_store_causal_edges,
+    store_causal_edges,
+    traverse_causal_chain,
+)
 from kyros.intelligence.integrity import stamp_memory
 from kyros.intelligence.integrity_service import update_agent_merkle_root
-from kyros.intelligence.causal import extract_and_store_causal_edges, store_causal_edges, traverse_causal_chain
-from kyros.intelligence.belief import index_fact_relationships, run_belief_propagation
-from kyros.ml.embedder import EmbeddingModel
 from kyros.logging import get_logger
+from kyros.ml.embedder import EmbeddingModel
 from kyros.storage.postgres import get_db_session_for_tenant
 from kyros.storage.redis_cache import MemoryCache
 
@@ -28,38 +32,38 @@ def _parse_dt(value: str | None) -> datetime:
     PostgreSQL TIMESTAMP WITHOUT TIME ZONE columns require naive datetimes.
     """
     if not value:
-        return datetime.now(timezone.utc).replace(tzinfo=None)
+        return datetime.now(UTC).replace(tzinfo=None)
     try:
         dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
         # Strip tzinfo — DB columns are TIMESTAMP WITHOUT TIME ZONE
         return dt.replace(tzinfo=None)
     except (ValueError, AttributeError):
-        return datetime.now(timezone.utc).replace(tzinfo=None)
+        return datetime.now(UTC).replace(tzinfo=None)
 
 from kyros.schemas.memory import (
-    RememberRequest,
-    RememberResponse,
-    RecallRequest,
-    RecallResponse,
+    ExportResponse,
+    FactResult,
+    MatchProcedureRequest,
     MemoryResult,
     MemoryType,
-    StoreFactRequest,
-    FactResult,
-    StoreProcedureRequest,
-    StoreProcedureResponse,
-    MatchProcedureRequest,
-    ProceduralResult,
-    ProceduralMatchResponse,
     OutcomeRequest,
     OutcomeResponse,
-    ExportResponse,
+    ProceduralMatchResponse,
+    ProceduralResult,
+    RecallRequest,
+    RecallResponse,
+    RememberRequest,
+    RememberResponse,
+    StoreFactRequest,
+    StoreProcedureRequest,
+    StoreProcedureResponse,
 )
 
 
 class MemoryService:
     """Orchestrates memory operations across storage, cache, and ML layers."""
 
-    def __init__(self, embedder: EmbeddingModel, cache: MemoryCache):
+    def __init__(self, embedder: EmbeddingModel, cache: MemoryCache) -> None:
         self.embedder = embedder
         self.cache = cache
 
@@ -83,7 +87,7 @@ class MemoryService:
 
         task = asyncio.create_task(coro)
 
-        def handle_result(t: asyncio.Task):
+        def handle_result(t: asyncio.Task) -> None:
             try:
                 t.result()
             except Exception as e:
@@ -98,7 +102,7 @@ class MemoryService:
         """Store an episodic memory: embed content → write DB → update cache."""
         embedding, embedding_secondary = self.embedder.embed_with_secondary(request.content)
         memory_id = uuid4()
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
 
         stamp = stamp_memory(request.content, request.metadata, now.isoformat())
         tenant_id_required = self._require_tenant_id(tenant_id)
@@ -291,7 +295,7 @@ class MemoryService:
                         causal_ancestry = causal_ancestry_graph["edges"]
                 except Exception:
                     pass  # causal traversal is best-effort; don't fail the recall
-                    
+
             results.append(
                 MemoryResult(
                     memory_id=row.id,
@@ -355,7 +359,7 @@ class MemoryService:
         fact_text = f"{request.subject} {request.predicate} {request.object}"
         embedding, embedding_secondary = self.embedder.embed_with_secondary(fact_text)
         fact_id = uuid4()
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         was_contradiction = False
         replaced_id = None
         stamp = stamp_memory(fact_text, None, now.isoformat())
@@ -425,13 +429,13 @@ class MemoryService:
         self._run_task(
             update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle"
         )
-        
+
         # E02: Index semantic relationships asynchronously
         self._run_task(
             index_fact_relationships(tenant_id_required, agent_id, fact_id, embedding),
             "index_fact",
         )
-        
+
         propagated_updates: list[dict] = []
         # E07: Trigger Belief Propagation if there was a contradiction (confidence delta)
         if was_contradiction and old:
@@ -510,7 +514,7 @@ class MemoryService:
         desc_text = f"{request.name}: {request.description}"
         embedding, embedding_secondary = self.embedder.embed_with_secondary(desc_text)
         procedure_id = uuid4()
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
         stamp = stamp_memory(desc_text, request.metadata, now.isoformat())
 
         async with get_db_session_for_tenant(tenant_id_required) as session:
@@ -690,7 +694,7 @@ class MemoryService:
     ) -> ExportResponse:
         """Export all memories for an agent as structured JSON."""
         tenant_id_required = self._require_tenant_id(tenant_id)
-        now = datetime.now(timezone.utc).replace(tzinfo=None)  # naive UTC for TIMESTAMP WITHOUT TIME ZONE columns
+        now = datetime.now(UTC).replace(tzinfo=None)  # naive UTC for TIMESTAMP WITHOUT TIME ZONE columns
 
         async with get_db_session_for_tenant(tenant_id_required) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, agent_external_id)

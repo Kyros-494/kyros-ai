@@ -6,9 +6,10 @@ and tree sizes for immutable cryptographic integrity tracking.
 Revision ID: c07_memory_audit_log
 """
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision = "0009"
 down_revision = "0008"

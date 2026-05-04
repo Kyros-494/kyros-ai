@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import asyncio
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import text
 
-from kyros.storage.postgres import get_db_session
 from kyros.logging import get_logger
+from kyros.storage.postgres import get_db_session
 
 logger = get_logger("kyros.intelligence.forgetting")
 
@@ -48,7 +48,7 @@ async def find_forgettable_memories(
 
     Uses a single aggregated query to avoid N+1 per-agent COUNT queries.
     """
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=retention_days)
+    cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(days=retention_days)
 
     async with get_db_session() as session:
         # Single query: get agents with their memory counts and forgettable candidates

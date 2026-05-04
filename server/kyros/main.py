@@ -4,21 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from kyros.api.v1 import admin, causal, episodic, procedural, search, semantic, trust
 from kyros.config import get_settings
-from kyros.logging import setup_logging, get_logger
-from kyros.api.v1 import episodic, semantic, procedural, search, admin, causal, trust
-from kyros.storage.postgres import engine, run_migrations
-from kyros.storage.redis_cache import get_redis, close_redis
-from kyros.ml.embedder import EmbeddingModel, EmbeddingError
+from kyros.logging import get_logger, setup_logging
 from kyros.middleware.auth import AuthMiddleware
 from kyros.middleware.usage_tracking import UsageTrackingMiddleware
+from kyros.ml.embedder import EmbeddingError, EmbeddingModel
+from kyros.storage.postgres import engine, run_migrations
+from kyros.storage.redis_cache import close_redis, get_redis
 
 settings = get_settings()
 
@@ -223,8 +223,9 @@ async def readiness_check(request: Request):
     healthy = True
 
     try:
-        from kyros.storage.postgres import get_db_session
         from sqlalchemy import text
+
+        from kyros.storage.postgres import get_db_session
         async with get_db_session() as session:
             await session.execute(text("SELECT 1"))
         checks["postgres"] = "ok"

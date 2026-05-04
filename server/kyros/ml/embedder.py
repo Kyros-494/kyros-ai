@@ -23,7 +23,7 @@ class EmbeddingModel:
         self,
         model_name: str = "all-MiniLM-L6-v2",
         secondary_model_name: str = "",
-    ):
+    ) -> None:
         try:
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(model_name)

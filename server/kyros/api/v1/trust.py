@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 
@@ -18,7 +18,7 @@ async def get_trust_status():
     """
     return {
         "status": "operational",
-        "last_updated": datetime.now(timezone.utc).isoformat(),
+        "last_updated": datetime.now(UTC).isoformat(),
         "compliance": {
             "soc2_type_1": "not_certified",
             "soc2_type_2": "not_certified",

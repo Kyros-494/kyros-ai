@@ -53,7 +53,7 @@ async def recall(request: Request, body: RecallRequest):
 
 
 @router.delete("/{memory_id}", status_code=204)
-async def forget(memory_id: UUID, request: Request):
+async def forget(memory_id: UUID, request: Request) -> None:
     """Soft-delete a specific episodic memory."""
     tenant_id = getattr(request.state, "tenant_id", None)
     service = get_memory_service(request)

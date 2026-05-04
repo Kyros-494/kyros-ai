@@ -6,7 +6,7 @@ Manages the Merkle tree construction and tamper detection at the agent level.
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import text
@@ -127,7 +127,7 @@ async def _do_update_merkle_root(agent_id: UUID, tenant_id: UUID) -> str:
                 "tenant_id": tenant_id,
                 "root": root,
                 "size": len(leaf_hashes),
-                "now": datetime.now(timezone.utc).replace(tzinfo=None),
+                "now": datetime.now(UTC).replace(tzinfo=None),
             },
         )
 
@@ -215,7 +215,7 @@ async def _emit_tamper_webhooks(agent_id: UUID, tampered: list[dict]) -> None:
                     "memory_id": mem["memory_id"],
                     "expected_hash": mem["expected_hash"],
                     "merkle_root": mem["merkle_root"],
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                 })
     except Exception as e:
         logger.error("Failed to send tamper webhook", error=str(e))

@@ -8,13 +8,13 @@ to keep the agent's worldview consistent.
 from __future__ import annotations
 
 from collections import deque
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
 
-from kyros.storage.postgres import get_db_session
 from kyros.logging import get_logger
+from kyros.storage.postgres import get_db_session
 
 logger = get_logger("kyros.belief")
 
@@ -68,7 +68,7 @@ async def index_fact_relationships(
         if not related_facts:
             return
 
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
 
         # Batch-insert all edges in a single executemany call
         edge_rows = []
@@ -133,7 +133,7 @@ async def run_belief_propagation(
     updates: list[dict] = []
     db_updates: list[dict] = []
     log_inserts: list[dict] = []
-    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(UTC).replace(tzinfo=None)
 
     # BFS queue: (fact_id, propagated_delta, depth)
     queue: deque[tuple[UUID, float, int]] = deque()

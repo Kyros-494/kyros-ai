@@ -28,7 +28,7 @@ class SessionAdapter:
     """Compat wrapper: transparently wraps raw SQL strings in text() so tests
     can use plain strings without importing sqlalchemy in every test file."""
 
-    def __init__(self, session):
+    def __init__(self, session) -> None:
         self._session = session
 
     async def execute(self, statement, *args, **kwargs):

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from sqlalchemy import event, text
 from sqlalchemy.exc import SQLAlchemyError
@@ -82,7 +82,7 @@ async def get_db_session_for_tenant(tenant_id: str) -> AsyncGenerator[AsyncSessi
             ...
     """
     from uuid import UUID
-    
+
     session = async_session_factory()
     try:
         # Validate tenant_id is a valid UUID to prevent SQL injection
@@ -91,8 +91,8 @@ async def get_db_session_for_tenant(tenant_id: str) -> AsyncGenerator[AsyncSessi
             tid = str(validated_uuid)
         except (ValueError, AttributeError) as e:
             logger.error("Invalid tenant_id format", tenant_id=tenant_id, error=str(e))
-            raise ValueError(f"Invalid tenant_id: must be a valid UUID") from e
-        
+            raise ValueError("Invalid tenant_id: must be a valid UUID") from e
+
         # SET LOCAL does not support bound parameters in asyncpg
         # Safe to use f-string after UUID validation
         await session.execute(

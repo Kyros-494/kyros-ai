@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import os
 import time
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 from kyros.logging import get_logger
 
@@ -48,7 +48,7 @@ class HistoryCard:
     memory_count: int
     compression_ratio: float
     levels: dict = field(default_factory=dict)
-    generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class CompressionEngine:
@@ -58,7 +58,7 @@ class CompressionEngine:
     L1 (paragraph), L2 (page), L3 (history card).
     """
 
-    def __init__(self, backend: str | None = None):
+    def __init__(self, backend: str | None = None) -> None:
         self.backend = backend or COMPRESSION_BACKEND
         logger.info("Compression engine initialised", backend=self.backend)
 

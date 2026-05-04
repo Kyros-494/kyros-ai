@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -24,7 +24,7 @@ _VALID_TABLES = frozenset({"episodic_memories", "semantic_memories", "procedural
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # ─── Summarise ────────────────────────────────
@@ -395,7 +395,8 @@ class MigrationRequest(BaseModel):
 async def migrate_embeddings(agent_id: str, request: Request, body: MigrationRequest):
     """Migrate all agent memory embeddings to a new embedding model space."""
     import asyncio
-    from kyros.ml.translation import EmbeddingTranslator, MODEL_REGISTRY
+
+    from kyros.ml.translation import MODEL_REGISTRY, EmbeddingTranslator
 
     if not agent_id.strip():
         raise HTTPException(status_code=400, detail="agent_id must not be blank")

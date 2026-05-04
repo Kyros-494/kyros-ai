@@ -19,9 +19,8 @@ Where:
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
 from dataclasses import dataclass, field
-
+from datetime import UTC, datetime
 
 # ─── B04: Decay Rate Lookup Table ─────────────
 
@@ -114,13 +113,13 @@ def calculate_freshness(
         Freshness score between 0.0 (completely stale) and 1.0 (fully fresh).
     """
     if now is None:
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
 
     # Ensure both are naive or both are aware
     if created_at.tzinfo is not None and now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
+        now = now.replace(tzinfo=UTC)
     elif created_at.tzinfo is None and now.tzinfo is not None:
-        created_at = created_at.replace(tzinfo=timezone.utc)
+        created_at = created_at.replace(tzinfo=UTC)
 
     age_seconds = max(0, (now - created_at).total_seconds())
     age_days = age_seconds / 86400.0
@@ -166,7 +165,7 @@ def evaluate_freshness(
         config = DecayConfig()
 
     if now is None:
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
 
     decay_rate = config.get_rate(category)
     freshness = calculate_freshness(created_at, decay_rate, base_confidence, now)
@@ -174,9 +173,9 @@ def evaluate_freshness(
 
     # Ensure timezone handling
     if created_at.tzinfo is not None and now.tzinfo is None:
-        now = now.replace(tzinfo=timezone.utc)
+        now = now.replace(tzinfo=UTC)
     elif created_at.tzinfo is None and now.tzinfo is not None:
-        created_at = created_at.replace(tzinfo=timezone.utc)
+        created_at = created_at.replace(tzinfo=UTC)
 
     age_days = max(0, (now - created_at).total_seconds()) / 86400.0
 
@@ -232,7 +231,7 @@ def batch_freshness_update(
     if config is None:
         config = DecayConfig()
     if now is None:
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        now = datetime.now(UTC).replace(tzinfo=None)
 
     updates = []
     for mem in memories:

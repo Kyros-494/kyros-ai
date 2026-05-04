@@ -102,7 +102,7 @@ class Settings(BaseSettings):
         return v
 
     @model_validator(mode="after")
-    def validate_production_safety(self) -> "Settings":
+    def validate_production_safety(self) -> Settings:
         """Enforce stricter defaults when running in production."""
         if self.environment != "production":
             return self
