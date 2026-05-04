@@ -69,12 +69,11 @@ async def call_llm(
         async with httpx.AsyncClient(timeout=timeout) as client:
             if provider == "openai":
                 return await _call_openai(client, prompt, system_prompt, temperature)
-            elif provider == "gemini":
+            if provider == "gemini":
                 return await _call_gemini(client, prompt, system_prompt)
-            elif provider == "anthropic":
+            if provider == "anthropic":
                 return await _call_anthropic(client, prompt, system_prompt, temperature)
-            else:
-                raise LLMError(f"Unsupported provider: {provider!r}")
+            raise LLMError(f"Unsupported provider: {provider!r}")
     except LLMError:
         raise
     except httpx.TimeoutException as e:
