@@ -65,9 +65,9 @@ class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
 
         try:
             if user_msg:
-                self.client.remember(self.agent_id, user_msg, role="user")
+                self.client.remember(self.agent_id, user_msg)
             if ai_msg:
-                self.client.remember(self.agent_id, ai_msg, role="assistant")
+                self.client.remember(self.agent_id, ai_msg)
         except KyrosError:
             pass  # Memory storage is best-effort — don't break the chain
 

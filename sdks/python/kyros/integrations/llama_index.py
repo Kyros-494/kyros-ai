@@ -79,7 +79,6 @@ class KyrosMemory(BaseMemory):  # type: ignore[misc]
             self.client.remember(
                 self.agent_id,
                 content,
-                role=message.role.value if hasattr(message.role, "value") else str(message.role),
             )
         except KyrosError:
             pass  # Best-effort

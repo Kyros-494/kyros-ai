@@ -43,7 +43,7 @@ class KyrosRecallTool(BaseTool):  # type: ignore[misc]
     class Config:
         arbitrary_types_allowed = True
 
-    def _run(self, query: str) -> str:  # type: ignore[override]
+    def _run(self, query: str) -> str:
         try:
             response = self.client.recall(self.agent_id, query, k=self.k)
             if not response.results:
@@ -69,7 +69,7 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
     class Config:
         arbitrary_types_allowed = True
 
-    def _run(self, fact: str) -> str:  # type: ignore[override]
+    def _run(self, fact: str) -> str:
         try:
             self.client.remember(self.agent_id, fact)
             return "Memory successfully stored."

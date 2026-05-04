@@ -66,7 +66,7 @@ def inject_kyros_memory(agent: Any, client: Client, agent_id: str, k: int = 10) 
 
             # Store incoming message as episodic memory
             with contextlib.suppress(KyrosError):
-                client.remember(agent_id, query, role="user")
+                client.remember(agent_id, query)
 
         return original_receive(message, sender, request_reply, silent)
 
