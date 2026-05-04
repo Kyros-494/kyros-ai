@@ -1,0 +1,68 @@
+Kyros Memory Operating System
+Copyright 2026 Kyros
+
+This product includes software developed at Kyros (kyros.494@gmail.com).
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+================================================================================
+
+This software contains code derived from or inspired by the following projects:
+
+FastAPI
+Copyright (c) 2018 Sebastián Ramírez
+Licensed under the MIT License
+https://fastapi.tiangolo.com/
+
+SQLAlchemy
+Copyright (c) 2005-2024 Michael Bayer and contributors
+Licensed under the MIT License
+https://www.sqlalchemy.org/
+
+Sentence Transformers
+Copyright (c) 2019 Nils Reimers
+Licensed under the Apache License 2.0
+https://www.sbert.net/
+
+PostgreSQL
+Copyright (c) 1996-2024, PostgreSQL Global Development Group
+Licensed under the PostgreSQL License
+https://www.postgresql.org/
+
+Redis
+Copyright (c) 2009-2024, Redis Ltd.
+Licensed under the BSD License
+https://redis.io/
+
+pgvector
+Copyright (c) 2021 Andrew Kane
+Licensed under the PostgreSQL License
+https://github.com/pgvector/pgvector
+
+Pydantic
+Copyright (c) 2017 Samuel Colvin and contributors
+Licensed under the MIT License
+https://pydantic-docs.helpmanual.io/
+
+httpx
+Copyright (c) 2019 Tom Christie
+Licensed under the BSD License
+https://www.python-httpx.org/
+
+================================================================================
+
+For a complete list of dependencies and their licenses, please refer to:
+- server/pyproject.toml (Python dependencies)
+- sdks/python/pyproject.toml (Python SDK dependencies)
+- sdks/typescript/package.json (TypeScript SDK dependencies)
+- website/package.json (Website dependencies)
