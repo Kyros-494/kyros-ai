@@ -1,0 +1,239 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# Kyros Server - Pre-commit Hooks Configuration
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Purpose: Automated code quality checks before commits
+# Benefits:
+# - Catch issues early (before CI/CD)
+# - Enforce consistent code style
+# - Prevent common mistakes
+# - Improve code quality
+#
+# Installation:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Usage:
+#   pre-commit run --all-files  # Run on all files
+#   pre-commit run              # Run on staged files only
+#   git commit                  # Hooks run automatically
+#
+# Bypass (use sparingly):
+#   git commit --no-verify
+#
+# ═══════════════════════════════════════════════════════════════════════════
+
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # ───────────────────────────────────────────────────────────────────────────
+  # General File Checks
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # File formatting
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+        name: Fix end of files
+      - id: mixed-line-ending
+        name: Fix mixed line endings
+        args: [--fix=lf]
+
+      # File checks
+      - id: check-added-large-files
+        name: Check for large files
+        args: [--maxkb=1000]
+      - id: check-case-conflict
+        name: Check for case conflicts
+      - id: check-merge-conflict
+        name: Check for merge conflicts
+      - id: check-symlinks
+        name: Check for broken symlinks
+      - id: destroyed-symlinks
+        name: Check for destroyed symlinks
+
+      # Code checks
+      - id: check-ast
+        name: Check Python AST
+      - id: check-builtin-literals
+        name: Check builtin literals
+      - id: check-docstring-first
+        name: Check docstring first
+      - id: debug-statements
+        name: Check for debug statements
+
+      # JSON/YAML checks
+      - id: check-json
+        name: Check JSON syntax
+      - id: check-yaml
+        name: Check YAML syntax
+        args: [--unsafe]  # Allow custom tags
+      - id: check-toml
+        name: Check TOML syntax
+
+      # Security checks
+      - id: detect-private-key
+        name: Detect private keys
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Python Code Formatting (Ruff)
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      # Linter
+      - id: ruff
+        name: Ruff linter
+        args:
+          - --fix
+          - --exit-non-zero-on-fix
+        types_or: [python, pyi]
+
+      # Formatter
+      - id: ruff-format
+        name: Ruff formatter
+        types_or: [python, pyi]
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Type Checking (MyPy)
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        name: MyPy type checker
+        additional_dependencies:
+          - types-redis
+          - types-passlib
+          - types-python-jose
+          - sqlalchemy[mypy]
+        args:
+          - --strict
+          - --ignore-missing-imports
+          - --no-warn-unused-ignores
+        exclude: ^(tests/|alembic/versions/)
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Security Scanning
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        name: Bandit security scanner
+        args:
+          - -c
+          - pyproject.toml
+        additional_dependencies:
+          - bandit[toml]
+        exclude: ^tests/
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Dependency Security (Safety)
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.3
+    hooks:
+      - id: python-safety-dependencies-check
+        name: Safety dependency scanner
+        files: pyproject.toml
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Secrets Detection (detect-secrets)
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: Detect secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+        exclude: |
+          (?x)^(
+            .*\.lock$|
+            .*\.md$|
+            .*/test_.*\.py$
+          )
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Commit Message Validation (Conventional Commits)
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.4.0
+    hooks:
+      - id: conventional-pre-commit
+        name: Conventional commit check
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - docs
+          - style
+          - refactor
+          - perf
+          - test
+          - build
+          - ci
+          - chore
+          - revert
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # Documentation Checks
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
+    hooks:
+      - id: pydocstyle
+        name: Pydocstyle docstring checker
+        args:
+          - --convention=google
+          - --add-ignore=D100,D104,D105,D107
+        exclude: ^(tests/|alembic/versions/)
+
+  # ───────────────────────────────────────────────────────────────────────────
+  # SQL Linting (for Alembic migrations)
+  # ───────────────────────────────────────────────────────────────────────────
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.2.3
+    hooks:
+      - id: sqlfluff-lint
+        name: SQLFluff linter
+        files: ^alembic/versions/.*\.py$
+        args:
+          - --dialect
+          - postgres
+          - --exclude-rules
+          - L034,L036  # Ignore some rules for Alembic
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Configuration Notes:
+#
+# Hook Stages:
+# - commit: Run on git commit (default)
+# - push: Run on git push
+# - commit-msg: Run on commit message
+# - manual: Only run when explicitly called
+#
+# Skipping Hooks:
+# - Skip all: git commit --no-verify
+# - Skip specific: SKIP=mypy git commit
+#
+# Performance:
+# - Hooks run in parallel when possible
+# - Only changed files are checked (unless --all-files)
+# - Results are cached for speed
+#
+# Troubleshooting:
+# - Update hooks: pre-commit autoupdate
+# - Clear cache: pre-commit clean
+# - Run manually: pre-commit run --all-files
+#
+# ═══════════════════════════════════════════════════════════════════════════
