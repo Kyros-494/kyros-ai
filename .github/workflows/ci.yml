@@ -94,6 +94,9 @@ jobs:
       - name: Run migrations
         run: uv run alembic upgrade head
 
+      - name: Seed test tenant and API key
+        run: uv run python tests/seed_test_tenant.py
+
       - name: Verify database connection
         run: |
           uv run python -c "
