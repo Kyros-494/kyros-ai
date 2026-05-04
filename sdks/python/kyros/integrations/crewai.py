@@ -5,11 +5,11 @@ Requires: pip install crewai kyros-sdk
 
 from __future__ import annotations
 
-from kyros import Client
+from kyros import KyrosClient
 from kyros.exceptions import KyrosError
 
 try:
-    from crewai.tools import BaseTool
+    from crewai.tools import BaseTool  # type: ignore[import-not-found]
     from pydantic import BaseModel, Field
 except ImportError as e:
     raise ImportError(
@@ -35,7 +35,7 @@ class KyrosRecallTool(BaseTool):  # type: ignore[misc]
     )
     args_schema: type[BaseModel] = _RecallInput
 
-    client: Client
+    client: KyrosClient
     agent_id: str
     k: int = 10
 
@@ -62,7 +62,7 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
     )
     args_schema: type[BaseModel] = _RememberInput
 
-    client: Client
+    client: KyrosClient
     agent_id: str
 
     class Config:
@@ -76,14 +76,14 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
             return f"Memory storage failed: {e!s}"
 
 
-def get_kyros_tools(client: Client, agent_id: str, k: int = 10) -> list[BaseTool]:
+def get_kyros_tools(client: KyrosClient, agent_id: str, k: int = 10) -> list[BaseTool]:
     """Get a list of Kyros memory tools ready to pass to a CrewAI agent.
 
     Usage:
-        from kyros import Client
+        from kyros import KyrosClient
         from kyros.integrations.crewai import get_kyros_tools
 
-        client = Client(api_key="mk_live_...")
+        client = KyrosClient(api_key="mk_live_...")
         tools = get_kyros_tools(client, agent_id="my-crew-agent")
 
         agent = Agent(role="...", tools=tools)

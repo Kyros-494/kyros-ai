@@ -7,11 +7,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from kyros import Client
+from kyros import KyrosClient
 from kyros.exceptions import KyrosError
 
 try:
-    from langchain_core.memory import BaseMemory
+    from langchain_core.memory import BaseMemory  # type: ignore[import-not-found]
 except ImportError as e:
     raise ImportError(
         "langchain-core is required for the LangChain integration. "
@@ -23,16 +23,16 @@ class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
     """Kyros-backed persistent memory for LangChain.
 
     Usage:
-        from kyros import Client
+        from kyros import KyrosClient
         from kyros.integrations.langchain import KyrosChatMemory
 
-        client = Client(api_key="mk_live_...")
+        client = KyrosClient(api_key="mk_live_...")
         memory = KyrosChatMemory(client=client, agent_id="my-agent")
 
         chain = ConversationChain(llm=llm, memory=memory)
     """
 
-    client: Client
+    client: KyrosClient
     agent_id: str
     memory_key: str = "history"
     k: int = 10  # Number of memories to retrieve per turn

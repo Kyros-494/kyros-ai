@@ -8,11 +8,11 @@ from __future__ import annotations
 import contextlib
 from typing import Any
 
-from kyros import Client
+from kyros import KyrosClient
 from kyros.exceptions import KyrosError
 
 
-def inject_kyros_memory(agent: Any, client: Client, agent_id: str, k: int = 10) -> None:
+def inject_kyros_memory(agent: Any, client: KyrosClient, agent_id: str, k: int = 10) -> None:
     """Wrap an AutoGen agent to automatically store and recall messages using Kyros.
 
     Patches the agent's `receive` method to:
@@ -22,10 +22,10 @@ def inject_kyros_memory(agent: Any, client: Client, agent_id: str, k: int = 10) 
 
     Usage:
         import autogen
-        from kyros import Client
+        from kyros import KyrosClient
         from kyros.integrations.autogen import inject_kyros_memory
 
-        client = Client(api_key="mk_live_...")
+        client = KyrosClient(api_key="mk_live_...")
         agent = autogen.AssistantAgent("assistant", llm_config=llm_config)
         inject_kyros_memory(agent, client, agent_id="my-autogen-agent")
 
