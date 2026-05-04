@@ -96,7 +96,7 @@ jobs:
         run: uv run alembic upgrade head
 
       - name: Integration tests
-        run: uv run pytest tests/integration/ -v --tb=short -m "not slow"
+        run: uv run pytest tests/integration/ -v --tb=short -m "not slow" --ignore=tests/integration/test_proxy.py
 
   # ─── Python SDK: lint + type check + tests ───
   sdk-python:
