@@ -1,0 +1,135 @@
+# Standard labels for Kyros repository
+# These labels will be automatically synced across the repository
+
+# Type labels
+- name: 'bug'
+  color: 'd73a4a'
+  description: 'Something is not working'
+
+- name: 'feature'
+  color: 'a2eeef'
+  description: 'New feature or request'
+
+- name: 'enhancement'
+  color: 'a2eeef'
+  description: 'Improvement to existing feature'
+
+- name: 'documentation'
+  color: '0075ca'
+  description: 'Improvements or additions to documentation'
+
+- name: 'performance'
+  color: 'fbca04'
+  description: 'Performance improvement'
+
+- name: 'security'
+  color: 'ee0701'
+  description: 'Security issue or improvement'
+
+- name: 'breaking'
+  color: 'b60205'
+  description: 'Breaking change'
+
+# Priority labels
+- name: 'priority: critical'
+  color: 'b60205'
+  description: 'Critical priority - needs immediate attention'
+
+- name: 'priority: high'
+  color: 'd93f0b'
+  description: 'High priority'
+
+- name: 'priority: medium'
+  color: 'fbca04'
+  description: 'Medium priority'
+
+- name: 'priority: low'
+  color: '0e8a16'
+  description: 'Low priority'
+
+# Status labels
+- name: 'status: needs-triage'
+  color: 'ededed'
+  description: 'Needs triage and prioritization'
+
+- name: 'status: in-progress'
+  color: 'fbca04'
+  description: 'Work in progress'
+
+- name: 'status: blocked'
+  color: 'd93f0b'
+  description: 'Blocked by another issue or external dependency'
+
+- name: 'status: needs-review'
+  color: '0075ca'
+  description: 'Needs code review'
+
+- name: 'status: needs-testing'
+  color: '0075ca'
+  description: 'Needs testing'
+
+- name: 'stale'
+  color: 'ededed'
+  description: 'No recent activity'
+
+# Component labels
+- name: 'component: server'
+  color: 'c5def5'
+  description: 'Related to the Kyros server'
+
+- name: 'component: python-sdk'
+  color: 'c5def5'
+  description: 'Related to the Python SDK'
+
+- name: 'component: typescript-sdk'
+  color: 'c5def5'
+  description: 'Related to the TypeScript SDK'
+
+- name: 'component: website'
+  color: 'c5def5'
+  description: 'Related to the website'
+
+- name: 'component: docs'
+  color: 'c5def5'
+  description: 'Related to documentation'
+
+- name: 'component: ci-cd'
+  color: 'c5def5'
+  description: 'Related to CI/CD pipelines'
+
+# Special labels
+- name: 'good first issue'
+  color: '7057ff'
+  description: 'Good for newcomers'
+
+- name: 'help wanted'
+  color: '008672'
+  description: 'Extra attention is needed'
+
+- name: 'question'
+  color: 'd876e3'
+  description: 'Further information is requested'
+
+- name: 'wontfix'
+  color: 'ffffff'
+  description: 'This will not be worked on'
+
+- name: 'duplicate'
+  color: 'cfd3d7'
+  description: 'This issue or pull request already exists'
+
+- name: 'invalid'
+  color: 'e4e669'
+  description: 'This does not seem right'
+
+- name: 'dependencies'
+  color: '0366d6'
+  description: 'Pull requests that update a dependency file'
+
+- name: 'pinned'
+  color: 'fef2c0'
+  description: 'Pinned issue - will not be marked as stale'
+
+- name: 'roadmap'
+  color: 'fef2c0'
+  description: 'Part of the project roadmap'
