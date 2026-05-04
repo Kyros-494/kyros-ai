@@ -5,6 +5,7 @@ Requires: pip install pyautogen kyros-sdk
 
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from kyros import Client
@@ -43,10 +44,7 @@ def inject_kyros_memory(agent: Any, client: Client, agent_id: str, k: int = 10) 
         silent: bool | None = False,
     ) -> Any:
         # Extract text content from message
-        if isinstance(message, dict):
-            query = str(message.get("content", ""))
-        else:
-            query = str(message)
+        query = str(message.get("content", "")) if isinstance(message, dict) else str(message)
 
         # Recall relevant memories and inject as context
         if query.strip():
@@ -59,17 +57,16 @@ def inject_kyros_memory(agent: Any, client: Client, agent_id: str, k: int = 10) 
                         f"[End of memory context]\n"
                     )
                     if isinstance(message, dict):
-                        message = {**message, "content": message.get("content", "") + memory_injection}
+                        content = message.get("content", "")
+                        message = {**message, "content": content + memory_injection}
                     else:
                         message = message + memory_injection
             except KyrosError:
                 pass  # Memory recall is best-effort — don't break the agent
 
             # Store incoming message as episodic memory
-            try:
+            with contextlib.suppress(KyrosError):
                 client.remember(agent_id, query, role="user")
-            except KyrosError:
-                pass
 
         return original_receive(message, sender, request_reply, silent)
 
