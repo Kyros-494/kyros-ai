@@ -14,8 +14,12 @@ from kyros.types import (
 
 __version__ = "0.1.0"
 
+# Alias for backward compatibility
+Client = KyrosClient
+
 __all__ = [
     "KyrosClient",
+    "Client",
     "KyrosError",
     "KyrosAPIError",
     "KyrosConnectionError",

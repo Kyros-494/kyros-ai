@@ -26,7 +26,7 @@ class _RememberInput(BaseModel):
     fact: str = Field(..., description="The fact or observation to store")
 
 
-class KyrosRecallTool(BaseTool):
+class KyrosRecallTool(BaseTool):  # type: ignore[misc]
     """CrewAI tool for recalling relevant memories from Kyros."""
 
     name: str = "Recall Memory"
@@ -43,17 +43,17 @@ class KyrosRecallTool(BaseTool):
     class Config:
         arbitrary_types_allowed = True
 
-    def _run(self, query: str) -> str:
+    def _run(self, query: str) -> str:  # type: ignore[override]
         try:
             response = self.client.recall(self.agent_id, query, k=self.k)
             if not response.results:
                 return "No relevant memories found."
             return "\n".join(f"- {r.content}" for r in response.results)
         except KyrosError as e:
-            return f"Memory recall failed: {e.message}"
+            return f"Memory recall failed: {e!s}"
 
 
-class KyrosRememberTool(BaseTool):
+class KyrosRememberTool(BaseTool):  # type: ignore[misc]
     """CrewAI tool for storing new memories in Kyros."""
 
     name: str = "Store Memory"
@@ -69,12 +69,12 @@ class KyrosRememberTool(BaseTool):
     class Config:
         arbitrary_types_allowed = True
 
-    def _run(self, fact: str) -> str:
+    def _run(self, fact: str) -> str:  # type: ignore[override]
         try:
             self.client.remember(self.agent_id, fact)
             return "Memory successfully stored."
         except KyrosError as e:
-            return f"Memory storage failed: {e.message}"
+            return f"Memory storage failed: {e!s}"
 
 
 def get_kyros_tools(client: Client, agent_id: str, k: int = 10) -> list[BaseTool]:

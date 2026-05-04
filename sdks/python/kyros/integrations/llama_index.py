@@ -20,7 +20,7 @@ except ImportError as e:
     ) from e
 
 
-class KyrosMemory(BaseMemory):
+class KyrosMemory(BaseMemory):  # type: ignore[misc]
     """Kyros-backed persistent memory for LlamaIndex agents.
 
     Usage:

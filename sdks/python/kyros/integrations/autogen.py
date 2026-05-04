@@ -38,7 +38,7 @@ def inject_kyros_memory(agent: Any, client: Client, agent_id: str, k: int = 10) 
     original_receive = agent.receive
 
     def receive_with_memory(
-        message: str | dict,
+        message: str | dict[str, Any],
         sender: Any,
         request_reply: bool | None = None,
         silent: bool | None = False,

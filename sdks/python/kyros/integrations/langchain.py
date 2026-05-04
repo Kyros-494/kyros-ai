@@ -19,7 +19,7 @@ except ImportError as e:
     ) from e
 
 
-class KyrosChatMemory(BaseMemory):
+class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
     """Kyros-backed persistent memory for LangChain.
 
     Usage:
