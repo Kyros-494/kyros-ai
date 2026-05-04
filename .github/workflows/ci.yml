@@ -55,7 +55,7 @@ jobs:
           POSTGRES_PASSWORD: test
         ports: ['5432:5432']
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U kyros -d kyros_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -94,11 +94,41 @@ jobs:
       - name: Run migrations
         run: uv run alembic upgrade head
 
+      - name: Verify database connection
+        run: |
+          uv run python -c "
+          import asyncio
+          from sqlalchemy import text
+          from kyros.storage.postgres import get_db_session
+          
+          async def check():
+              async with get_db_session() as session:
+                  result = await session.execute(text('SELECT 1'))
+                  print('✅ Database connection successful')
+          
+          asyncio.run(check())
+          "
+
       - name: Start server in background
         run: |
-          uv run uvicorn kyros.main:app --host 0.0.0.0 --port 8000 &
-          sleep 5
-          curl --retry 10 --retry-delay 1 --retry-connrefused http://localhost:8000/health
+          uv run uvicorn kyros.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+          echo $! > server.pid
+          
+          # Wait for server to start (max 30 seconds)
+          for i in {1..30}; do
+            if curl -f http://localhost:8000/health 2>/dev/null; then
+              echo "✅ Server started successfully"
+              exit 0
+            fi
+            echo "Waiting for server to start... ($i/30)"
+            sleep 1
+          done
+          
+          # If we get here, server failed to start
+          echo "❌ Server failed to start within 30 seconds"
+          echo "=== Server logs ==="
+          cat server.log
+          exit 1
 
       - name: Integration tests
         run: >-
