@@ -135,7 +135,7 @@ def get_settings() -> Settings:
     rather than failing silently at the first DB call.
     """
     try:
-        return Settings()
+        return Settings()  # type: ignore[call-arg]
     except Exception as e:
         print(f"[FATAL] Configuration error: {e}", file=sys.stderr)
         print(

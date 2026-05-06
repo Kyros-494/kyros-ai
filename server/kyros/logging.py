@@ -27,6 +27,7 @@ def setup_logging(log_level: str = "INFO", environment: str = "development") -> 
         structlog.processors.UnicodeDecoder(),
     ]
 
+    renderer: structlog.dev.ConsoleRenderer | structlog.processors.JSONRenderer
     if environment == "development":
         # Pretty, colored output for local development
         renderer = structlog.dev.ConsoleRenderer(colors=True)

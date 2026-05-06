@@ -49,15 +49,15 @@ async def seed_test_tenant() -> None:
         await session.execute(
             text("""
             INSERT INTO agents (
-                id, tenant_id, name, created_at, updated_at
+                tenant_id, external_id, display_name, created_at
             )
-            VALUES (:id, :tenant_id, :name, NOW(), NOW())
-            ON CONFLICT (id) DO NOTHING
+            VALUES (:tenant_id, :external_id, :display_name, NOW())
+            ON CONFLICT (tenant_id, external_id) DO NOTHING
             """),
             {
-                "id": TEST_AGENT_ID,
                 "tenant_id": TEST_TENANT_ID,
-                "name": "Test Agent",
+                "external_id": TEST_AGENT_ID,
+                "display_name": "Test Agent",
             },
         )
 
@@ -65,7 +65,7 @@ async def seed_test_tenant() -> None:
 
     print(f"✅ Test tenant created: {TEST_TENANT_ID}")
     print(f"✅ Test API key: {TEST_API_KEY}")
-    print(f"✅ Test agent: {TEST_AGENT_ID}")
+    print(f"✅ Test agent external_id: {TEST_AGENT_ID}")
 
 
 if __name__ == "__main__":

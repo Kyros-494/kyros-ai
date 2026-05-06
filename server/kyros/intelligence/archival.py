@@ -181,7 +181,7 @@ async def hard_delete_archived(memory_ids: list[str]) -> int:
     return len(memory_ids)
 
 
-async def archive_deleted_memories() -> None:
+async def archive_deleted_memories() -> int:
     """Run one archival cycle: find deleted → S3 → hard delete."""
     start = time.monotonic()
     logger.info("Starting archival cycle")

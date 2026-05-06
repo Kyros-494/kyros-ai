@@ -75,7 +75,7 @@ class MemoryService:
             raise ValueError("tenant_id is required for memory operations")
         return tenant_id
 
-    def _run_task(self, coro: Any, name: str) -> None:
+    def _run_task(self, coro: Any, name: str) -> asyncio.Task[Any]:
         """Helper to run a fire-and-forget task with error logging.
 
         Uses the global tracked task registry from main.py when available
@@ -110,7 +110,7 @@ class MemoryService:
         stamp = stamp_memory(request.content, request.metadata, now.isoformat())
         tenant_id_required = self._require_tenant_id(tenant_id)
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
 
             await session.execute(
@@ -235,7 +235,7 @@ class MemoryService:
         half_life_hours = 168.0
         freshness_warning_threshold = 0.40
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
 
             # E57: Build optional session_id filter
@@ -331,7 +331,7 @@ class MemoryService:
     async def forget(self, tenant_id: UUID | None, memory_id: UUID) -> None:
         """Soft-delete a specific memory."""
         tenant_id_required = self._require_tenant_id(tenant_id)
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             # We need the agent_id to update the merkle root
             result = await session.execute(
                 text("SELECT agent_id FROM episodic_memories WHERE id = :id"), {"id": memory_id}
@@ -364,7 +364,7 @@ class MemoryService:
         replaced_id = None
         stamp = stamp_memory(fact_text, None, now.isoformat())
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
 
             existing = await session.execute(
@@ -464,7 +464,7 @@ class MemoryService:
         tenant_id_required = self._require_tenant_id(tenant_id)
         query_embedding = self.embedder.embed(request.query)
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
             result = await session.execute(
                 text("""
@@ -520,7 +520,7 @@ class MemoryService:
         now = datetime.now(UTC).replace(tzinfo=None)
         stamp = stamp_memory(desc_text, request.metadata, now.isoformat())
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
 
             await session.execute(
@@ -580,7 +580,7 @@ class MemoryService:
 
         # E64: Success rate weighting
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
 
             result = await session.execute(
@@ -644,7 +644,7 @@ class MemoryService:
     ) -> OutcomeResponse:
         """Report success/failure for a procedure (reinforcement signal)."""
         tenant_id_required = self._require_tenant_id(tenant_id)
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             if request.success:
                 await session.execute(
                     text("""
@@ -679,6 +679,9 @@ class MemoryService:
                 {"id": request.procedure_id},
             )
             row = result.fetchone()
+            
+            if row is None:
+                raise ValueError(f"Procedure {request.procedure_id} not found")
 
         total = row.success_count + row.failure_count
         return OutcomeResponse(
@@ -700,7 +703,7 @@ class MemoryService:
             tzinfo=None
         )  # naive UTC for TIMESTAMP WITHOUT TIME ZONE columns
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, agent_external_id)
 
             # Episodic
@@ -803,7 +806,7 @@ class MemoryService:
         counts = {"episodic": 0, "semantic": 0, "procedural": 0}
         tenant_id_required = self._require_tenant_id(tenant_id)
 
-        async with get_db_session_for_tenant(tenant_id_required) as session:
+        async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, agent_external_id)
             t_id = tenant_id_required
 
