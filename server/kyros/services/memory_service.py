@@ -683,6 +683,9 @@ class MemoryService:
             if row is None:
                 raise ValueError(f"Procedure {request.procedure_id} not found")
 
+            if row is None:
+                raise ValueError(f"Procedure {request.procedure_id} not found")
+
         total = row.success_count + row.failure_count
         return OutcomeResponse(
             procedure_id=request.procedure_id,

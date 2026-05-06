@@ -46,15 +46,17 @@ async def seed_test_tenant() -> None:
         )
 
         # Insert test agent
+        test_agent_id = uuid.uuid4()
         await session.execute(
             text("""
             INSERT INTO agents (
-                tenant_id, external_id, display_name, created_at
+                id, tenant_id, external_id, display_name, created_at
             )
-            VALUES (:tenant_id, :external_id, :display_name, NOW())
+            VALUES (:id, :tenant_id, :external_id, :display_name, NOW())
             ON CONFLICT (tenant_id, external_id) DO NOTHING
             """),
             {
+                "id": test_agent_id,
                 "tenant_id": TEST_TENANT_ID,
                 "external_id": TEST_AGENT_ID,
                 "display_name": "Test Agent",

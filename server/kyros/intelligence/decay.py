@@ -242,6 +242,10 @@ def batch_freshness_update(
         if not isinstance(created_at, datetime):
             continue
 
+        # Skip if created_at is None or invalid
+        if not isinstance(created_at, datetime):
+            continue
+
         result = evaluate_freshness(
             created_at=created_at,
             category=mem.get("memory_category", "general"),
