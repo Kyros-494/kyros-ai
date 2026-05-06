@@ -679,7 +679,7 @@ class MemoryService:
                 {"id": request.procedure_id},
             )
             row = result.fetchone()
-            
+
             if row is None:
                 raise ValueError(f"Procedure {request.procedure_id} not found")
 
