@@ -1,5 +1,5 @@
 # ─── Base image ───────────────────────────────────────────────────────────────
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
 # Security: run as non-root
 RUN groupadd --gid 1001 kyros \
