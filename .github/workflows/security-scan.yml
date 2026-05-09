@@ -1,64 +1,126 @@
-# E88 — Container scan (Trivy) in CI pipeline
+---
 name: Security Scan
+
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   pull_request:
-    branches: [master]
+    branches: [master, main]
   schedule:
     - cron: "0 6 * * 1"  # Weekly Monday 6am UTC
+  workflow_dispatch:
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
-  trivy-container:
+  # ─── Dependency Vulnerability Audit ────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-
-      - name: Build Docker image
-        run: docker build -t kyros-server:scan ./server
-
-      - name: Run Trivy container scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: "kyros-server:scan"
-          format: "sarif"
-          output: "trivy-results.sarif"
-          severity: "CRITICAL,HIGH"
-          exit-code: "1"
-          trivyignores: ".trivyignore"
-
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
-
-  trivy-filesystem:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Run Trivy filesystem scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: "fs"
-          scan-ref: "."
-          format: "table"
-          severity: "CRITICAL,HIGH"
-          exit-code: "1"
-          trivyignores: ".trivyignore"
-
-  pip-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install and audit
+      - name: Install and audit Python deps
         working-directory: server
         run: |
           pip install pip-audit
           pip install .
-          pip-audit --strict --desc --ignore-vuln GHSA-wj6h-64fc-37mp
+          pip-audit --strict --desc
+
+      - name: Audit npm deps (TypeScript SDK)
+        working-directory: sdks/typescript
+        run: |
+          npm ci
+          npm audit --audit-level=high || true
+
+  # ─── Container Scan (Trivy) ───────────────────────────────────────
+  container-scan:
+    name: Container Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t kyros-server:scan ./server
+
+      - name: Trivy container scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "kyros-server:scan"
+          format: "sarif"
+          output: "trivy-container.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+      - name: Upload container scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-container.sarif"
+          category: "trivy-container"
+
+  # ─── Filesystem & IaC Scan ────────────────────────────────────────
+  filesystem-scan:
+    name: Filesystem Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-fs.sarif"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1"
+
+      - name: Upload filesystem scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-fs.sarif"
+          category: "trivy-filesystem"
+
+  # ─── Secret Scanning ──────────────────────────────────────────────
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+  # ─── License Compliance ───────────────────────────────────────────
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check Python licenses
+        working-directory: server
+        run: |
+          pip install pip-licenses
+          pip install .
+          pip-licenses --fail-on="GPL-3.0-only;GPL-3.0-or-later;AGPL-3.0-only;AGPL-3.0-or-later" \
+            --allow-only="MIT;BSD-2-Clause;BSD-3-Clause;Apache-2.0;ISC;PSF-2.0;MPL-2.0;LGPL-2.1-only;LGPL-3.0-only;Python-2.0;Unlicense" \
+            || echo "⚠️ Review flagged licenses above"

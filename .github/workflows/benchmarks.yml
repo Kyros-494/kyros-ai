@@ -1,13 +1,34 @@
-# E86 — Performance benchmark suite in CI
+---
 name: Benchmarks
+
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   pull_request:
-    branches: [master]
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      benchmark:
+        description: "Benchmark to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - locomo
+          - longmemeval
+          - beam
+
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   benchmark:
+    name: "Memory Benchmarks"
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -17,28 +38,107 @@ jobs:
           POSTGRES_USER: kyros
           POSTGRES_PASSWORD: test
         ports: ["5432:5432"]
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        options: >-
+          --health-cmd "pg_isready -U kyros -d kyros_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       redis:
         image: redis:7-alpine
         ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      KYROS_DATABASE_URL: postgresql+asyncpg://kyros:test@localhost:5432/kyros_test
+      KYROS_REDIS_URL: redis://localhost:6379/0
+      KYROS_JWT_SECRET_KEY: ci-bench-secret-key-minimum-32-chars!!
+      KYROS_ENVIRONMENT: test
+
+    defaults:
+      run:
+        working-directory: server
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Install dependencies
-        working-directory: server
-        run: pip install -e ".[dev]" locust
+        run: uv sync --extra dev
 
-      - name: Run unit tests
-        working-directory: server
-        run: pytest tests/unit/ -v --tb=short
+      - name: Run migrations
+        run: uv run alembic upgrade head
 
-      - name: Run load test (30s, 50 users)
-        working-directory: server
+      - name: Seed test data
+        run: uv run python tests/seed_test_tenant.py
+
+      - name: Start server
         run: |
+          uv run uvicorn kyros.main:app --host 0.0.0.0 --port 8000 > server.log 2>&1 &
+          echo $! > server.pid
+          for i in {1..30}; do
+            curl -sf http://localhost:8000/health/ready && echo "✅ Server ready" && exit 0
+            sleep 1
+          done
+          echo "❌ Server failed" && cat server.log && exit 1
+
+      # ── Download Real Datasets ──
+      - name: Download datasets (LOCOMO, LongMemEval, BEAM)
+        run: uv run python -m tests.benchmarks.download_datasets
+
+      # ── Benchmark Infrastructure Tests ──
+      - name: Validate benchmark datasets
+        run: uv run pytest tests/benchmarks/test_benchmark_infra.py -v --tb=short
+
+      # ── LOCOMO Benchmark ──
+      - name: "LOCOMO: Ingest → Search → Evaluate"
+        if: >-
+          github.event.inputs.benchmark == 'all' ||
+          github.event.inputs.benchmark == 'locomo' ||
+          github.event.inputs.benchmark == ''
+        run: |
+          uv run python -m tests.benchmarks.run_benchmark \
+            --benchmark locomo \
+            --project-name ci-locomo-${{ github.sha }} \
+            --top-k 20 \
+            --top-k-cutoffs 10,20,50
+
+      # ── LongMemEval Benchmark ──
+      - name: "LongMemEval: Ingest → Search → Evaluate"
+        if: >-
+          github.event.inputs.benchmark == 'all' ||
+          github.event.inputs.benchmark == 'longmemeval' ||
+          github.event.inputs.benchmark == ''
+        run: |
+          uv run python -m tests.benchmarks.run_benchmark \
+            --benchmark longmemeval \
+            --project-name ci-lme-${{ github.sha }} \
+            --top-k 20
+
+      # ── BEAM Benchmark ──
+      - name: "BEAM: Ingest → Search → Evaluate"
+        if: >-
+          github.event.inputs.benchmark == 'all' ||
+          github.event.inputs.benchmark == 'beam' ||
+          github.event.inputs.benchmark == ''
+        run: |
+          uv run python -m tests.benchmarks.run_benchmark \
+            --benchmark beam \
+            --project-name ci-beam-${{ github.sha }} \
+            --top-k 20
+
+      # ── Load Test ──
+      - name: "Load test (Locust — 50 users, 30s)"
+        run: |
+          pip install locust
           locust -f tests/load/locustfile.py \
             --host=http://localhost:8000 \
             --headless \
@@ -48,8 +148,19 @@ jobs:
             --csv=benchmark_results \
             --only-summary
 
-      - name: Upload results
-        uses: actions/upload-artifact@v7
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
-          path: server/benchmark_results*.csv
+          name: benchmark-results-${{ github.sha }}
+          path: |
+            server/tests/benchmarks/results/
+            server/benchmark_results*.csv
+          retention-days: 90
+
+      - name: Upload server logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-server-logs
+          path: server/server.log

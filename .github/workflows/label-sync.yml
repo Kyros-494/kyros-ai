@@ -1,10 +1,11 @@
-name: Sync Labels
+---
+name: Label Sync
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
     paths:
-      - '.github/labels.yml'
+      - ".github/labels.yml"
   workflow_dispatch:
 
 permissions:
@@ -12,15 +13,14 @@ permissions:
 
 jobs:
   sync:
+    name: Sync Labels
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Sync labels
-        uses: micnncim/action-label-syncer@v1
+        uses: EndBug/label-sync@v2
         with:
-          manifest: .github/labels.yml
-          repository: ${{ github.repository }}
+          config-file: .github/labels.yml
+          delete-other-labels: false
           token: ${{ secrets.GITHUB_TOKEN }}
-          prune: false
