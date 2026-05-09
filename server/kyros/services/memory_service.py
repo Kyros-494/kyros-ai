@@ -4,7 +4,13 @@ import asyncio
 import json
 import os
 import time
-from datetime import UTC, datetime
+from datetime import datetime
+
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -27,9 +33,9 @@ logger = get_logger("kyros.services.memory")
 
 
 def _parse_dt(value: str | None) -> datetime:
-    """Parse an ISO datetime string to a naive UTC datetime for DB writes.
+    """Parse an ISO datetime string to a naive timezone.utc datetime for DB writes.
 
-    Falls back to current UTC time if value is None or unparseable.
+    Falls back to current timezone.utc time if value is None or unparseable.
     PostgreSQL TIMESTAMP WITHOUT TIME ZONE columns require naive datetimes.
     """
     if not value:
@@ -99,16 +105,53 @@ class MemoryService:
         task.add_done_callback(handle_result)
         return task
 
+    def _parse_timestamp(self, ts_input: Any) -> datetime:
+        """Parse various timestamp formats (float, ISO string, Locomo format)."""
+        if ts_input is None:
+            return datetime.now(UTC).replace(tzinfo=None)
+        
+        if isinstance(ts_input, (int, float)):
+            try:
+                return datetime.fromtimestamp(ts_input, tz=UTC).replace(tzinfo=None)
+            except (ValueError, OSError):
+                return datetime.now(UTC).replace(tzinfo=None)
+
+        if isinstance(ts_input, str):
+            # 1. Try ISO format
+            try:
+                # Remove Z or offset if present for replace(tzinfo=None)
+                return datetime.fromisoformat(ts_input.replace("Z", "+00:00")).replace(tzinfo=None)
+            except ValueError:
+                pass
+            
+            # 2. Try Locomo format: "1:56 pm on 8 May, 2023"
+            try:
+                # %p handles am/pm, %B handles full month name
+                return datetime.strptime(ts_input, "%I:%M %p on %d %B, %Y").replace(tzinfo=None)
+            except ValueError:
+                pass
+
+        # Fallback to current time if parsing fails
+        return datetime.now(UTC).replace(tzinfo=None)
+
     async def remember_episodic(
-        self, tenant_id: UUID | None, request: RememberRequest
+        self, tenant_id: UUID | None, request: RememberRequest, override_id: UUID | None = None
     ) -> RememberResponse:
         """Store an episodic memory: embed content → write DB → update cache."""
         embedding, embedding_secondary = self.embedder.embed_with_secondary(request.content)
-        memory_id = uuid4()
-        now = datetime.now(UTC).replace(tzinfo=None)
+        memory_id = override_id or uuid4()
+        now = self._parse_timestamp(request.timestamp)
 
         stamp = stamp_memory(request.content, request.metadata, now.isoformat())
         tenant_id_required = self._require_tenant_id(tenant_id)
+
+        # Autonomous Temporal Extraction (Phase 5)
+        from kyros.proxy.classifier import extract_temporal_info
+        event_time_str = json.dumps(request.event_time) if request.event_time else None
+        if not event_time_str:
+            extracted_time = extract_temporal_info(request.content, reference_time=now)
+            if extracted_time and "resolved_date" in extracted_time:
+                event_time_str = json.dumps({"timestamp": extracted_time["resolved_date"], "relative": extracted_time.get("relative_day")})
 
         async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
@@ -118,12 +161,12 @@ class MemoryService:
                 INSERT INTO episodic_memories
                     (id, agent_id, tenant_id, content, content_type, role,
                      session_id, embedding, embedding_secondary, embedding_model,
-                     metadata, importance, created_at,
+                     metadata, importance, created_at, event_time,
                      content_hash, merkle_leaf, nonce)
                 VALUES
                     (:id, :agent_id, :tenant_id, :content, :content_type, :role,
                      :session_id, :embedding, :embedding_secondary, :embedding_model,
-                     :metadata, :importance, :created_at,
+                     :metadata, :importance, :created_at, :event_time,
                      :content_hash, :merkle_leaf, :nonce)
                 """),
                 {
@@ -140,6 +183,7 @@ class MemoryService:
                     "metadata": json.dumps(request.metadata),
                     "importance": request.importance,
                     "created_at": now,
+                    "event_time": event_time_str,
                     "content_hash": stamp.content_hash,
                     "merkle_leaf": stamp.merkle_leaf,
                     "nonce": stamp.nonce,
@@ -212,6 +256,15 @@ class MemoryService:
                 "extract_causal",
             )
 
+        # E01: Asynchronously extract and store structured semantic facts (Knowledge Graph)
+        from kyros.intelligence.semantic import extract_and_store_semantic_facts
+        self._run_task(
+            extract_and_store_semantic_facts(
+                tenant_id_required, agent_id, memory_id, request.content
+            ),
+            "extract_semantic"
+        )
+
         return RememberResponse(
             memory_id=memory_id,
             agent_id=request.agent_id,
@@ -219,19 +272,50 @@ class MemoryService:
             created_at=now,
         )
 
+
     async def recall(self, tenant_id: UUID | None, request: RecallRequest) -> RecallResponse:
         """Retrieve relevant memories via hybrid search.
 
         Uses similarity + recency + importance + freshness scoring.
+        Query classification adjusts weights for temporal/factual/procedural queries.
         """
         start = time.monotonic()
         tenant_id_required = self._require_tenant_id(tenant_id)
         query_embedding = self.embedder.embed(request.query)
 
-        w_sim = 0.50
-        w_recency = 0.20
-        w_importance = 0.15
-        w_freshness = 0.15
+        # Classify query to adjust retrieval weights
+        from kyros.proxy.query_classifier import QueryType, classify_query
+        qc = classify_query(request.query)
+
+        if qc.query_type == QueryType.TEMPORAL:
+            # Temporal queries: boost recency heavily
+            w_sim = 0.30
+            w_bm25 = 0.15
+            w_recency = 0.35
+            w_importance = 0.10
+            w_freshness = 0.10
+        elif qc.query_type == QueryType.FACTUAL:
+            # Factual queries: boost similarity and BM25 (semantic match + keyword hit)
+            w_sim = 0.45
+            w_bm25 = 0.30
+            w_recency = 0.05
+            w_importance = 0.15
+            w_freshness = 0.05
+        elif qc.query_type == QueryType.PROCEDURAL:
+            # Procedural queries: balanced with importance boost
+            w_sim = 0.35
+            w_bm25 = 0.20
+            w_recency = 0.10
+            w_importance = 0.25
+            w_freshness = 0.10
+        else:
+            # Default balanced weights
+            w_sim = 0.40
+            w_bm25 = 0.20
+            w_recency = 0.15
+            w_importance = 0.15
+            w_freshness = 0.10
+
         half_life_hours = 168.0
         freshness_warning_threshold = 0.40
 
@@ -240,85 +324,276 @@ class MemoryService:
 
             # E57: Build optional session_id filter
             session_filter = ""
+            query_text_bm25 = request.query
+            if getattr(qc, "expanded_keywords", None):
+                query_text_bm25 += " " + " ".join(qc.expanded_keywords)
+
             params: dict = {
                 "agent_id": agent_id,
                 "min_rel": request.min_relevance,
                 "k": request.k,
                 "w_sim": w_sim,
+                "w_bm25": w_bm25,
                 "w_recency": w_recency,
                 "w_importance": w_importance,
                 "w_freshness": w_freshness,
                 "half_life": half_life_hours,
                 "query_vec": query_embedding,
+                "query_text": query_text_bm25,
             }
 
             if request.session_id:
                 session_filter = "AND session_id = :session_id"
                 params["session_id"] = request.session_id
 
-            # B08: Hybrid search with freshness-weighted ranking
-            # :query_vec is passed as a Python list; pgvector asyncpg codec handles the cast
+            # Entity Boost logic (Phase 2: Item 10) - Boost instead of strict filter
+            entity_boost_sql = "0"
+            if qc.entities:
+                boost_parts = []
+                for i, ent in enumerate(qc.entities[:5]):
+                    param_name = f"ent_boost_{i}"
+                    params[param_name] = f'{{"entities": ["{ent}"]}}'
+                    # Use CAST instead of ::jsonb to avoid SQLAlchemy parameter parsing issues
+                    boost_parts.append(f"(CASE WHEN metadata @> CAST(:{param_name} AS jsonb) THEN 0.2 ELSE 0 END)")
+                entity_boost_sql = " + ".join(boost_parts)
+
+            # Temporal Boost logic (Phase 5: Temporal Engine)
+            temporal_boost_sql = "0"
+            if getattr(qc, "temporal_info", None) and qc.temporal_info.get("resolved_date"):
+                params["resolved_date"] = qc.temporal_info["resolved_date"]
+                temporal_boost_sql = """
+                    (CASE 
+                        WHEN event_time IS NOT NULL AND event_time::jsonb->>'timestamp' = CAST(:resolved_date AS text) THEN 2.0
+                        WHEN created_at::date = CAST(:resolved_date AS date) THEN 0.5
+                        ELSE 0 
+                    END)
+                """
+
+            # B08: Hybrid search with freshness-weighted ranking across all memory types
             query = f"""
-                SELECT id, content, importance, created_at, metadata,
-                       freshness_score, memory_category,
+                WITH ep_vector AS (
+                    SELECT id, content, importance, created_at, metadata, freshness_score, 'episodic' as memory_type, embedding, event_time
+                    FROM episodic_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL {session_filter}
+                    ORDER BY embedding <=> :query_vec LIMIT :k_fetch
+                ),
+                ep_text AS (
+                    SELECT id, content, importance, created_at, metadata, freshness_score, 'episodic' as memory_type, embedding, event_time
+                    FROM episodic_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL {session_filter}
+                      AND to_tsvector('english', content) @@ plainto_tsquery('english', :query_text)
+                    ORDER BY ts_rank_cd(to_tsvector('english', content), plainto_tsquery('english', :query_text)) DESC LIMIT :k_fetch
+                ),
+                sem_vector AS (
+                    SELECT id, (subject || ' ' || predicate || ': ' || object) as content, confidence as importance, created_at, '{{}}'::jsonb as metadata, freshness_score, 'semantic' as memory_type, embedding, NULL::jsonb as event_time
+                    FROM semantic_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL
+                    ORDER BY embedding <=> :query_vec LIMIT :k_fetch
+                ),
+                sem_text AS (
+                    SELECT id, (subject || ' ' || predicate || ': ' || object) as content, confidence as importance, created_at, '{{}}'::jsonb as metadata, freshness_score, 'semantic' as memory_type, embedding, NULL::jsonb as event_time
+                    FROM semantic_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL
+                      AND to_tsvector('english', subject || ' ' || predicate || ': ' || object) @@ plainto_tsquery('english', :query_text)
+                    ORDER BY ts_rank_cd(to_tsvector('english', subject || ' ' || predicate || ': ' || object), plainto_tsquery('english', :query_text)) DESC LIMIT :k_fetch
+                ),
+                proc_vector AS (
+                    SELECT id, (name || ': ' || description) as content, 0.8 as importance, created_at, metadata, freshness_score, 'procedural' as memory_type, embedding, NULL::jsonb as event_time
+                    FROM procedural_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL
+                    ORDER BY embedding <=> :query_vec LIMIT :k_fetch
+                ),
+                proc_text AS (
+                    SELECT id, (name || ': ' || description) as content, 0.8 as importance, created_at, metadata, freshness_score, 'procedural' as memory_type, embedding, NULL::jsonb as event_time
+                    FROM procedural_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL
+                      AND to_tsvector('english', name || ': ' || description) @@ plainto_tsquery('english', :query_text)
+                    ORDER BY ts_rank_cd(to_tsvector('english', name || ': ' || description), plainto_tsquery('english', :query_text)) DESC LIMIT :k_fetch
+                ),
+                all_memories AS (
+                    SELECT * FROM ep_vector
+                    UNION SELECT * FROM ep_text
+                    UNION SELECT * FROM sem_vector
+                    UNION SELECT * FROM sem_text
+                    UNION SELECT * FROM proc_vector
+                    UNION SELECT * FROM proc_text
+                )
+                SELECT id, content, importance, created_at, metadata, 
+                       freshness_score, memory_type, event_time,
                        1 - (embedding <=> :query_vec) AS similarity,
-                       EXP(
-                           -1.0 * EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600.0
-                           / :half_life
-                       ) AS recency_score,
+                       ts_rank_cd(to_tsvector('english', content), plainto_tsquery('english', :query_text)) AS bm25_score,
                        (
                            :w_sim * (1 - (embedding <=> :query_vec))
+                         + :w_bm25 * (
+                               CASE 
+                                   WHEN ts_rank_cd(to_tsvector('english', content), plainto_tsquery('english', :query_text)) > 0 
+                                   THEN LEAST(ts_rank_cd(to_tsvector('english', content), plainto_tsquery('english', :query_text)) * 5.0, 1.0)
+                                   ELSE 0 
+                               END
+                           )
                          + :w_recency * EXP(
-                               -1.0 * EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600.0
+                               -1.0 * EXTRACT(EPOCH FROM (NOW() - created_at)) / 3600.0 
                                / :half_life
                            )
                          + :w_importance * importance
                          + :w_freshness * freshness_score
+                         + {entity_boost_sql}
+                         + {temporal_boost_sql}
                        ) AS hybrid_score
-                FROM episodic_memories
-                WHERE agent_id = :agent_id
-                  AND deleted_at IS NULL
-                  AND (1 - (embedding <=> :query_vec)) >= :min_rel
-                  {session_filter}
+                FROM all_memories
+                WHERE (1 - (embedding <=> :query_vec)) >= :min_rel
                 ORDER BY hybrid_score DESC
-                LIMIT :k
+                LIMIT :k_fetch
             """
 
-            result = await session.execute(text(query), params)
-            rows = result.fetchall()
+            # Over-fetch 3x to allow deduplication headroom
+            params["k_fetch"] = request.k * 3
 
-        # Return structured results
-        results = []
-        for row in rows:
-            causal_ancestry: list[dict] = []
+            # Phase 3: Strict Deterministic Mode
+            if request.strict:
+                # Bypass probabilistic vector/BM25 search entirely
+                rows = []
+            else:
+                result = await session.execute(text(query), params)
+                rows = result.fetchall()
+            
+            # Deterministic Canonical Fact Store Injection
+            # Resolves "No canonical fact store" & "No structured entity state"
+            deterministic_facts = []
+            if qc.entities:
+                entities_str = [ent.lower() for ent in qc.entities]
+                # Fetch Entity State (O(1) JSONB Retrieval)
+                entity_query = text("""
+                    SELECT id, name, state, created_at, updated_at
+                    FROM entities
+                    WHERE agent_id = :agent_id
+                    AND LOWER(name) = ANY(:entities)
+                """)
+                entity_result = await session.execute(entity_query, {
+                    "agent_id": agent_id,
+                    "entities": entities_str
+                })
+                
+                class MockRow:
+                    def __init__(self, **kwargs):
+                        self.__dict__.update(kwargs)
+                        
+                for fact_row in entity_result.fetchall():
+                    # Format the JSONB state into a readable block for the LLM
+                    state_str = []
+                    for key, value in fact_row.state.items():
+                        state_str.append(f"  - {key.replace('_', ' ').title()}: {value}")
+                    
+                    formatted_state = f"[CANONICAL FACT] Entity: {fact_row.name}\n" + "\n".join(state_str)
+                    
+                    # Create a mock row that perfectly mirrors the Hybrid Search output
+                    deterministic_facts.append(MockRow(
+                        id=fact_row.id,
+                        content=formatted_state,
+                        importance=1.0,
+                        created_at=fact_row.updated_at,
+                        metadata={"source": "canonical_entity_state"},
+                        freshness_score=1.0,
+                        memory_type="semantic",
+                        event_time=None,
+                        similarity=1.0,
+                        bm25_score=1.0,
+                        hybrid_score=2.0 # Force to top
+                    ))
+            
+            # Inject deterministic facts before deduplication
+            rows = deterministic_facts + list(rows)
+
+            # Deduplicate near-identical memories before building results
+            rows = self._deduplicate_rows(rows, max_results=request.k)
+
+            # Return structured results
+            results = []
+            
+            # Prepare graph traversal tasks for concurrent execution
+            causal_tasks = []
             if request.include_causal_ancestry:
-                try:
-                    causal_ancestry_graph = await traverse_causal_chain(
-                        agent_id=agent_id, memory_id=row.id, max_depth=3, direction="causes"
+                from kyros.intelligence.causal import traverse_causal_chain
+                import asyncio
+                for row in rows:
+                    causal_tasks.append(
+                        traverse_causal_chain(
+                            agent_id=agent_id, memory_id=row.id, max_depth=2, direction="both"
+                        )
                     )
-                    if causal_ancestry_graph and causal_ancestry_graph.get("edges"):
-                        causal_ancestry = causal_ancestry_graph["edges"]
-                except Exception:
-                    pass  # causal traversal is best-effort; don't fail the recall
+            else:
+                for _ in rows:
+                    causal_tasks.append(asyncio.sleep(0)) # No-op dummy tasks
 
-            results.append(
-                MemoryResult(
-                    memory_id=row.id,
-                    content=row.content,
-                    memory_type=MemoryType.EPISODIC,
-                    relevance_score=round(float(row.hybrid_score), 4),
-                    importance=row.importance,
-                    created_at=row.created_at,
-                    metadata=row.metadata or {},
-                    # B09: Freshness fields in recall response
-                    freshness_score=round(float(row.freshness_score), 4),
-                    freshness_warning=row.freshness_score < freshness_warning_threshold,
-                    memory_category=row.memory_category,
-                    causal_ancestry=causal_ancestry,
+            # Wait for all graph traversals concurrently (they manage their own DB sessions)
+            causal_results = await asyncio.gather(*causal_tasks, return_exceptions=True)
+
+            for i, row in enumerate(rows):
+                causal_ancestry: list[dict] = []
+                
+                # Assign causal results from concurrent tasks
+                if request.include_causal_ancestry:
+                    graph_res = causal_results[i]
+                    if not isinstance(graph_res, Exception) and graph_res and graph_res.get("edges"):
+                        causal_ancestry = graph_res["edges"]
+
+                # Removed Session Timeline Retrieval to prevent context contamination and bloated chunks
+                context_window = []
+
+                results.append(
+                    MemoryResult(
+                        memory_id=row.id,
+                        content=row.content,
+                        memory_type=row.memory_type,
+                        relevance_score=round(float(row.hybrid_score), 4),
+                        importance=row.importance,
+                        created_at=row.created_at,
+                        metadata={
+                            **(row.metadata or {}),
+                            "session_context": context_window,
+                            "graph_links": causal_ancestry, # Inject Graph relationships
+                            "event_time": row.event_time, # Forward absolute temporal info
+                        },
+                        freshness_score=round(float(row.freshness_score), 4),
+                        freshness_warning=row.freshness_score < freshness_warning_threshold,
+                        memory_category=row.memory_type,
+                        causal_ancestry=causal_ancestry,
+                    )
                 )
-            )
+
+        # Apply Cross-Encoder Reranking
+        try:
+            from kyros.ml.reranker import get_reranker
+            reranker = get_reranker()
+            results = reranker.rerank(request.query, results, top_k=request.k)
+        except Exception as e:
+            logger.warning(f"Reranking skipped or failed: {e}")
+            results = results[:request.k]
+            
+        # Phase 7: Memory Compression
+        compressed_results = []
+        for res in results:
+            # 1. Drop highly irrelevant episodic noise that slipped through
+            if res.memory_category == "episodic" and res.importance < 0.2:
+                continue
+                
+            # 2. Strip conversational filler words from episodic chunks
+            if not res.content.startswith("[CANONICAL FACT]"):
+                res.content = res.content.replace("This is a memory of ", "")
+                res.content = res.content.replace("The user said: ", "")
+                
+            compressed_results.append(res)
+        results = compressed_results
 
         elapsed = (time.monotonic() - start) * 1000
+
+        logger.info(
+            "Recall completed",
+            agent_id=str(agent_id),
+            query=request.query[:50],
+            found_count=len(results),
+            latency_ms=round(elapsed, 2),
+        )
 
         return RecallResponse(
             agent_id=request.agent_id,
@@ -353,12 +628,12 @@ class MemoryService:
         # C08: Recalculate Merkle root asynchronously
         self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
 
-    async def store_fact(self, tenant_id: UUID | None, request: StoreFactRequest) -> FactResult:
+    async def store_fact(self, tenant_id: UUID | None, request: StoreFactRequest, override_id: UUID | None = None) -> FactResult:
         """Store a semantic fact with automatic contradiction detection."""
         tenant_id_required = self._require_tenant_id(tenant_id)
         fact_text = f"{request.subject} {request.predicate} {request.object}"
         embedding, embedding_secondary = self.embedder.embed_with_secondary(fact_text)
-        fact_id = uuid4()
+        fact_id = override_id or uuid4()
         now = datetime.now(UTC).replace(tzinfo=None)
         was_contradiction = False
         replaced_id = None
@@ -393,12 +668,12 @@ class MemoryService:
                 INSERT INTO semantic_memories
                     (id, agent_id, tenant_id, subject, predicate, object,
                      confidence, embedding, embedding_secondary, embedding_model,
-                     source_type, created_at, updated_at,
+                     source_type, created_at, updated_at, event_time,
                      content_hash, merkle_leaf, nonce)
                 VALUES
                     (:id, :agent_id, :tenant_id, :subject, :predicate, :object,
                      :confidence, :embedding, :embedding_secondary, :embedding_model,
-                     :source_type, :now, :now,
+                     :source_type, :now, :now, :event_time,
                      :content_hash, :merkle_leaf, :nonce)
                 """),
                 {
@@ -414,6 +689,7 @@ class MemoryService:
                     "embedding_model": self.embedder.model_name,
                     "source_type": request.source_type,
                     "now": now,
+                    "event_time": json.dumps(request.event_time) if request.event_time else None,
                     "content_hash": stamp.content_hash,
                     "merkle_leaf": stamp.merkle_leaf,
                     "nonce": stamp.nonce,
@@ -510,13 +786,13 @@ class MemoryService:
     # ─── E61: Procedural Memory — Store ────────
 
     async def store_procedure(
-        self, tenant_id: UUID | None, request: StoreProcedureRequest
+        self, tenant_id: UUID | None, request: StoreProcedureRequest, override_id: UUID | None = None
     ) -> StoreProcedureResponse:
         """Store a learned procedure (workflow, tool-call sequence)."""
         tenant_id_required = self._require_tenant_id(tenant_id)
         desc_text = f"{request.name}: {request.description}"
         embedding, embedding_secondary = self.embedder.embed_with_secondary(desc_text)
-        procedure_id = uuid4()
+        procedure_id = override_id or uuid4()
         now = datetime.now(UTC).replace(tzinfo=None)
         stamp = stamp_memory(desc_text, request.metadata, now.isoformat())
 
@@ -528,12 +804,12 @@ class MemoryService:
                 INSERT INTO procedural_memories
                     (id, agent_id, tenant_id, name, description, task_type,
                      steps, embedding, embedding_secondary, embedding_model,
-                     metadata, created_at, updated_at,
+                     metadata, created_at, updated_at, event_time,
                      content_hash, merkle_leaf, nonce)
                 VALUES
                     (:id, :agent_id, :tenant_id, :name, :description, :task_type,
                      :steps, :embedding, :embedding_secondary, :embedding_model,
-                     :metadata, :now, :now,
+                     :metadata, :now, :now, :event_time,
                      :content_hash, :merkle_leaf, :nonce)
                 """),
                 {
@@ -551,6 +827,7 @@ class MemoryService:
                     "embedding_model": self.embedder.model_name,
                     "metadata": json.dumps(request.metadata),
                     "now": now,
+                    "event_time": json.dumps(request.event_time) if request.event_time else None,
                     "content_hash": stamp.content_hash,
                     "merkle_leaf": stamp.merkle_leaf,
                     "nonce": stamp.nonce,
@@ -679,7 +956,7 @@ class MemoryService:
                 {"id": request.procedure_id},
             )
             row = result.fetchone()
-            
+
             if row is None:
                 raise ValueError(f"Procedure {request.procedure_id} not found")
 
@@ -704,7 +981,7 @@ class MemoryService:
         tenant_id_required = self._require_tenant_id(tenant_id)
         now = datetime.now(UTC).replace(
             tzinfo=None
-        )  # naive UTC for TIMESTAMP WITHOUT TIME ZONE columns
+        )  # naive timezone.utc for TIMESTAMP WITHOUT TIME ZONE columns
 
         async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, agent_external_id)
@@ -951,3 +1228,39 @@ class MemoryService:
         )
         await self.cache.set_agent_id(tenant_id, external_id, str(agent_id))
         return agent_id
+
+    def _deduplicate_rows(self, rows: list, max_results: int, threshold: float = 0.85) -> list:
+        """Remove near-identical memories based on fuzzy content similarity.
+        
+        This prevents the LLM context from being filled with multiple copies of the same event.
+        """
+        from difflib import SequenceMatcher
+        
+        if not rows:
+            return []
+            
+        deduplicated = []
+        seen_contents = []
+        
+        for row in rows:
+            content = str(row.content).strip().lower()
+            
+            # Simple heuristic: remove metadata prefixes like "[user]: " for comparison
+            if "]: " in content:
+                content = content.split("]: ", 1)[1]
+            
+            is_duplicate = False
+            for seen in seen_contents:
+                # SequenceMatcher is slower than set lookup but handles small variations
+                similarity = SequenceMatcher(None, content, seen).ratio()
+                if similarity > threshold:
+                    is_duplicate = True
+                    break
+            
+            if not is_duplicate:
+                deduplicated.append(row)
+                seen_contents.append(content)
+                if len(deduplicated) >= max_results:
+                    break
+                    
+        return deduplicated

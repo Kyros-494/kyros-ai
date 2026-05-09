@@ -20,7 +20,13 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
+
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 
 # ─── B04: Decay Rate Lookup Table ─────────────
 
@@ -237,7 +243,7 @@ def batch_freshness_update(
         created_at = mem.get("created_at")
         if isinstance(created_at, str):
             created_at = datetime.fromisoformat(created_at)
-        
+
         # Skip if created_at is None or invalid
         if not isinstance(created_at, datetime):
             continue
