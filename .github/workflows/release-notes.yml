@@ -1,55 +1,47 @@
-name: Generate Release Notes
+---
+name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g., v1.2.3)"
+        required: true
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
-  update-release-notes:
+  release-notes:
+    name: Generate Release Notes
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Generate release notes
-        id: notes
-        uses: release-drafter/release-drafter@v6
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v5
         with:
-          config-name: release-drafter.yml
+          configuration: ".github/release-drafter.yml"
+          commitMode: true
+          outputFile: CHANGELOG_RELEASE.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update CHANGELOG
-        run: |
-          # Extract version from tag
-          VERSION="${{ github.event.release.tag_name }}"
-          DATE=$(date +%Y-%m-%d)
-          
-          # Create changelog entry
-          cat > /tmp/changelog-entry.md << EOF
-          ## [$VERSION] - $DATE
-          
-          ${{ github.event.release.body }}
-          
-          EOF
-          
-          # Prepend to CHANGELOG.md
-          if [ -f CHANGELOG.md ]; then
-            cat /tmp/changelog-entry.md CHANGELOG.md > /tmp/new-changelog.md
-            mv /tmp/new-changelog.md CHANGELOG.md
-          else
-            mv /tmp/changelog-entry.md CHANGELOG.md
-          fi
-
-      - name: Commit changelog
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add CHANGELOG.md
-          git commit -m "docs: update CHANGELOG for ${{ github.event.release.tag_name }}" || exit 0
-          git push
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version || github.ref_name }}
+          name: "Kyros ${{ github.event.inputs.version || github.ref_name }}"
+          body_path: CHANGELOG_RELEASE.md
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

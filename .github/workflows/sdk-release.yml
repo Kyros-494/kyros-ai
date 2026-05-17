@@ -1,137 +1,88 @@
-# SDK Release Workflow
-# Triggers on git tags matching: sdk-v* (e.g., sdk-v0.1.0)
-# Publishes Python SDK to PyPI and TypeScript SDK to npm
-#
-# ── PyPI Setup (one-time) ──────────────────────────────────────────────────────
-# This workflow uses PyPI Trusted Publishers (OIDC) — no API token needed.
-# Before the first release, configure a Trusted Publisher on PyPI:
-#   1. Go to https://pypi.org/manage/account/publishing/
-#   2. Add a new publisher:
-#      - PyPI project name: kyros-sdk
-#      - Owner:             Kyros-494
-#      - Repository:        kyros-ai
-#      - Workflow filename: sdk-release.yml
-#      - Environment name:  (leave blank)
-#
-# ── npm Setup (one-time) ───────────────────────────────────────────────────────
-# Add NPM_TOKEN to GitHub repository secrets:
-#   Settings → Secrets → Actions → New repository secret
-#   Name: NPM_TOKEN  Value: <npm automation token>
-
-name: SDK Release
+---
+name: Publish SDKs
 
 on:
-  push:
-    tags:
-      - 'sdk-v*'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      sdk:
+        description: "SDK to publish"
+        required: true
+        type: choice
+        options:
+          - python
+          - typescript
+          - both
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
-  # ─── Python SDK → PyPI ────────────────────────
+  # ─── Python SDK → PyPI ─────────────────────────────────────────────
   publish-python:
+    name: Publish Python SDK
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write  # Required for PyPI Trusted Publisher (OIDC)
-    defaults:
-      run:
-        working-directory: sdks/python
+    if: >-
+      github.event_name == 'release' ||
+      github.event.inputs.sdk == 'python' ||
+      github.event.inputs.sdk == 'both'
+    environment:
+      name: pypi
+      url: https://pypi.org/project/kyros/
 
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install build tools
-        run: pip install hatch build twine
+        run: pip install build twine
 
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> $GITHUB_OUTPUT
-
-      - name: Bump version
-        # hatch reads/writes the version from kyros/__init__.py (configured in pyproject.toml)
-        run: hatch version "${{ steps.version.outputs.VERSION }}"
-
-      - name: Build sdist + wheel
+      - name: Build package
+        working-directory: sdks/python
         run: python -m build
 
-      - name: Verify package
+      - name: Check package
+        working-directory: sdks/python
         run: twine check dist/*
 
-      - name: Publish to PyPI (Trusted Publisher — no token needed)
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: sdks/python/dist/
 
-  # ─── TypeScript SDK → npm ─────────────────────
+  # ─── TypeScript SDK → npm ──────────────────────────────────────────
   publish-typescript:
+    name: Publish TypeScript SDK
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: sdks/typescript
+    if: >-
+      github.event_name == 'release' ||
+      github.event.inputs.sdk == 'typescript' ||
+      github.event.inputs.sdk == 'both'
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@kyros-ai/sdk
 
     steps:
-      - uses: actions/checkout@v6
-
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> $GITHUB_OUTPUT
-
-      - name: Bump version in package.json
-        run: npm version "${{ steps.version.outputs.VERSION }}" --no-git-tag-version
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
+        working-directory: sdks/typescript
         run: npm ci
 
       - name: Build
+        working-directory: sdks/typescript
         run: npm run build
 
-      - name: Run tests
-        run: npm test
-
       - name: Publish to npm
+        working-directory: sdks/typescript
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # ─── Create GitHub Release ────────────────────
-  github-release:
-    needs: [publish-python, publish-typescript]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Extract version
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/sdk-v}" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: "SDK v${{ steps.version.outputs.VERSION }}"
-          body: |
-            ## Kyros SDK v${{ steps.version.outputs.VERSION }}
-
-            ### Python
-            ```bash
-            pip install kyros-sdk==${{ steps.version.outputs.VERSION }}
-            ```
-
-            ### TypeScript / Node
-            ```bash
-            npm install @kyros/sdk@${{ steps.version.outputs.VERSION }}
-            ```
-
-            See [CHANGELOG](https://github.com/Kyros-494/kyros-ai/blob/main/sdks/python/CHANGELOG.md) for details.
-          draft: false
-          prerelease: ${{ contains(steps.version.outputs.VERSION, 'alpha') || contains(steps.version.outputs.VERSION, 'beta') || contains(steps.version.outputs.VERSION, 'rc') }}
