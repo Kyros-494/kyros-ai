@@ -24,7 +24,7 @@
     "ts-jest": "^29.1.0",
     "@types/jest": "^29.5.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
+    "@typescript-eslint/parser": "^8.59.2",
     "eslint": "^8.57.0"
   },
   "jest": {
