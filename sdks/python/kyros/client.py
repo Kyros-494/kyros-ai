@@ -107,6 +107,42 @@ class KyrosClient:
         """Close the HTTP client."""
         self._client.close()
 
+    def request(
+        self,
+        method: str,
+        path: str,
+        json: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> httpx.Response:
+        """Make a raw HTTP request and return the response.
+
+        This is a low-level escape hatch for tooling/debug helpers that need
+        status codes or response headers instead of parsed SDK models.
+        """
+        try:
+            return self._client.request(method, path, json=json, **kwargs)
+        except httpx.TimeoutException as e:
+            raise TimeoutError(
+                f"Request timed out after {self.timeout}s",
+                timeout=self.timeout,
+            ) from e
+        except httpx.ConnectError as e:
+            raise ConnectionError(
+                f"Failed to connect to {self.base_url}",
+                base_url=self.base_url,
+            ) from e
+        except httpx.HTTPError as e:
+            raise KyrosError(f"HTTP error: {e}") from e
+
+    def post(
+        self,
+        path: str,
+        json: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> httpx.Response:
+        """Make a raw POST request and return the HTTP response."""
+        return self.request("POST", path, json=json, **kwargs)
+
     def _request(
         self,
         method: str,

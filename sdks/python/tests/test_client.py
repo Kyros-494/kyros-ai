@@ -5,7 +5,7 @@ import pytest
 from kyros import AuthenticationError, KyrosClient
 
 
-def test_client_initialization_with_api_key():
+def test_client_initialization_with_api_key() -> None:
     """Test client initialization with API key."""
     client = KyrosClient(api_key="test-key")
     assert client.api_key == "test-key"
@@ -14,13 +14,13 @@ def test_client_initialization_with_api_key():
     client.close()
 
 
-def test_client_initialization_without_api_key():
+def test_client_initialization_without_api_key() -> None:
     """Test client initialization without API key raises error."""
     with pytest.raises(AuthenticationError):
         KyrosClient()
 
 
-def test_client_initialization_with_custom_base_url():
+def test_client_initialization_with_custom_base_url() -> None:
     """Test client initialization with custom base URL."""
     client = KyrosClient(
         api_key="test-key",
@@ -30,14 +30,14 @@ def test_client_initialization_with_custom_base_url():
     client.close()
 
 
-def test_client_initialization_with_custom_timeout():
+def test_client_initialization_with_custom_timeout() -> None:
     """Test client initialization with custom timeout."""
     client = KyrosClient(api_key="test-key", timeout=60.0)
     assert client.timeout == 60.0
     client.close()
 
 
-def test_client_context_manager():
+def test_client_context_manager() -> None:
     """Test client as context manager."""
     with KyrosClient(api_key="test-key") as client:
         assert client.api_key == "test-key"
@@ -45,7 +45,7 @@ def test_client_context_manager():
 
 
 @pytest.mark.integration
-def test_remember(client: KyrosClient, agent_id: str):
+def test_remember(client: KyrosClient, agent_id: str) -> None:
     """Test storing episodic memory."""
     response = client.remember(
         agent_id=agent_id,
@@ -58,7 +58,7 @@ def test_remember(client: KyrosClient, agent_id: str):
 
 
 @pytest.mark.integration
-def test_recall(client: KyrosClient, agent_id: str):
+def test_recall(client: KyrosClient, agent_id: str) -> None:
     """Test recalling memories."""
     # First store a memory
     client.remember(
@@ -77,7 +77,7 @@ def test_recall(client: KyrosClient, agent_id: str):
 
 
 @pytest.mark.integration
-def test_store_fact(client: KyrosClient, agent_id: str):
+def test_store_fact(client: KyrosClient, agent_id: str) -> None:
     """Test storing semantic fact."""
     fact = client.store_fact(
         agent_id=agent_id,
@@ -93,7 +93,7 @@ def test_store_fact(client: KyrosClient, agent_id: str):
 
 
 @pytest.mark.integration
-def test_store_procedure(client: KyrosClient, agent_id: str):
+def test_store_procedure(client: KyrosClient, agent_id: str) -> None:
     """Test storing procedure."""
     procedure = client.store_procedure(
         agent_id=agent_id,
@@ -110,7 +110,7 @@ def test_store_procedure(client: KyrosClient, agent_id: str):
 
 
 @pytest.mark.integration
-def test_search(client: KyrosClient, agent_id: str):
+def test_search(client: KyrosClient, agent_id: str) -> None:
     """Test unified search."""
     results = client.search(
         agent_id=agent_id,
