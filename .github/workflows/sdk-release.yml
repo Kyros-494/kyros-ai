@@ -33,7 +33,7 @@ jobs:
       url: https://pypi.org/project/kyros/
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -67,7 +67,7 @@ jobs:
       url: https://www.npmjs.com/package/@kyros-ai/sdk
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: "20"
