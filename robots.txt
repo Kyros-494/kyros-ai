@@ -1,0 +1,23 @@
+# Kyros Website - Robots.txt
+# https://kyros.ai/robots.txt
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin/internal pages (if any)
+# Disallow: /admin/
+# Disallow: /api/
+
+# Sitemap location
+Sitemap: https://kyros.ai/sitemap.xml
+
+# Crawl delay (optional, in seconds)
+# Crawl-delay: 1
+
+# Specific bot rules (optional)
+# User-agent: Googlebot
+# Allow: /
+
+# User-agent: Bingbot
+# Allow: /
