@@ -50,6 +50,7 @@ PUBLIC_PATHS = frozenset(
         "/docs",
         "/redoc",
         "/openapi.json",
+        "/v1/admin/tenants",
     }
 )
 
@@ -78,8 +79,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         path = request.url.path
 
-        # Skip auth for public endpoints and doc sub-paths
-        if path in PUBLIC_PATHS or path.startswith(("/docs/", "/redoc/")):
+        # Skip auth for public endpoints, docs, and the dashboard
+        if path in PUBLIC_PATHS or path.startswith(("/docs/", "/redoc/", "/dashboard")):
             return await call_next(request)
 
         # ── Extract key ──────────────────────────────────────────────────

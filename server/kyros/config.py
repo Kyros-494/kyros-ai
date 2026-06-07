@@ -9,7 +9,7 @@ from __future__ import annotations
 import sys
 from functools import lru_cache
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, field_validator, model_validator, AliasChoices
 from pydantic_settings import BaseSettings
 
 
@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     database_url: str = Field(..., description="PostgreSQL async DSN (asyncpg)")
     # Pool size: 10–100 per worker. Total connections = pool_size + max_overflow.
     # For production with 4 workers: pool_size=10, max_overflow=20 → max 120 connections.
-    db_pool_size: int = Field(default=10, ge=1, le=100)
-    db_max_overflow: int = Field(default=20, ge=0, le=50)
+    db_pool_size: int = Field(default=20, ge=1, le=100)
+    db_max_overflow: int = Field(default=30, ge=0, le=50)
 
     # ── Redis ────────────────────────────────────────────────────────────
     redis_url: str = Field(..., description="Redis connection URL")
@@ -40,9 +40,13 @@ class Settings(BaseSettings):
     jwt_expiry_minutes: int = Field(default=60, ge=1)
     # How long to cache auth lookups in Redis (seconds). Revoked keys take this long to propagate.
     auth_cache_ttl: int = Field(default=300, ge=0, le=3600)
+    # Default API key for auto-bootstrapping a tenant on startup (development/test only)
+    api_key: str = Field(default="", description="Default API key for auto-bootstrapping")
+    # Master admin token for tenant provisioning
+    admin_token: str = Field(default="", description="Master admin token for provisioning")
 
     # ── Embeddings ───────────────────────────────────────────────────────
-    embedding_model: str = Field(default="all-MiniLM-L6-v2")
+    embedding_model: str = Field(default="all-MiniLM-L12-v2")
     embedding_dimension: int = Field(default=384, ge=1)
     # Optional secondary embedding model for cross-model portability (F01/F02).
     # When set, every memory write also populates embedding_secondary.
@@ -60,10 +64,41 @@ class Settings(BaseSettings):
     compression_llm_api_key: str = Field(default="")
     compression_llm_model: str = Field(default="")
 
-    # ── LLM model names (configurable per-provider) ───────────────────────
-    openai_model: str = Field(default="gpt-4o")
-    anthropic_model: str = Field(default="claude-3-5-sonnet-20241022")
-    gemini_model: str = Field(default="gemini-1.5-flash")
+    # ── LLM Provider API Keys (optional) ──────────────────────────────
+    openai_api_key: str = Field(
+        default="", 
+        validation_alias=AliasChoices("KYROS_OPENAI_API_KEY", "OPENAI_API_KEY")
+    )
+    gemini_api_key: str = Field(
+        default="", 
+        validation_alias=AliasChoices("KYROS_GEMINI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY")
+    )
+    anthropic_api_key: str = Field(
+        default="", 
+        validation_alias=AliasChoices("KYROS_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY")
+    )
+    mistral_api_key: str = Field(
+        default="", 
+        validation_alias=AliasChoices("KYROS_MISTRAL_API_KEY", "MISTRAL_API_KEY")
+    )
+
+    # ── LLM model names (configurable per-provider) ────────────────────────
+    openai_model: str = Field(
+        default="gpt-4o-2024-08-06", 
+        validation_alias=AliasChoices("KYROS_OPENAI_MODEL", "OPENAI_MODEL")
+    )
+    anthropic_model: str = Field(
+        default="claude-3-5-sonnet-20241022", 
+        validation_alias=AliasChoices("KYROS_ANTHROPIC_MODEL", "ANTHROPIC_MODEL")
+    )
+    gemini_model: str = Field(
+        default="gemini-2.5-pro", 
+        validation_alias=AliasChoices("KYROS_GEMINI_MODEL", "GEMINI_MODEL")
+    )
+    mistral_model: str = Field(
+        default="mistral-large-2512", 
+        validation_alias=AliasChoices("KYROS_MISTRAL_MODEL", "MISTRAL_MODEL")
+    )
 
     # ── CORS (optional) ──────────────────────────────────────────────────
     # Comma-separated list of allowed origins. Use "*" to allow all (dev only).
@@ -75,7 +110,7 @@ class Settings(BaseSettings):
     model_config = {
         "env_file": ".env",
         "env_prefix": "KYROS_",
-        "extra": "ignore",  # silently ignore unknown env vars
+        "extra": "allow",  # allow extra fields like OPENAI_API_KEY if they don't have prefix
     }
 
     @field_validator("environment")

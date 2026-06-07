@@ -55,6 +55,24 @@ def on_test_start(environment: Any, **kwargs: Any) -> None:
     print(f"[Locust] Using API key: {_API_KEY[:20]}...")
 
 
+@events.request.add_listener
+def on_request(
+    request_type: str,
+    name: str,
+    response_time: float,
+    response_length: int,
+    response: Any,
+    context: Any,
+    exception: Exception | None,
+    **kwargs: Any
+) -> None:
+    status_code = getattr(response, "status_code", "n/a")
+    if exception:
+        print(f"[Locust] FAILURE {request_type} {name} status={status_code} time={response_time:.2f}ms error={exception}")
+    else:
+        print(f"[Locust] REQUEST {request_type} {name} status={status_code} time={response_time:.2f}ms length={response_length}")
+
+
 @events.test_stop.add_listener
 def on_test_stop(environment: Any, **kwargs: Any) -> None:
     stats = environment.stats.total

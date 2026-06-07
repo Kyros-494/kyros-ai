@@ -72,6 +72,13 @@ class MemoryCache:
             pipe.expire(key, self.SEMANTIC_TTL)
             await pipe.execute()
 
+    async def get_cached_semantic_fact(
+        self, agent_id: UUID, subject: str, predicate: str
+    ) -> str | None:
+        """Get a cached semantic fact if present."""
+        key = self.SEMANTIC_HOT.format(agent_id=agent_id)
+        return await self.redis.hget(key, f"{subject}:{predicate}")
+
     async def invalidate_agent(self, agent_id: UUID) -> None:
         """Invalidate all caches for an agent."""
         keys = [

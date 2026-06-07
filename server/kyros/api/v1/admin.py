@@ -5,7 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-from datetime import UTC, datetime, timedelta
+import uuid
+from datetime import datetime, timedelta
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
@@ -583,3 +589,112 @@ async def hard_delete_agent_memories(
         records=cert_data,
     )
     return certificate
+
+
+# ─── List Agents ──────────────────────────────
+
+
+@router.get("/agents")
+async def list_agents(request: Request) -> dict[str, Any]:
+    """List all agents for the current tenant."""
+    service = get_memory_service(request)
+    tenant_id = getattr(request.state, "tenant_id", None)
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Unauthenticated")
+
+    try:
+        async with get_db_session_for_tenant(str(tenant_id)) as session:
+            result = await session.execute(
+                text("""
+                SELECT external_id, display_name, metadata
+                FROM agents
+                WHERE tenant_id = :tid
+                ORDER BY display_name ASC
+                """),
+                {"tid": tenant_id},
+            )
+            rows = result.fetchall()
+    except SQLAlchemyError as e:
+        logger.error("DB error in list_agents", tenant_id=str(tenant_id), error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {
+        "agents": [
+            {
+                "agent_id": row.external_id,
+                "display_name": row.display_name or row.external_id,
+                "metadata": row.metadata or {},
+            }
+            for row in rows
+        ]
+    }
+
+
+# ─── Create Tenant ────────────────────────────
+
+
+class CreateTenantRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    email: str = Field(..., min_length=1, max_length=255)
+    plan: str = Field(default="pro")
+
+
+@router.post("/tenants")
+async def create_tenant(body: CreateTenantRequest, request: Request) -> dict[str, Any]:
+    """Create a new tenant and generate an API key.
+
+    Requires the master admin token or jwt_secret_key for authentication.
+    """
+    import os
+    import secrets
+    from kyros.config import get_settings
+    from kyros.storage.postgres import get_db_session
+
+    settings = get_settings()
+    admin_token = settings.admin_token or settings.jwt_secret_key
+    
+    auth_header = request.headers.get("Authorization", "")
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header.replace("Bearer ", "").strip()
+    else:
+        token = request.headers.get("X-Admin-Token", "").strip()
+
+    if not token or token != admin_token:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+
+    api_key = f"mk_live_{secrets.token_hex(16)}"
+    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    tenant_id = uuid.uuid4()
+
+    try:
+        async with get_db_session() as session:
+            await session.execute(
+                text("""
+                INSERT INTO tenants (
+                    id, name, email, api_key_hash, plan, is_active, created_at, updated_at
+                )
+                VALUES (
+                    :id, :name, :email, :key_hash, :plan, true, NOW(), NOW()
+                )
+                """),
+                {
+                    "id": tenant_id,
+                    "name": body.name,
+                    "email": body.email,
+                    "key_hash": key_hash,
+                    "plan": body.plan,
+                },
+            )
+    except SQLAlchemyError as e:
+        logger.error("DB error in create_tenant", error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {
+        "tenant_id": str(tenant_id),
+        "name": body.name,
+        "email": body.email,
+        "api_key": api_key,
+        "plan": body.plan,
+        "status": "created",
+    }

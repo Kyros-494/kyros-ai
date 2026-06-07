@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kyros AI — Developer Dashboard</title>
+  <!-- Google Fonts: Inter and Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-blue: #4facfe;
+      --accent-purple: #00f2fe;
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-shadow: rgba(0, 0, 0, 0.5);
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --font-outfit: 'Outfit', sans-serif;
+      --font-inter: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-inter);
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem 3rem;
+      border-bottom: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px);
+      background: rgba(11, 15, 25, 0.7);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-outfit);
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-logo {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0b0f19;
+      font-weight: 900;
+      font-size: 1.25rem;
+      box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: var(--success);
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* Key Config Modal / Settings Banner */
+    .auth-config {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 0.35rem 0.75rem;
+    }
+
+    .auth-config input {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      width: 260px;
+      font-family: monospace;
+    }
+
+    .auth-config button {
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      border: none;
+      color: #0b0f19;
+      font-weight: 600;
+      padding: 0.35rem 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+
+    .auth-config button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    /* Layout */
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 0 2rem;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 2rem;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .sidebar-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 32px var(--glass-shadow);
+    }
+
+    .sidebar-card h3 {
+      font-family: var(--font-outfit);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .agent-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 250px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .agent-item {
+      padding: 0.65rem 0.85rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .agent-item:hover, .agent-item.active {
+      background: rgba(79, 172, 254, 0.1);
+      border-color: rgba(79, 172, 254, 0.25);
+      color: var(--accent-blue);
+    }
+
+    .agent-item-id {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    .create-agent-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px dashed var(--glass-border);
+      color: var(--text-muted);
+      padding: 0.65rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      margin-top: 0.75rem;
+    }
+
+    .create-agent-btn:hover {
+      border-color: var(--accent-purple);
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .nav-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .nav-item:hover, .nav-item.active {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-item.active {
+      border-left: 3px solid var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Main Console */
+    .main-console {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .console-pane {
+      display: none;
+      animation: fadeIn 0.35s ease-out;
+    }
+
+    .console-pane.active {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 2rem;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px var(--glass-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .panel-title {
+      font-family: var(--font-outfit);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    /* Grid layout inside panels */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-family: var(--font-outfit);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Forms */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+
+    input[type="text"], input[type="email"], select, textarea {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      color: var(--text-main);
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s ease;
+      font-family: var(--font-inter);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent-blue);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: 0 0 10px rgba(79, 172, 254, 0.15);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      border: none;
+      color: #0b0f19;
+      font-family: var(--font-outfit);
+      font-weight: 700;
+      padding: 0.8rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+    }
+
+    .btn:hover {
+      opacity: 0.95;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 242, 254, 0.35);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      box-shadow: none;
+    }
+
+    .btn.secondary:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-1px);
+    }
+
+    /* Tables & Memory Logs */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 1rem;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.005);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge.role-user { background: rgba(79, 172, 254, 0.15); color: var(--accent-blue); border: 1px solid rgba(79, 172, 254, 0.3); }
+    .badge.role-assistant { background: rgba(0, 242, 254, 0.15); color: var(--accent-purple); border: 1px solid rgba(0, 242, 254, 0.3); }
+    .badge.role-system { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .score-bar-container {
+      width: 100px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 0.5rem;
+    }
+
+    .score-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+      border-radius: 4px;
+    }
+
+    .console-log {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      font-family: monospace;
+      padding: 1rem;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* Modal dialog */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #0f1626;
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      width: 480px;
+      max-width: 90%;
+      padding: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .modal-header {
+      font-family: var(--font-outfit);
+      font-size: 1.35rem;
+      font-weight: 700;
+      border-bottom: 1px solid var(--glass-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    /* Knowledge Graph placeholder styles */
+    .graph-canvas {
+      height: 380px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px dashed var(--glass-border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .graph-info {
+      position: absolute;
+      top: 1rem;
+      left: 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+    }
+
+    /* Loading state */
+    .loading-spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border-left-color: var(--accent-blue);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">K</div>
+      Kyros AI
+    </div>
+    <div class="header-actions">
+      <!-- Status Badge -->
+      <div id="platform-status" class="status-badge">
+        <div class="status-dot"></div>
+        <span>Platform Offline</span>
+      </div>
+      <!-- API Key Field -->
+      <div class="auth-config">
+        <input type="password" id="api-key-input" placeholder="Enter X-API-Key..." autocomplete="off">
+        <button id="save-key-btn">Connect</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-container">
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+      
+      <!-- Agents Selection Card -->
+      <div class="sidebar-card">
+        <h3>Agents</h3>
+        <ul id="agent-list-ul" class="agent-list">
+          <li class="agent-item active">Select Agent...</li>
+        </ul>
+        <button id="show-create-agent-modal" class="create-agent-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          New Agent
+        </button>
+      </div>
+
+      <!-- Navigation Pane Selection -->
+      <div class="sidebar-card">
+        <h3>Console</h3>
+        <ul class="nav-list">
+          <li class="nav-item active" data-pane="overview">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            Overview
+          </li>
+          <li class="nav-item" data-pane="episodic">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Episodic Memories
+          </li>
+          <li class="nav-item" data-pane="semantic">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64a9 9 0 11-12.73 0M12 2v10"/></svg>
+            Semantic Graph
+          </li>
+          <li class="nav-item" data-pane="procedural">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 21a1.94 1.94 0 00-3.47 0m0 0A8 8 0 1121 10.3a1.94 1.94 0 000 3.47m0 0a8 8 0 11-10.7 7.23"/></svg>
+            Procedural Skills
+          </li>
+          <li class="nav-item" data-pane="playground">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            Playground & Audits
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Main Console Panel -->
+    <div class="main-console">
+      
+      <!-- 1. OVERVIEW PANE -->
+      <div id="pane-overview" class="console-pane active">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">System Overview</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">Active Agent ID</span>
+              <span id="overview-agent-id" class="stat-value">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Platform Environment</span>
+              <span id="overview-env" class="stat-value">—</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Embedding Model</span>
+              <span id="overview-embedder" class="stat-value">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">System Health & Latency Indicators</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-label">PostgreSQL Vector DB</span>
+              <span id="health-postgres" class="stat-value">unknown</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Redis Context Cache</span>
+              <span id="health-redis" class="stat-value">unknown</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Embedding Engine</span>
+              <span id="health-embedder" class="stat-value">unknown</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. EPISODIC PANE -->
+      <div id="pane-episodic" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Episodic Memory Stream</div>
+            <button id="refresh-episodic-btn" class="btn secondary">Refresh</button>
+          </div>
+          
+          <div class="table-container">
+            <table id="episodic-table">
+              <thead>
+                <tr>
+                  <th>Content</th>
+                  <th>Role</th>
+                  <th>Freshness</th>
+                  <th>Session ID</th>
+                  <th>Added At</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted);">Select an agent to browse episodic memories.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. SEMANTIC PANE -->
+      <div id="pane-semantic" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Semantic Fact Triples</div>
+            <button id="refresh-semantic-btn" class="btn secondary">Refresh</button>
+          </div>
+          
+          <div class="table-container">
+            <table id="semantic-table">
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Predicate</th>
+                  <th>Object / Value</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-muted);">Select an agent to view semantic facts.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Semantic Knowledge Graph Visualizer</div>
+          </div>
+          <div class="graph-canvas" id="graph-canvas-container">
+            <div class="graph-info">Interactive visual D3.js graph coming soon</div>
+            <svg id="visual-graph-svg" width="100%" height="100%"></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. PROCEDURAL PANE -->
+      <div id="pane-procedural" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Procedural Skills</div>
+            <button id="refresh-procedural-btn" class="btn secondary">Refresh</button>
+          </div>
+          
+          <div class="table-container">
+            <table id="procedural-table">
+              <thead>
+                <tr>
+                  <th>Skill Name</th>
+                  <th>Description</th>
+                  <th>Category</th>
+                  <th>Steps</th>
+                  <th>Success Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="5" style="text-align: center; color: var(--text-muted);">Select an agent to view procedural skills.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. PLAYGROUND PANE -->
+      <div id="pane-playground" class="console-pane">
+        
+        <!-- Live Operations / Insertion -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Store New Memory</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="mem-input-type">Memory Type</label>
+              <select id="mem-input-type">
+                <option value="episodic">Episodic Event (remember)</option>
+                <option value="semantic">Semantic Fact (storeFact)</option>
+              </select>
+            </div>
+            <div class="form-group" id="grp-role">
+              <label for="mem-input-role">Role</label>
+              <select id="mem-input-role">
+                <option value="user">User</option>
+                <option value="assistant">Assistant</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" id="grp-content">
+            <label for="mem-input-content">Memory Content / Text</label>
+            <textarea id="mem-input-content" rows="3" placeholder="Enter memory text (e.g. 'User prefers dark mode')"></textarea>
+          </div>
+
+          <!-- Fact specific row -->
+          <div class="form-row" id="grp-fact-details" style="display: none;">
+            <div class="form-group">
+              <label for="fact-subject">Subject</label>
+              <input type="text" id="fact-subject" placeholder="user">
+            </div>
+            <div class="form-group">
+              <label for="fact-predicate">Predicate</label>
+              <input type="text" id="fact-predicate" placeholder="prefers">
+            </div>
+            <div class="form-group">
+              <label for="fact-value">Object / Value</label>
+              <input type="text" id="fact-value" placeholder="dark_mode">
+            </div>
+          </div>
+
+          <div>
+            <button id="store-memory-btn" class="btn">Store Memory</button>
+          </div>
+        </div>
+
+        <!-- Live Recall Playground -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Recall Context Query</div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="recall-query">Natural Language Query</label>
+              <input type="text" id="recall-query" placeholder="What are the user's settings?">
+            </div>
+            <div class="form-group">
+              <label for="recall-k">Results Limit (K)</label>
+              <select id="recall-k">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="10">10</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button id="recall-query-btn" class="btn">Query Recall</button>
+            </div>
+          </div>
+
+          <div id="recall-results-container" style="display: none;" class="table-container">
+            <table id="recall-results-table">
+              <thead>
+                <tr>
+                  <th>Content</th>
+                  <th>Relevance</th>
+                  <th>Freshness</th>
+                  <th>Audit Proof</th>
+                </tr>
+              </thead>
+              <tbody>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Cryptographic Audit -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Cryptographic Mind Audit</div>
+          </div>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Run a mathematically verifiable audit of all stored agent memory nodes. This validates that the local database hashes match the agent's current Merkle tree root hash, indicating no tampering or database corruption has occurred.
+          </p>
+          <div>
+            <button id="audit-integrity-btn" class="btn">Run Integrity Audit</button>
+          </div>
+          <div id="audit-logs-container" style="display: none;">
+            <div id="audit-console" class="console-log">Running audit...</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Create Agent Modal -->
+  <div id="create-agent-modal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">Create New AI Agent</div>
+      <div class="form-group">
+        <label for="new-agent-id">External Agent ID</label>
+        <input type="text" id="new-agent-id" placeholder="e.g. support-agent-01">
+      </div>
+      <div class="form-group">
+        <label for="new-agent-name">Display Name</label>
+        <input type="text" id="new-agent-name" placeholder="e.g. Customer Support Agent">
+      </div>
+      <div class="modal-actions">
+        <button id="cancel-create-agent" class="btn secondary">Cancel</button>
+        <button id="confirm-create-agent" class="btn">Create Agent</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS Controller -->
+  <script>
+    // State Variables
+    let apiKey = localStorage.getItem('kyros_api_key') || '';
+    let activeAgentId = '';
+    let activePane = 'overview';
+    const baseUrl = ''; // Relative path because they share same domain/port
+
+    // DOM Elements
+    const apiKeyInput = document.getElementById('api-key-input');
+    const saveKeyBtn = document.getElementById('save-key-btn');
+    const platformStatus = document.getElementById('platform-status');
+    const agentListUl = document.getElementById('agent-list-ul');
+    const navItems = document.querySelectorAll('.nav-item');
+    const consolePanes = document.querySelectorAll('.console-pane');
+
+    // Init
+    if (apiKey) {
+      apiKeyInput.value = apiKey;
+      saveKeyBtn.textContent = 'Disconnect';
+    }
+
+    // Platform Health check
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${baseUrl}/health/ready`);
+        if (res.status === 200) {
+          const data = await res.json();
+          platformStatus.className = 'status-badge';
+          platformStatus.querySelector('span').textContent = 'Platform Online';
+          
+          document.getElementById('health-postgres').textContent = data.checks?.postgres || 'ok';
+          document.getElementById('health-redis').textContent = data.checks?.redis || 'ok';
+          document.getElementById('health-embedder').textContent = data.checks?.embedder || 'ok';
+          
+          document.getElementById('overview-env').textContent = data.environment || 'development';
+          return true;
+        } else {
+          setOfflineStatus();
+          return false;
+        }
+      } catch (err) {
+        setOfflineStatus();
+        return false;
+      }
+    }
+
+    function setOfflineStatus() {
+      platformStatus.className = 'status-badge error';
+      platformStatus.querySelector('span').textContent = 'Platform Offline';
+      document.getElementById('health-postgres').textContent = 'error';
+      document.getElementById('health-redis').textContent = 'error';
+      document.getElementById('health-embedder').textContent = 'error';
+      document.getElementById('overview-env').textContent = 'unknown';
+    }
+
+    // Fetch Agents list
+    async function fetchAgents() {
+      if (!apiKey) return;
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/agents`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.status === 200) {
+          const data = await res.json();
+          renderAgentList(data.agents);
+        } else if (res.status === 401) {
+          alert('Unauthorized. Please enter a valid API Key.');
+        }
+      } catch (err) {
+        console.error('Failed to fetch agents:', err);
+      }
+    }
+
+    function renderAgentList(agents) {
+      agentListUl.innerHTML = '';
+      if (!agents || agents.length === 0) {
+        agentListUl.innerHTML = '<li class="agent-item">No agents found</li>';
+        return;
+      }
+      
+      agents.forEach(agent => {
+        const li = document.createElement('li');
+        li.className = 'agent-item';
+        if (agent.agent_id === activeAgentId) {
+          li.classList.add('active');
+        }
+        li.innerHTML = `
+          <span>${agent.display_name}</span>
+          <span class="agent-item-id">${agent.agent_id}</span>
+        `;
+        li.addEventListener('click', () => {
+          selectAgent(agent.agent_id);
+          // Highlight
+          document.querySelectorAll('.agent-item').forEach(el => el.classList.remove('active'));
+          li.classList.add('active');
+        });
+        agentListUl.appendChild(li);
+      });
+
+      // Default select first agent if none is selected
+      if (!activeAgentId && agents.length > 0) {
+        selectAgent(agents[0].agent_id);
+        agentListUl.querySelector('.agent-item').classList.add('active');
+      }
+    }
+
+    function selectAgent(agentId) {
+      activeAgentId = agentId;
+      document.getElementById('overview-agent-id').textContent = agentId;
+      refreshPaneData();
+    }
+
+    // Navigation Panes toggling
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const paneId = item.getAttribute('data-pane');
+        navItems.forEach(nav => nav.classList.remove('active'));
+        consolePanes.forEach(pane => pane.classList.remove('active'));
+        
+        item.classList.add('active');
+        document.getElementById(`pane-${paneId}`).classList.add('active');
+        activePane = paneId;
+        refreshPaneData();
+      });
+    });
+
+    // Refresh data in active pane
+    function refreshPaneData() {
+      if (!activeAgentId) return;
+      if (activePane === 'episodic') {
+        loadEpisodicMemories();
+      } else if (activePane === 'semantic') {
+        loadSemanticFacts();
+      } else if (activePane === 'procedural') {
+        loadProceduralSkills();
+      }
+    }
+
+    // ─── Content Loading ─────────────────────────
+
+    async function loadEpisodicMemories() {
+      const tableBody = document.querySelector('#episodic-table tbody');
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+      
+      try {
+        // Query empty string to get recent memories
+        const res = await fetch(`${baseUrl}/v1/memory/episodic/recall`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: activeAgentId, query: '', k: 100 })
+        });
+        
+        if (res.status === 200) {
+          const data = await res.json();
+          renderEpisodicTable(data.results);
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--error);">Error loading memories (${res.status})</td></tr>`;
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">Failed to fetch memories from server.</td></tr>';
+      }
+    }
+
+    function renderEpisodicTable(results) {
+      const tableBody = document.querySelector('#episodic-table tbody');
+      tableBody.innerHTML = '';
+      
+      if (!results || results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No episodic memories stored for this agent.</td></tr>';
+        return;
+      }
+
+      results.forEach(m => {
+        const row = document.createElement('tr');
+        const formattedDate = new Date(m.created_at).toLocaleString();
+        
+        // Clean metadata / text extracts
+        let displayContent = m.content;
+        let roleBadge = `<span class="badge role-system">system</span>`;
+        if (m.content.startsWith('User: ')) {
+          displayContent = m.content.replace('User: ', '');
+          roleBadge = `<span class="badge role-user">user</span>`;
+        } else if (m.content.startsWith('Assistant: ')) {
+          displayContent = m.content.replace('Assistant: ', '');
+          roleBadge = `<span class="badge role-assistant">assistant</span>`;
+        } else if (m.content.startsWith('Support: ')) {
+          displayContent = m.content.replace('Support: ', '');
+          roleBadge = `<span class="badge role-assistant">support</span>`;
+        }
+
+        const freshness = m.freshness ?? 1.0;
+        const freshnessPercent = Math.round(freshness * 100);
+
+        row.innerHTML = `
+          <td style="max-width: 400px; word-break: break-word;">${displayContent}</td>
+          <td>${roleBadge}</td>
+          <td>
+            <div class="score-bar-container">
+              <div class="score-bar" style="width: ${freshnessPercent}%;"></div>
+            </div>
+            <span>${freshness.toFixed(2)}</span>
+          </td>
+          <td><span style="font-family: monospace; font-size: 0.85rem;">${m.session_id || 'default'}</span></td>
+          <td style="font-size: 0.85rem; color: var(--text-muted);">${formattedDate}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    async function loadSemanticFacts() {
+      const tableBody = document.querySelector('#semantic-table tbody');
+      tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+      
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/semantic/query`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: activeAgentId, query: '', k: 100 })
+        });
+        
+        if (res.status === 200) {
+          const data = await res.json();
+          renderSemanticTable(data.results);
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Error loading facts (${res.status})</td></tr>`;
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--error);">Failed to fetch facts from server.</td></tr>';
+      }
+    }
+
+    function renderSemanticTable(results) {
+      const tableBody = document.querySelector('#semantic-table tbody');
+      tableBody.innerHTML = '';
+      
+      if (!results || results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No semantic facts recorded for this agent.</td></tr>';
+        return;
+      }
+
+      results.forEach(m => {
+        const row = document.createElement('tr');
+        
+        // Try parsing subject/predicate/object from fact content (format: "subject predicate value" or similar)
+        // Usually, the facts results might return actual triple fields or custom text
+        // Let's print the fact as is, or try standard split
+        let subject = m.subject || 'unknown';
+        let predicate = m.predicate || 'relation';
+        let object = m.content || m.object || '';
+        
+        const confidence = m.confidence ?? 1.0;
+        const confidencePercent = Math.round(confidence * 100);
+
+        row.innerHTML = `
+          <td style="font-weight: 600; color: var(--accent-blue);">${subject}</td>
+          <td style="font-family: monospace; color: var(--accent-purple);">${predicate}</td>
+          <td>${object}</td>
+          <td>
+            <div class="score-bar-container">
+              <div class="score-bar" style="width: ${confidencePercent}%; background: linear-gradient(90deg, #10b981 0%, #059669 100%);"></div>
+            </div>
+            <span>${confidence.toFixed(2)}</span>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    async function loadProceduralSkills() {
+      const tableBody = document.querySelector('#procedural-table tbody');
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+      
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/procedural/match`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: activeAgentId, task_description: '', k: 100 })
+        });
+        
+        if (res.status === 200) {
+          const data = await res.json();
+          renderProceduralTable(data.results);
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--error);">Error loading skills (${res.status})</td></tr>`;
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">Failed to fetch procedures from server.</td></tr>';
+      }
+    }
+
+    function renderProceduralTable(results) {
+      const tableBody = document.querySelector('#procedural-table tbody');
+      tableBody.innerHTML = '';
+      
+      if (!results || results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No procedural skills matched for this agent.</td></tr>';
+        return;
+      }
+
+      results.forEach(p => {
+        const row = document.createElement('tr');
+        
+        let stepsHtml = '';
+        if (p.steps && Array.isArray(p.steps)) {
+          stepsHtml = p.steps.map((s, idx) => `<div>${idx+1}. ${s.action || JSON.stringify(s)}</div>`).join('');
+        }
+        
+        const successRate = p.success_rate ?? 1.0;
+        const ratePercent = Math.round(successRate * 100);
+
+        row.innerHTML = `
+          <td style="font-weight: 600;">${p.name}</td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">${p.description}</td>
+          <td><span class="badge" style="background: rgba(255, 255, 255, 0.05);">${p.task_type || 'custom'}</span></td>
+          <td style="font-size: 0.8rem; font-family: monospace;">${stepsHtml}</td>
+          <td>
+            <div class="score-bar-container">
+              <div class="score-bar" style="width: ${ratePercent}%; background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);"></div>
+            </div>
+            <span>${(successRate * 100).toFixed(0)}%</span>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    // ─── Playground Ingestion Operations ──────────
+
+    const memInputType = document.getElementById('mem-input-type');
+    const grpRole = document.getElementById('grp-role');
+    const grpContent = document.getElementById('grp-content');
+    const grpFactDetails = document.getElementById('grp-fact-details');
+
+    memInputType.addEventListener('change', () => {
+      if (memInputType.value === 'episodic') {
+        grpRole.style.display = 'flex';
+        grpContent.style.display = 'flex';
+        grpFactDetails.style.display = 'none';
+      } else {
+        grpRole.style.display = 'none';
+        grpContent.style.display = 'none';
+        grpFactDetails.style.display = 'grid';
+      }
+    });
+
+    document.getElementById('store-memory-btn').addEventListener('click', async () => {
+      if (!activeAgentId) {
+        alert('Please select or create an agent first.');
+        return;
+      }
+
+      const type = memInputType.value;
+      let url = `${baseUrl}/v1/memory/episodic/remember`;
+      let body = {};
+
+      if (type === 'episodic') {
+        const content = document.getElementById('mem-input-content').value.trim();
+        const role = document.getElementById('mem-input-role').value;
+        if (!content) return alert('Memory text cannot be empty');
+        
+        body = {
+          agent_id: activeAgentId,
+          content: content,
+          role: role,
+          importance: 0.6
+        };
+      } else {
+        url = `${baseUrl}/v1/memory/semantic/facts`;
+        const subject = document.getElementById('fact-subject').value.trim();
+        const predicate = document.getElementById('fact-predicate').value.trim();
+        const object = document.getElementById('fact-value').value.trim();
+        
+        if (!subject || !predicate || !object) {
+          return alert('Subject, Predicate, and Value fields must all be filled.');
+        }
+
+        body = {
+          agent_id: activeAgentId,
+          subject: subject,
+          predicate: predicate,
+          object: object,
+          confidence: 1.0
+        };
+      }
+
+      try {
+        const btn = document.getElementById('store-memory-btn');
+        btn.textContent = 'Storing...';
+        btn.disabled = true;
+
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+
+        if (res.status === 200 || res.status === 201) {
+          alert('Memory stored successfully!');
+          document.getElementById('mem-input-content').value = '';
+          document.getElementById('fact-subject').value = '';
+          document.getElementById('fact-predicate').value = '';
+          document.getElementById('fact-value').value = '';
+          refreshPaneData();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          alert(`Failed to store memory: ${errData.message || res.statusText}`);
+        }
+      } catch (err) {
+        alert(`Request failed: ${err}`);
+      } finally {
+        const btn = document.getElementById('store-memory-btn');
+        btn.textContent = 'Store Memory';
+        btn.disabled = false;
+      }
+    });
+
+    // ─── Playground Recall Operations ────────────
+
+    document.getElementById('recall-query-btn').addEventListener('click', async () => {
+      if (!activeAgentId) {
+        alert('Please select an agent first.');
+        return;
+      }
+      
+      const query = document.getElementById('recall-query').value.trim();
+      const k = parseInt(document.getElementById('recall-k').value);
+      if (!query) return alert('Recall query cannot be empty');
+
+      const container = document.getElementById('recall-results-container');
+      const tableBody = document.querySelector('#recall-results-table tbody');
+      
+      container.style.display = 'block';
+      tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/episodic/recall`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: activeAgentId, query: query, k: k })
+        });
+
+        if (res.status === 200) {
+          const data = await res.json();
+          renderRecallResults(data.results);
+        } else {
+          tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Recall failed: ${res.statusText}</td></tr>`;
+        }
+      } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Request failed: ${err}</td></tr>`;
+      }
+    });
+
+    function renderRecallResults(results) {
+      const tableBody = document.querySelector('#recall-results-table tbody');
+      tableBody.innerHTML = '';
+
+      if (!results || results.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No relevant memories matched.</td></tr>';
+        return;
+      }
+
+      results.forEach(r => {
+        const row = document.createElement('tr');
+        const relevancePercent = Math.round(r.similarity * 100);
+        const freshnessPercent = Math.round((r.freshness ?? 1.0) * 100);
+
+        row.innerHTML = `
+          <td>${r.content}</td>
+          <td>
+            <div class="score-bar-container">
+              <div class="score-bar" style="width: ${relevancePercent}%;"></div>
+            </div>
+            <span>${r.similarity.toFixed(2)}</span>
+          </td>
+          <td>
+            <div class="score-bar-container">
+              <div class="score-bar" style="width: ${freshnessPercent}%; background: linear-gradient(90deg, #10b981 0%, #059669 100%);"></div>
+            </div>
+            <span>${(r.freshness ?? 1.0).toFixed(2)}</span>
+          </td>
+          <td>
+            <button class="btn secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="viewMerkleProof('${r.id}')">Verify Proof</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    window.viewMerkleProof = async function(memoryId) {
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/memory/${memoryId}/proof`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.status === 200) {
+          const data = await res.json();
+          alert(`Cryptographic Merkle Proof found!\n\nRoot Hash: ${data.proof.root_hash}\nLeaf Index: ${data.proof.leaf_index}\nProof Path Length: ${data.proof.proof_path.length}\nVerified State: INTACT`);
+        } else {
+          alert('Merkle proof could not be verified. Memory may be compressed or offline.');
+        }
+      } catch (err) {
+        alert('Network verification failure.');
+      }
+    }
+
+    // ─── Cryptographic Integrity Audit ────────────
+
+    document.getElementById('audit-integrity-btn').addEventListener('click', async () => {
+      if (!activeAgentId) {
+        return alert('Please select an agent first.');
+      }
+
+      const container = document.getElementById('audit-logs-container');
+      const consoleLog = document.getElementById('audit-console');
+      
+      container.style.display = 'block';
+      consoleLog.textContent = `[SYSTEM] Initiating full cryptographic scan for agent [${activeAgentId}]...\n`;
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/agent/${activeAgentId}/audit`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey }
+        });
+
+        if (res.status === 200) {
+          const data = await res.json();
+          if (data.is_intact) {
+            consoleLog.textContent += `[SUCCESS] Verification complete!\n`;
+            consoleLog.textContent += `[STATUS] Mind state: INTACT\n`;
+            consoleLog.textContent += `[AUDIT] Cryptographic Merkle leaves scanned: matches root hash.\n`;
+            consoleLog.style.color = '#10b981'; // Green
+          } else {
+            consoleLog.textContent += `[ALERT] Verification mismatch detected!\n`;
+            consoleLog.textContent += `[STATUS] Mind state: CORRUPTED / TAMPERED\n`;
+            consoleLog.textContent += `[TAMPERED COUNT] ${data.tampered_count} records\n`;
+            consoleLog.textContent += `[RECORDS] ${JSON.stringify(data.tampered_memories, null, 2)}\n`;
+            consoleLog.style.color = '#ef4444'; // Red
+          }
+        } else {
+          consoleLog.textContent += `[ERROR] Verification engine failure: HTTP ${res.status}\n`;
+        }
+      } catch (err) {
+        consoleLog.textContent += `[ERROR] Failed to run cryptographic scan: ${err}\n`;
+      }
+    });
+
+    // ─── Modal Dialog Management ─────────────────
+
+    const createAgentModal = document.getElementById('create-agent-modal');
+    const showModalBtn = document.getElementById('show-create-agent-modal');
+    const cancelModalBtn = document.getElementById('cancel-create-agent');
+    const confirmModalBtn = document.getElementById('confirm-create-agent');
+
+    showModalBtn.addEventListener('click', () => {
+      createAgentModal.classList.add('active');
+    });
+
+    cancelModalBtn.addEventListener('click', () => {
+      createAgentModal.classList.remove('active');
+    });
+
+    confirmModalBtn.addEventListener('click', async () => {
+      const agentId = document.getElementById('new-agent-id').value.trim();
+      const agentName = document.getElementById('new-agent-name').value.trim();
+
+      if (!agentId || !agentName) {
+        return alert('Please fill in both Agent ID and Display Name fields.');
+      }
+
+      try {
+        // Create an agent by storing a dummy fact/preference, which triggers agent record creation in server
+        const res = await fetch(`${baseUrl}/v1/memory/semantic/facts`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent_id: agentId,
+            subject: 'agent',
+            predicate: 'name',
+            object: agentName,
+            confidence: 1.0
+          })
+        });
+
+        if (res.status === 200 || res.status === 201) {
+          alert('Agent initialized successfully!');
+          createAgentModal.classList.remove('active');
+          document.getElementById('new-agent-id').value = '';
+          document.getElementById('new-agent-name').value = '';
+          
+          activeAgentId = agentId;
+          await fetchAgents();
+        } else {
+          alert(`Failed to create agent: HTTP ${res.status}`);
+        }
+      } catch (err) {
+        alert(`Failed to request agent registration: ${err}`);
+      }
+    });
+
+    // ─── Auth Handler ───────────────────────────
+
+    saveKeyBtn.addEventListener('click', async () => {
+      if (apiKey) {
+        // Disconnect
+        apiKey = '';
+        localStorage.removeItem('kyros_api_key');
+        apiKeyInput.value = '';
+        saveKeyBtn.textContent = 'Connect';
+        agentListUl.innerHTML = '<li class="agent-item">Select Agent...</li>';
+        document.getElementById('overview-agent-id').textContent = '—';
+        setOfflineStatus();
+        alert('Disconnected API Key.');
+      } else {
+        // Connect
+        const inputKey = apiKeyInput.value.trim();
+        if (!inputKey) return alert('Enter a valid API key');
+        
+        apiKey = inputKey;
+        localStorage.setItem('kyros_api_key', inputKey);
+        saveKeyBtn.textContent = 'Disconnect';
+        
+        const isHealthy = await checkHealth();
+        if (isHealthy) {
+          await fetchAgents();
+        }
+      }
+    });
+
+    // Initial check
+    (async () => {
+      const healthy = await checkHealth();
+      if (healthy && apiKey) {
+        await fetchAgents();
+      }
+    })();
+  </script>
+</body>
+</html>

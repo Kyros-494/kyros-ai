@@ -19,7 +19,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = dim
+            mock_model.get_embedding_dimension.return_value = dim
             mock_model.encode.return_value = np.random.randn(dim).astype(np.float32)
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
@@ -45,7 +45,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_model.get_embedding_dimension.return_value = 384
             mock_st.return_value = mock_model
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="empty"):
@@ -56,7 +56,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_model.get_embedding_dimension.return_value = 384
             mock_st.return_value = mock_model
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="empty"):
@@ -67,7 +67,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_model.get_embedding_dimension.return_value = 384
             mock_model.encode.return_value = np.random.randn(3, 384).astype(np.float32)
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
@@ -82,7 +82,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_model.get_embedding_dimension.return_value = 384
             mock_st.return_value = mock_model
             embedder = EmbeddingModel("test-model")
             with pytest.raises(EmbeddingError, match="empty batch"):
@@ -94,7 +94,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_model.get_embedding_dimension.return_value = 384
             mock_model.encode.return_value = np.random.randn(3, 384).astype(np.float32)
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
@@ -127,7 +127,7 @@ class TestEmbeddingModel:
 
         with patch("kyros.ml.embedder.SentenceTransformer") as mock_st:
             mock_model = MagicMock()
-            mock_model.get_sentence_embedding_dimension.return_value = 384
+            mock_model.get_embedding_dimension.return_value = 384
             mock_model.encode.side_effect = RuntimeError("CUDA out of memory")
             mock_st.return_value = mock_model
             from kyros.ml.embedder import EmbeddingModel
@@ -145,14 +145,16 @@ class TestMemoryCache:
     def mock_redis(self) -> Generator[Any, None, None]:
         """Mock Redis client with a synchronous pipeline (matches redis.asyncio behavior)."""
         redis = AsyncMock()
-        pipe = MagicMock()  # pipeline() is sync in redis.asyncio
+        pipe = AsyncMock()
+        pipe.__aenter__ = AsyncMock(return_value=pipe)
+        pipe.__aexit__ = AsyncMock(return_value=None)
         pipe.zadd = MagicMock()
         pipe.zremrangebyrank = MagicMock()
         pipe.expire = MagicMock()
         pipe.hset = MagicMock()
         pipe.incr = MagicMock()
         pipe.execute = AsyncMock(return_value=[1, True])
-        redis.pipeline.return_value = pipe
+        redis.pipeline = MagicMock(return_value=pipe)
         redis.zrevrange = AsyncMock(return_value=[])
         redis.delete = AsyncMock()
         return redis

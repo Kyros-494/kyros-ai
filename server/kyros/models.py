@@ -78,6 +78,9 @@ class Agent(Base):
     procedural_memories = relationship(
         "ProceduralMemory", back_populates="agent", cascade="all, delete-orphan"
     )
+    entities = relationship(
+        "Entity", back_populates="agent", cascade="all, delete-orphan"
+    )
 
 
 # ─── E16: Episodic Memories ───────────────────
@@ -103,7 +106,7 @@ class EpisodicMemory(Base):
 
     # F01, F02: Dual Embeddings for Portability
     embedding_secondary = Column(Vector(1536), nullable=True)
-    embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L6-v2")
+    embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L12-v2")
 
     metadata_ = Column("metadata", JSONB, nullable=False, default=dict)
     importance = Column(Float, nullable=False, default=0.5)
@@ -118,6 +121,7 @@ class EpisodicMemory(Base):
     merkle_leaf = Column(String(64), nullable=True)  # This memory's Merkle leaf hash
     merkle_root = Column(String(64), nullable=True)  # Current Merkle root at write time
     nonce = Column(String(32), nullable=True)  # Random nonce to prevent hash collisions
+    event_time = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     deleted_at = Column(DateTime, nullable=True)
 
@@ -154,8 +158,9 @@ class SemanticMemory(Base):
 
     # F01, F02: Dual Embeddings for Portability
     embedding_secondary = Column(Vector(1536), nullable=True)
-    embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L6-v2")
+    embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L12-v2")
 
+    metadata_ = Column("metadata", JSONB, nullable=False, default=dict)
     source_type = Column(String(50), nullable=False, default="explicit")
     # B01: Ebbinghaus Decay Engine columns
     freshness_score = Column(Float, nullable=False, default=1.0)
@@ -167,9 +172,13 @@ class SemanticMemory(Base):
     merkle_leaf = Column(String(64), nullable=True)
     merkle_root = Column(String(64), nullable=True)
     nonce = Column(String(32), nullable=True)
+    event_time = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(DateTime, nullable=True)
+    # Bitemporal modeling fields
+    valid_from = Column(DateTime, nullable=False, server_default=func.now())
+    valid_to = Column(DateTime, nullable=True)
 
     __table_args__ = (
         Index("ix_semantic_agent_subject", "agent_id", "subject"),
@@ -204,7 +213,7 @@ class ProceduralMemory(Base):
 
     # F01, F02: Dual Embeddings for Portability
     embedding_secondary = Column(Vector(1536), nullable=True)
-    embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L6-v2")
+    embedding_model = Column(String(100), nullable=False, default="all-MiniLM-L12-v2")
 
     success_count = Column(Integer, nullable=False, default=0)
     failure_count = Column(Integer, nullable=False, default=0)
@@ -220,6 +229,7 @@ class ProceduralMemory(Base):
     merkle_leaf = Column(String(64), nullable=True)
     merkle_root = Column(String(64), nullable=True)
     nonce = Column(String(32), nullable=True)
+    event_time = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=func.now())
     updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
     deleted_at = Column(DateTime, nullable=True)
@@ -409,3 +419,30 @@ class SemanticPropagationLog(Base):
 
     agent = relationship("Agent")
     fact = relationship("SemanticMemory", foreign_keys=[fact_id])
+
+
+# ─── Entity Resolution State Model ────────────
+
+
+class Entity(Base):
+    """A resolved canonical entity with dynamic property tracking (JSONB state)."""
+
+    __tablename__ = "entities"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    agent_id = Column(
+        UUID(as_uuid=True), ForeignKey("agents.id", ondelete="CASCADE"), nullable=False
+    )
+    name = Column(String(255), nullable=False)
+    canonical_name = Column(String(255), nullable=True)
+    state = Column(JSONB, nullable=False, default=dict)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
+    updated_at = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+    deleted_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("agent_id", "name", name="uq_entity_agent_name"),
+        Index("ix_entity_agent_name", "agent_id", "name"),
+    )
+
+    agent = relationship("Agent", back_populates="entities")

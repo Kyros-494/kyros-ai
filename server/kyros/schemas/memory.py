@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import StrEnum
+try:
+    from enum import StrEnum
+except ImportError:
+    from enum import Enum
+    class StrEnum(str, Enum):
+        pass
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
@@ -40,12 +45,25 @@ class RememberRequest(BaseModel):
     session_id: str | None = Field(default=None, max_length=255)
     metadata: dict = Field(default_factory=dict)
     importance: float = Field(default=0.5, ge=0.0, le=1.0)
+    memory_category: str | None = Field(
+        default=None, max_length=100, description="Optional category to determine decay rate"
+    )
+    decay_rate_override: float | None = Field(
+        default=None, ge=0.0, le=1.0, description="Optional hard override for decay rate"
+    )
     # D07: Explicit Causal Edges
     cause_memory_id: str | None = Field(
         default=None, description="ID of the memory that caused this one"
     )
     effect_memory_id: str | None = Field(
         default=None, description="ID of the memory that this one caused"
+    )
+    # E05: Event Time support
+    event_time: dict | None = Field(
+        default=None, description="Optional absolute or relative temporal information"
+    )
+    timestamp: str | float | None = Field(
+        default=None, description="Optional creation timestamp (ISO format, Locomo format, or epoch float)"
     )
 
     @field_validator("content")
@@ -88,6 +106,14 @@ class RecallRequest(BaseModel):
     include_causal_ancestry: bool = Field(
         default=False,
         description="If true, fetches causal ancestors for each recalled memory",
+    )
+    retrieve_by_entity: bool = Field(
+        default=False,
+        description="If true, performs dynamic canonical entity resolution retrieval",
+    )
+    metadata: dict = Field(
+        default_factory=dict,
+        description="Optional metadata for search context (e.g. reference_time)"
     )
 
     @field_validator("query")
@@ -162,6 +188,10 @@ class StoreFactRequest(BaseModel):
     object: str = Field(..., min_length=1, max_length=5_000, description="Value of the fact")
     confidence: float = Field(default=1.0, ge=0.0, le=1.0)
     source_type: str = Field(default="explicit", max_length=50)
+    # E05: Event Time support
+    event_time: dict | None = Field(
+        default=None, description="Optional absolute or relative temporal information"
+    )
 
 
 class FactResult(BaseModel):
@@ -196,6 +226,10 @@ class StoreProcedureRequest(BaseModel):
     )
     steps: list[dict] = Field(..., min_length=1, description="Ordered list of procedure steps")
     metadata: dict = Field(default_factory=dict)
+    # E05: Event Time support
+    event_time: dict | None = Field(
+        default=None, description="Optional absolute or relative temporal information"
+    )
 
 
 class StoreProcedureResponse(BaseModel):
