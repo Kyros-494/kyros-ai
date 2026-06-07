@@ -18,29 +18,14 @@ You should see:
 - ✓ redis (running)
 - ✓ kyros-server (running)
 
-## Step 2: Create Your API Key (1 minute)
+## Step 2: Access the Developer Dashboard & Bootstrapped Key (30 seconds)
 
-```bash
-# Access the database
-docker compose exec postgres psql -U kyros -d kyros
+Kyros features **Zero-Config Auto-Bootstrapping**. When you spin up the containers, the system automatically runs migrations and provisions a default tenant using the dev API key defined in your `.env` file.
 
-# Create your API key (copy-paste this entire block)
-INSERT INTO tenants (tenant_id, name, api_key_hash, tier, created_at)
-VALUES (
-  'my-tenant',
-  'My Organization',
-  encode(digest('my_secret_api_key_12345', 'sha256'), 'hex'),
-  'pro',
-  NOW()
-);
+* **Default API Key:** `mk_live_default_dev_key_123456`
+* **Developer Playground Dashboard:** Open [http://localhost:8000/dashboard](http://localhost:8000/dashboard) in your browser.
 
-# Exit
-\q
-```
-
-**Your API Key:** `my_secret_api_key_12345`
-
-(Change this to something secure for production!)
+Enter the default API key into the dashboard settings to visually inspect agent memory graphs, browse Episodic/Semantic/Procedural memory stores, test queries, and verify cryptographic Merkle tree proofs in real-time.
 
 ## Step 3: Use Kyros
 
@@ -56,7 +41,7 @@ from kyros import KyrosClient
 
 # Initialize
 client = KyrosClient(
-    api_key="my_secret_api_key_12345",
+    api_key="mk_live_default_dev_key_123456",
     base_url="http://localhost:8000"
 )
 
@@ -88,7 +73,7 @@ npm install @kyros/sdk
 import { KyrosClient } from '@kyros/sdk';
 
 const client = new KyrosClient({
-  apiKey: 'my_secret_api_key_12345',
+  apiKey: 'mk_live_default_dev_key_123456',
   baseUrl: 'http://localhost:8000'
 });
 
@@ -113,7 +98,7 @@ console.log(results.results[0].content);
 ```bash
 # Store a memory
 curl -X POST http://localhost:8000/v1/memory/episodic/remember \
-  -H "Authorization: Bearer my_secret_api_key_12345" \
+  -H "Authorization: Bearer mk_live_default_dev_key_123456" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_id": "my-agent",
@@ -123,7 +108,7 @@ curl -X POST http://localhost:8000/v1/memory/episodic/remember \
 
 # Recall memories
 curl -X POST http://localhost:8000/v1/memory/episodic/recall \
-  -H "Authorization: Bearer my_secret_api_key_12345" \
+  -H "Authorization: Bearer mk_live_default_dev_key_123456" \
   -H "Content-Type: application/json" \
   -d '{
     "agent_id": "my-agent",
@@ -141,7 +126,7 @@ import openai
 
 # Initialize
 kyros = KyrosClient(
-    api_key="my_secret_api_key_12345",
+    api_key="mk_live_default_dev_key_123456",
     base_url="http://localhost:8000"
 )
 openai.api_key = "your-openai-key"
@@ -199,7 +184,7 @@ import { KyrosClient } from '@kyros/sdk';
 import OpenAI from 'openai';
 
 const kyros = new KyrosClient({
-  apiKey: 'my_secret_api_key_12345',
+  apiKey: 'mk_live_default_dev_key_123456',
   baseUrl: 'http://localhost:8000'
 });
 
@@ -250,7 +235,7 @@ from langchain.llms import OpenAI
 
 memory = KyrosChatMemory(
     agent_id="my-agent",
-    api_key="my_secret_api_key_12345",
+    api_key="mk_live_default_dev_key_123456",
     base_url="http://localhost:8000"
 )
 
@@ -275,7 +260,7 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
 const kyros = new KyrosClient({
-  apiKey: 'my_secret_api_key_12345',
+  apiKey: 'mk_live_default_dev_key_123456',
   baseUrl: 'http://localhost:8000'
 });
 
@@ -291,15 +276,48 @@ console.log(result.text);
 // Memory is automatically stored!
 ```
 
-## View Your Data
+## View and Manage Your Data
 
-### API Documentation (Interactive)
+### Developer Dashboard (Visual Playground)
 
-Open in browser: http://localhost:8000/docs
+Open in browser: [http://localhost:8000/dashboard](http://localhost:8000/dashboard)
+- Click the settings gear in the sidebar and enter your API key: `mk_live_default_dev_key_123456`.
+- Explore episodic history, semantic belief networks, and procedural graphs visually.
+- Test memory recall query matches and observe the decay-freshness dynamics in real-time.
 
-- Try all endpoints
-- See request/response formats
-- Test directly in browser
+### Interactive Admin CLI
+
+The Python SDK includes a complete CLI command-line wrapper for managing the memory engine:
+
+```bash
+# Install the CLI locally (from project root)
+pip install -e sdks/python
+
+# Check server health
+kyros status
+
+# Store a memory
+kyros remember --agent my-agent --content "User prefers Python over JS"
+
+# Recall memories semantically
+kyros recall --agent my-agent --query "preferred languages"
+
+# Cryptographically audit memory integrity (Merkle tree verification)
+kyros audit --agent my-agent
+
+# Compress/Summarize agent memories
+kyros summarize --agent my-agent
+
+# Register a new tenant & fetch a new API key (requires admin token)
+export KYROS_ADMIN_TOKEN="admin-secret-token"
+kyros tenant create --name "New Developer Organization" --email "dev@example.com"
+```
+
+### API Documentation (Interactive Swagger Docs)
+
+Open in browser: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Interactive playground to test all endpoints.
+- Review schemas and request/response specifications.
 
 ### Database
 
@@ -427,6 +445,7 @@ When you're ready for production:
 ## Need Help?
 
 - **API Docs:** http://localhost:8000/docs
+- **SDK & LLM Integrations Guide:** `docs/sdk-publication-and-integrations.md`
 - **Python SDK:** `docs/python-sdk.md`
 - **TypeScript SDK:** `docs/typescript-sdk.md`
 - **Full Guide:** `docs/quickstart.md`
