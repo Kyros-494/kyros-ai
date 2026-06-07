@@ -1,18 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
-
-// Simulated SHA-256 generator
-const generateSimulatedHash = (text: string) => {
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return "sha256_" + Math.abs(hash).toString(16).padStart(8, "0") + Math.random().toString(16).substring(2, 10);
-};
+import Link from "next/link";
 
 export default function Home() {
   // Playground State
@@ -67,7 +56,7 @@ export default function Home() {
       timestamp: "Just now",
       content: episodicInput.trim(),
       decay: 100.0,
-      hash: generateSimulatedHash(episodicInput),
+      hash: "sha256_" + Math.random().toString(16).substring(2, 10) + Math.random().toString(16).substring(2, 10),
     };
     setEpisodicMemories([newMem, ...episodicMemories]);
     setEpisodicInput("");
@@ -76,7 +65,6 @@ export default function Home() {
   // Handle Semantic Conflict Simulation
   const handleTriggerConflict = () => {
     setConflictTriggered(true);
-    // Simulate belief propagation update
     setSemanticFacts(prev =>
       prev.map(fact => {
         if (fact.predicate === "name") {
@@ -89,7 +77,6 @@ export default function Home() {
       })
     );
 
-    // Add new conflicting beliefs
     setTimeout(() => {
       setSemanticFacts(prev => [
         ...prev,
@@ -133,98 +120,50 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-zinc-950 text-zinc-100 font-sans">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/kyros-logo.png"
-              alt="Kyros"
-              width={32}
-              height={32}
-              className="rounded-lg border border-zinc-800"
-            />
-            <span className="text-xl font-bold tracking-tight text-white">
-              Kyros
-            </span>
-          </div>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <a
-              href="https://github.com/JAi-SATHVIK/kyros-ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-400 hover:text-white transition-colors"
-            >
-              GitHub
-            </a>
-            <a
-              href="https://github.com/JAi-SATHVIK/kyros-ai/tree/main/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-400 hover:text-white transition-colors"
-            >
-              Docs
-            </a>
-            <a
-              href="https://github.com/JAi-SATHVIK/kyros-ai/blob/main/docs/architecture.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-1.5 rounded-md border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-zinc-300 hover:text-white transition-all"
-            >
-              Architecture
-            </a>
-          </div>
-        </div>
-      </nav>
-
+    <div className="flex flex-col min-h-full bg-slate-900 text-slate-100 font-sans">
+      
       {/* Hero Section */}
       <header className="max-w-4xl mx-auto px-6 pt-24 pb-16 text-center flex flex-col items-center">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-900 text-xs font-mono text-zinc-400 mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          Production-Grade · Apache 2.0
-        </div>
-
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
+        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight font-sans">
           Persistent Memory Operating System for AI Agents
         </h1>
 
-        <p className="mt-6 max-w-2xl text-lg text-zinc-400 leading-relaxed">
+        <p className="mt-6 max-w-2xl text-lg text-slate-400 leading-relaxed">
           Provide your autonomous agents with biological-inspired memory structures: Episodic events, semantic facts, and procedural skills. Securely audited with cryptographic integrity and structured with natural decay parameters.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4 items-center">
           <a
-            href="https://github.com/JAi-SATHVIK/kyros-ai"
+            href="https://github.com/Kyros-494/kyros-ai"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium tracking-wide transition-all shadow-lg shadow-blue-900/20"
+            className="px-6 py-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium tracking-wide transition-all shadow-md"
           >
             Get Started on GitHub
           </a>
-          <a
-            href="#quickstart"
-            className="px-6 py-3 rounded-md border border-zinc-800 text-zinc-300 font-medium bg-zinc-900 hover:bg-zinc-800 transition-colors"
+          <Link
+            href="/docs"
+            className="px-6 py-3 rounded-md border border-slate-700 text-slate-300 font-medium bg-slate-800 hover:bg-slate-700 transition-colors"
           >
-            View Quickstart
-          </a>
+            View Documentation
+          </Link>
         </div>
       </header>
 
-      {/* Stats Grid */}
-      <section className="border-y border-zinc-900 bg-zinc-900/30">
+      {/* Capabilities Stats Grid (Metrics-Free) */}
+      <section className="border-y border-slate-800 bg-slate-800/40">
         <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
           {[
-            { value: "100%", label: "Precision@5 Retrieval" },
-            { value: "37ms", label: "Avg Recall Latency" },
-            { value: "99%", label: "Fewer Tokens than Mem0" },
-            { value: "3", label: "Memory Subsystems" },
+            { value: "3 Modules", label: "Episodic, Semantic, Procedural" },
+            { value: "0-Config", label: "Auto-Migration Startup" },
+            { value: "Apache 2.0", label: "Permissive Licensing" },
+            { value: "Python & TS", label: "Native Client SDKs" },
           ].map((stat) => (
             <div key={stat.label} className="flex flex-col items-center">
-              <span className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              <span className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 {stat.value}
               </span>
-              <span className="mt-2 text-xs font-mono uppercase tracking-wider text-zinc-500">
+              <span className="mt-2 text-xs font-mono uppercase tracking-wider text-slate-500">
                 {stat.label}
               </span>
             </div>
@@ -238,14 +177,14 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-white tracking-tight">
             Interactive Memory Playground
           </h2>
-          <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
-            Interact with the client-side simulator to see how Kyros parses, secures, decays, and propagates state in real time.
+          <p className="mt-3 text-slate-400 max-w-xl mx-auto">
+            Interact with the client-side simulator to see how Kyros parses, secures, decays, and propagates state in real time. Or view the full sandbox on the <Link href="/simulation" className="text-blue-400 hover:underline">Simulation Page</Link>.
           </p>
         </div>
 
-        <div className="border border-zinc-800 rounded-xl bg-zinc-900/60 overflow-hidden shadow-2xl">
+        <div className="border border-slate-800 rounded-xl bg-slate-800/50 overflow-hidden shadow-xl">
           {/* Playground Tabs */}
-          <div className="flex border-b border-zinc-800 bg-zinc-900/90 text-sm">
+          <div className="flex border-b border-slate-800 bg-slate-800/80 text-sm">
             {[
               { id: "episodic", label: "Episodic Logger" },
               { id: "semantic", label: "Semantic Graph" },
@@ -256,8 +195,8 @@ export default function Home() {
                 onClick={() => setActivePlaygroundTab(tab.id as any)}
                 className={`flex-1 py-4 text-center font-medium transition-all ${
                   activePlaygroundTab === tab.id
-                    ? "text-blue-500 bg-zinc-950 border-b-2 border-blue-500"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "text-blue-400 bg-slate-900 border-b-2 border-blue-500"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 {tab.label}
@@ -265,7 +204,7 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="p-6 bg-zinc-950 min-h-[350px]">
+          <div className="p-6 bg-slate-900 min-h-[350px]">
             {/* Episodic Simulator */}
             {activePlaygroundTab === "episodic" && (
               <div className="space-y-6">
@@ -274,36 +213,36 @@ export default function Home() {
                     type="text"
                     value={episodicInput}
                     onChange={(e) => setEpisodicInput(e.target.value)}
-                    placeholder="Enter raw event (e.g. 'User likes to deploy services using Docker Compose.')"
-                    className="flex-1 px-4 py-3 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500 text-sm"
+                    placeholder="Enter raw event (e.g. 'User prefers strict typing.')"
+                    className="flex-1 px-4 py-3 rounded-md bg-slate-800 border border-slate-700 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 text-sm"
                   />
                   <button
                     type="submit"
-                    className="px-5 py-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors"
+                    className="px-5 py-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors"
                   >
                     Remember Event
                   </button>
                 </form>
 
                 <div className="space-y-3">
-                  <span className="text-xs font-mono uppercase tracking-wider text-zinc-500 block">
+                  <span className="text-xs font-mono uppercase tracking-wider text-slate-500 block">
                     Episodic Logs (Tamper-evident, hashed sequence)
                   </span>
                   {episodicMemories.map((mem) => (
                     <div
                       key={mem.id}
-                      className="p-4 rounded-md border border-zinc-800 bg-zinc-900/40 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm hover:border-zinc-700 transition-colors"
+                      className="p-4 rounded-md border border-slate-800 bg-slate-800/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm hover:border-slate-700 transition-colors"
                     >
                       <div className="space-y-1.5 flex-1">
-                        <p className="text-zinc-200">{mem.content}</p>
-                        <div className="flex flex-wrap gap-4 text-xs font-mono text-zinc-500">
+                        <p className="text-slate-200">{mem.content}</p>
+                        <div className="flex flex-wrap gap-4 text-xs font-mono text-slate-500">
                           <span>Stored: {mem.timestamp}</span>
-                          <span className="text-blue-500/80">Hash: {mem.hash}</span>
+                          <span className="text-blue-400/80 font-mono">Hash: {mem.hash.substring(0, 16)}...</span>
                         </div>
                       </div>
                       <div className="flex flex-col items-end shrink-0">
-                        <span className="text-xs font-mono text-zinc-400">Decay Weight</span>
-                        <span className="text-lg font-bold text-emerald-500 font-mono">
+                        <span className="text-xs font-mono text-slate-400">Decay Weight</span>
+                        <span className="text-lg font-bold text-emerald-400 font-mono">
                           {mem.decay}%
                         </span>
                       </div>
@@ -317,21 +256,21 @@ export default function Home() {
             {activePlaygroundTab === "semantic" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">
+                  <span className="text-xs font-mono uppercase tracking-wider text-slate-500">
                     Semantic Facts Database
                   </span>
                   <div className="flex gap-2">
                     <button
                       onClick={handleTriggerConflict}
                       disabled={conflictTriggered}
-                      className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-zinc-300 font-medium text-xs transition-colors"
+                      className="px-4 py-2 rounded-md bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 font-medium text-xs transition-colors"
                     >
                       Simulate Identity Conflict
                     </button>
                     {conflictTriggered && (
                       <button
                         onClick={handleResetSemantic}
-                        className="px-4 py-2 rounded-md bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-400 font-medium text-xs transition-colors"
+                        className="px-4 py-2 rounded-md bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-400 font-medium text-xs transition-colors"
                       >
                         Reset Facts
                       </button>
@@ -342,7 +281,7 @@ export default function Home() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm border-collapse">
                     <thead>
-                      <tr className="border-b border-zinc-800 text-zinc-500 font-mono text-xs">
+                      <tr className="border-b border-slate-800 text-slate-500 font-mono text-xs">
                         <th className="py-3 px-4">Subject</th>
                         <th className="py-3 px-4">Predicate</th>
                         <th className="py-3 px-4">Object</th>
@@ -354,12 +293,12 @@ export default function Home() {
                       {semanticFacts.map((fact) => (
                         <tr
                           key={fact.id}
-                          className={`border-b border-zinc-900 transition-colors ${
+                          className={`border-b border-slate-800 transition-colors ${
                             fact.status === "updated"
                               ? "bg-emerald-950/20 text-emerald-300"
                               : fact.status === "decayed"
-                              ? "bg-red-950/10 text-zinc-600"
-                              : "text-zinc-300"
+                              ? "bg-rose-950/10 text-slate-500"
+                              : "text-slate-300"
                           }`}
                         >
                           <td className="py-3.5 px-4 font-mono text-xs">{fact.subject}</td>
@@ -374,8 +313,8 @@ export default function Home() {
                                 fact.status === "updated"
                                   ? "bg-emerald-500/20 text-emerald-400"
                                   : fact.status === "decayed"
-                                  ? "bg-red-500/10 text-red-500"
-                                  : "bg-zinc-800 text-zinc-400"
+                                  ? "bg-rose-500/10 text-rose-400"
+                                  : "bg-slate-800 text-slate-400"
                               }`}
                             >
                               {fact.status}
@@ -388,7 +327,7 @@ export default function Home() {
                 </div>
 
                 {conflictTriggered && (
-                  <div className="p-4 rounded-md border border-emerald-900 bg-emerald-950/10 text-xs text-emerald-400 font-mono leading-relaxed">
+                  <div className="p-4 rounded-md border border-slate-700 bg-slate-800/40 text-xs text-slate-300 font-mono leading-relaxed">
                     [Belief Propagation Engine]: Detected name update to &quot;Bob&quot; and backend language change to &quot;Go&quot;. Conflicting context scores updated. Old facts marked for decay pruning.
                   </div>
                 )}
@@ -400,15 +339,15 @@ export default function Home() {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <div className="space-y-1">
-                    <span className="text-xs font-mono uppercase tracking-wider text-zinc-500 block">
+                    <span className="text-xs font-mono uppercase tracking-wider text-slate-500 block">
                       Workflow execution pipeline
                     </span>
-                    <p className="text-sm text-zinc-300 font-medium">Procedure: handle_user_context</p>
+                    <p className="text-sm text-slate-300 font-medium">Procedure: handle_user_context</p>
                   </div>
                   <button
                     onClick={handleRunProcedure}
                     disabled={runningProcedure}
-                    className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium text-xs transition-colors"
+                    className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-xs transition-colors"
                   >
                     {runningProcedure ? "Running workflow..." : "Execute workflow"}
                   </button>
@@ -423,14 +362,14 @@ export default function Home() {
                         key={step.name}
                         className={`p-4 rounded-md border transition-all ${
                           isActive
-                            ? "border-blue-500 bg-blue-950/10"
+                            ? "border-blue-500 bg-blue-950/20"
                             : isCompleted
                             ? "border-emerald-800 bg-emerald-950/5"
-                            : "border-zinc-800 bg-zinc-900/20"
+                            : "border-slate-800 bg-slate-800/20"
                         }`}
                       >
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-mono font-bold text-zinc-500">STEP 0{idx + 1}</span>
+                          <span className="text-xs font-mono font-bold text-slate-500">STEP 0{idx + 1}</span>
                           {isCompleted && (
                             <span className="w-2 h-2 rounded-full bg-emerald-500" />
                           )}
@@ -438,10 +377,10 @@ export default function Home() {
                             <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
                           )}
                         </div>
-                        <h4 className={`text-sm font-semibold mb-1 ${isActive ? "text-blue-400" : isCompleted ? "text-emerald-400" : "text-zinc-300"}`}>
+                        <h4 className={`text-sm font-semibold mb-1 ${isActive ? "text-blue-400" : isCompleted ? "text-emerald-400" : "text-slate-300"}`}>
                           {step.name}
                         </h4>
-                        <p className="text-xs text-zinc-500 leading-relaxed">{step.desc}</p>
+                        <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
                       </div>
                     );
                   })}
@@ -452,8 +391,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feature Cards Grid (SVG Icons instead of emojis, solid branding) */}
-      <section className="max-w-6xl mx-auto px-6 py-24">
+      {/* Feature Cards Grid (SVG Icons, solid branding) */}
+      <section className="max-w-6xl mx-auto px-6 py-24 border-t border-slate-800">
         <h2 className="text-3xl font-bold text-white text-center mb-16 tracking-tight">
           System Specifications & Features
         </h2>
@@ -463,7 +402,7 @@ export default function Home() {
               title: "Three Memory Modules",
               desc: "Episodic (conversations), semantic (structured facts), and procedural (predefined workflows) subsystems integrated within a unified architecture.",
               icon: (
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               ),
@@ -472,7 +411,7 @@ export default function Home() {
               title: "Ebbinghaus Temporal Decay",
               desc: "Memories fade dynamically according to category decay rates. Prevents token bloat, keeps search queries relevant, and optimizes context windows.",
               icon: (
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               ),
@@ -481,7 +420,7 @@ export default function Home() {
               title: "Cryptographic Tamper Auditing",
               desc: "Protects memory chains using SHA-256 hashes and Merkle tree verification logic. Instantly detects external injections and poisoning attacks.",
               icon: (
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               ),
@@ -490,7 +429,7 @@ export default function Home() {
               title: "Causal Relationship Chains",
               desc: "Establishes explicit parent-child links between independent memory nodes, allowing the agent to audit reasoning chains and trace causality.",
               icon: (
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 12l3-3 3 3 4-4M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                 </svg>
               ),
@@ -499,7 +438,7 @@ export default function Home() {
               title: "Adaptive Belief Propagation",
               desc: "Graph-based conflict resolution updating network confidence states iteratively using breadth-first traversal whenever new info is parsed.",
               icon: (
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
                 </svg>
               ),
@@ -508,7 +447,7 @@ export default function Home() {
               title: "Zero-Code API Proxy Mode",
               desc: "Point an existing LLM wrapper base_url directly to the Kyros proxy server. Intercepts request payloads to inject and log context automatically.",
               icon: (
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               ),
@@ -516,13 +455,13 @@ export default function Home() {
           ].map((f) => (
             <div
               key={f.title}
-              className="p-6 rounded-lg border border-zinc-800 bg-zinc-900/25 hover:border-zinc-700 hover:bg-zinc-900/40 transition-all"
+              className="p-6 rounded-lg border border-slate-800 bg-slate-800/20 hover:border-slate-700 hover:bg-slate-800/40 transition-all animate-fade-in"
             >
               <div className="mb-4">{f.icon}</div>
               <h3 className="font-semibold text-white mb-2 text-base">
                 {f.title}
               </h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed">
                 {f.desc}
               </p>
             </div>
@@ -530,171 +469,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Competitive Benchmark Table */}
-      <section className="border-t border-zinc-900 bg-zinc-900/10">
-        <div className="max-w-5xl mx-auto px-6 py-24 w-full">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-white tracking-tight">
-              Competitive Performance Analysis
-            </h2>
-            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
-              Evaluation metrics extracted from the automated benchmarking suite.
-            </p>
-          </div>
-
-          <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-950">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-800 bg-zinc-900/40 text-zinc-500 font-mono text-xs">
-                  <th className="py-4 px-6">Evaluation Dimension</th>
-                  <th className="py-4 px-6 text-blue-400 font-bold">Kyros AI (Self-Hosted)</th>
-                  <th className="py-4 px-6">Mem0</th>
-                  <th className="py-4 px-6">Standard RAG</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { metric: "Precision@5 Retrieval", kyros: "100%", mem0: "85%", rag: "62%" },
-                  { metric: "Average Query Latency", kyros: "37.2ms", mem0: "148.6ms", rag: "120.4ms" },
-                  { metric: "Token Consumption Efficiency", kyros: "99.1% Reduction", mem0: "Baseline", rag: "Dynamic" },
-                  { metric: "Cryptographic Tamper Protection", kyros: "Enabled (Merkle + SHA)", mem0: "None", rag: "None" },
-                  { metric: "Biological-based Decay Weights", kyros: "Enabled (Ebbinghaus)", mem0: "None", rag: "None" },
-                  { metric: "Context-Aware Causal Graphing", kyros: "Enabled", mem0: "None", rag: "None" },
-                ].map((row, idx) => (
-                  <tr key={idx} className="border-b border-zinc-900 text-zinc-300 hover:bg-zinc-900/10 transition-colors">
-                    <td className="py-4 px-6 font-medium text-zinc-400">{row.metric}</td>
-                    <td className="py-4 px-6 font-semibold text-white">{row.kyros}</td>
-                    <td className="py-4 px-6">{row.mem0}</td>
-                    <td className="py-4 px-6">{row.rag}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* System Architecture Section */}
-      <section className="border-t border-zinc-900 bg-zinc-950">
-        <div className="max-w-6xl mx-auto px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white tracking-tight">
-              System Architecture & Data Flow
-            </h2>
-            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
-              Kyros coordinates ingestion, verification, intelligence processing, and hybrid storage in a low-latency pipeline.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 relative">
-            {[
-              {
-                step: "01",
-                layer: "Client & Ingestion",
-                desc: "Python SDK, TypeScript SDK, or direct REST requests hit the API endpoint. Uses custom retry backoff logic for connection robustness.",
-                nodes: ["Python SDK", "TypeScript SDK", "FastAPI Proxy"]
-              },
-              {
-                step: "02",
-                layer: "Gateway & Security",
-                desc: "FastAPI validates API keys or admin tokens. Bypasses authentication for public routes like Swagger docs and developer dashboard.",
-                nodes: ["Token Validation", "Public Path Bypass", "Rate Limiting"]
-              },
-              {
-                step: "03",
-                layer: "Intelligence Engine",
-                desc: "Processes memories through Ebbinghaus decay curve scaling, constructs Merkle Tree proofs, and runs graph-based belief propagation updates.",
-                nodes: ["Forgetting Decay", "Merkle Cryptography", "Belief Propagation"]
-              },
-              {
-                step: "04",
-                layer: "Hybrid Storage Layer",
-                desc: "Saves raw records, embeddings, and relationships into PostgreSQL with pgvector, caching hot memory lookups in Redis.",
-                nodes: ["PostgreSQL + pgvector", "Redis Hot Caching", "Row-Level Security"]
-              }
-            ].map((tier, idx) => (
-              <div key={idx} className="relative p-6 rounded-xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-md flex flex-col justify-between hover:border-zinc-700 transition-all">
-                <div>
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-xs font-mono font-bold text-blue-500">LAYER {tier.step}</span>
-                    <span className="text-xs text-zinc-600 font-mono">Verified</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{tier.layer}</h3>
-                  <p className="text-sm text-zinc-400 leading-relaxed mb-6">{tier.desc}</p>
-                </div>
-                <div className="space-y-2">
-                  {tier.nodes.map((node, nIdx) => (
-                    <div key={nIdx} className="px-3 py-1.5 rounded bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-300 flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                      {node}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Deep-Dive */}
-      <section className="border-t border-zinc-900 bg-zinc-900/10">
-        <div className="max-w-5xl mx-auto px-6 py-24">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-white tracking-tight">
-              Biologically Inspired, Cryptographically Audited
-            </h2>
-            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
-              How Kyros manages memory persistence and database security under the hood.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="p-8 rounded-xl border border-zinc-800 bg-zinc-950 space-y-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <span className="text-blue-500">·</span> Forgetting Curve & Decay
-              </h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Kyros models cognitive recall using the Ebbinghaus forgetting curve equation:
-              </p>
-              <div className="py-4 px-6 rounded bg-zinc-900 border border-zinc-800 text-center font-mono text-sm text-blue-400">
-                w = w₀ · e^(-λ · t)
-              </div>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Where <code>w₀</code> is the initial importance weight, <code>λ</code> is the decay rate, and <code>t</code> is the elapsed time. Market stats fade in 1.4 days (half-life), while stable user identities last up to 693 days, keeping LLM contexts optimal and compact.
-              </p>
-            </div>
-
-            <div className="p-8 rounded-xl border border-zinc-800 bg-zinc-950 space-y-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <span className="text-blue-500">·</span> Cryptographic Merkle Trees
-              </h3>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Every memory entry generated is hashed via SHA-256 and appended to a local agent-specific Merkle Tree:
-              </p>
-              <div className="py-4 px-6 rounded bg-zinc-900 border border-zinc-800 text-center font-mono text-xs text-blue-400 break-all">
-                Root = SHA-256(Hash(Left) + Hash(Right))
-              </div>
-              <p className="text-sm text-zinc-400 leading-relaxed">
-                Kyros allows clients to request cryptographic proof paths for any memory block. The audit engine dynamically verifies that historical logs have not been tampered with or injected from external vectors.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Integration Code Blocks / Tabs */}
-      <section id="quickstart" className="border-t border-zinc-900 bg-zinc-950">
+      <section id="quickstart" className="border-t border-slate-800 bg-slate-900/50">
         <div className="max-w-4xl mx-auto px-6 py-24">
           <h2 className="text-3xl font-bold text-white text-center mb-4 tracking-tight">
             Up in 60 Seconds
           </h2>
-          <p className="text-center text-zinc-400 mb-12 max-w-lg mx-auto">
+          <p className="text-center text-slate-400 mb-12 max-w-lg mx-auto">
             Self-host the memory server using Docker or deploy the Python and TypeScript SDK wrapper.
           </p>
 
-          <div className="border border-zinc-800 rounded-lg overflow-hidden bg-zinc-900/40 shadow-2xl">
+          <div className="border border-slate-800 rounded-lg overflow-hidden bg-slate-800/40 shadow-xl">
             {/* Code Tabs */}
-            <div className="flex border-b border-zinc-800 bg-zinc-900/60 px-4">
+            <div className="flex border-b border-slate-800 bg-slate-800/60 px-4">
               {[
                 { id: "docker", label: "Self-Host (Docker)" },
                 { id: "python", label: "Python SDK" },
@@ -705,8 +492,8 @@ export default function Home() {
                   onClick={() => setActiveCodeTab(tab.id as any)}
                   className={`py-3.5 px-4 font-mono text-xs font-semibold border-b-2 transition-all ${
                     activeCodeTab === tab.id
-                      ? "text-blue-500 border-blue-500"
-                      : "text-zinc-500 hover:text-zinc-300 border-transparent"
+                      ? "text-blue-400 border-blue-500"
+                      : "text-slate-500 hover:text-slate-300 border-transparent"
                   }`}
                 >
                   {tab.label}
@@ -715,11 +502,11 @@ export default function Home() {
             </div>
 
             {/* Code Content */}
-            <div className="p-6 bg-zinc-950/80 font-mono text-xs text-zinc-300 leading-relaxed overflow-x-auto">
+            <div className="p-6 bg-slate-900/80 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto">
               {activeCodeTab === "docker" && (
                 <pre>
                   <code>{`# Clone the repository
-git clone https://github.com/JAi-SATHVIK/kyros-ai.git
+git clone https://github.com/Kyros-494/kyros-ai
 cd kyros-ai
 
 # Start the PostgreSQL + pgvector + Redis container stacks
@@ -782,34 +569,6 @@ const results = await client.query({
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t border-zinc-900 bg-zinc-950 mt-auto">
-        <div className="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-3">
-            <span className="text-zinc-500 text-sm font-semibold tracking-wider uppercase font-mono">Kyros AI Memory</span>
-          </div>
-          <div className="flex gap-8 text-sm text-zinc-500">
-            <a
-              href="https://github.com/JAi-SATHVIK/kyros-ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-zinc-300 transition-colors"
-            >
-              GitHub Repo
-            </a>
-            <a
-              href="https://github.com/JAi-SATHVIK/kyros-ai/tree/main/docs"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-zinc-300 transition-colors"
-            >
-              System Docs
-            </a>
-            <span className="text-zinc-600">Apache 2.0 License</span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

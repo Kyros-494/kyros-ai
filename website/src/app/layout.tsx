@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://kyros.ai"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://kyros-494.github.io/kyros-ai"),
   title: "Kyros — Persistent Memory for AI Agents",
   description:
     "Open-source memory operating system for AI agents. Episodic, semantic, and procedural memory with Ebbinghaus decay, Merkle integrity proofs, and zero-code proxy injection.",
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Kyros — Persistent Memory for AI Agents",
     description:
-      "Open-source memory OS for AI agents. 100% Precision@5, 37ms avg latency, 99% fewer tokens than Mem0.",
+      "Open-source memory operating system for AI agents with episodic, semantic, and procedural memory structures.",
     type: "website",
     images: [
       {
@@ -35,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Kyros — Persistent Memory for AI Agents",
-    description: "Open-source memory OS for AI agents.",
+    description: "Open-source memory operating system for AI agents.",
     images: ["/og-image.png"],
   },
   icons: {
@@ -54,7 +56,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-slate-900 text-slate-100 font-sans">
+        <Navbar />
+        <main className="flex-1 flex flex-col">{children}</main>
+        <Footer />
+      </body>
     </html>
   );
 }
