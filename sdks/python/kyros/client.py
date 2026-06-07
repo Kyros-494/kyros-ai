@@ -114,25 +114,40 @@ class KyrosClient:
         json: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> httpx.Response:
-        """Make a raw HTTP request and return the response.
+        """Make a raw HTTP request and return the response with automatic retries on transient errors."""
+        import time
+        import random
 
-        This is a low-level escape hatch for tooling/debug helpers that need
-        status codes or response headers instead of parsed SDK models.
-        """
-        try:
-            return self._client.request(method, path, json=json, **kwargs)
-        except httpx.TimeoutException as e:
-            raise TimeoutError(
-                f"Request timed out after {self.timeout}s",
-                timeout=self.timeout,
-            ) from e
-        except httpx.ConnectError as e:
-            raise ConnectionError(
-                f"Failed to connect to {self.base_url}",
-                base_url=self.base_url,
-            ) from e
-        except httpx.HTTPError as e:
-            raise KyrosError(f"HTTP error: {e}") from e
+        max_retries = 3
+        backoff = 0.5
+
+        for attempt in range(max_retries):
+            try:
+                response = self._client.request(method, path, json=json, **kwargs)
+                if response.status_code in (429, 502, 503, 504) and attempt < max_retries - 1:
+                    sleep_time = backoff + random.uniform(0, 0.1)
+                    time.sleep(sleep_time)
+                    backoff *= 2
+                    continue
+                return response
+            except httpx.RequestError as e:
+                if attempt < max_retries - 1:
+                    sleep_time = backoff + random.uniform(0, 0.1)
+                    time.sleep(sleep_time)
+                    backoff *= 2
+                    continue
+                if isinstance(e, httpx.TimeoutException):
+                    raise TimeoutError(
+                        f"Request timed out after {self.timeout}s",
+                        timeout=self.timeout,
+                    ) from e
+                raise ConnectionError(
+                    f"Failed to connect to {self.base_url} ({e})",
+                    base_url=self.base_url,
+                ) from e
+            except httpx.HTTPError as e:
+                raise KyrosError(f"HTTP error: {e}") from e
+        raise ConnectionError(f"Failed to connect to {self.base_url} after {max_retries} attempts", base_url=self.base_url)
 
     def post(
         self,
@@ -149,7 +164,7 @@ class KyrosClient:
         path: str,
         json: dict[str, Any] | None = None,
     ) -> Any:
-        """Make HTTP request to Kyros API.
+        """Make HTTP request to Kyros API with automatic retries on transient errors.
 
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
@@ -164,21 +179,44 @@ class KyrosClient:
             TimeoutError: On request timeout
             ConnectionError: On connection failure
         """
-        try:
-            response = self._client.request(method, path, json=json)
-            return self._handle_response(response)
-        except httpx.TimeoutException as e:
-            raise TimeoutError(
-                f"Request timed out after {self.timeout}s",
-                timeout=self.timeout,
-            ) from e
-        except httpx.ConnectError as e:
-            raise ConnectionError(
-                f"Failed to connect to {self.base_url}",
-                base_url=self.base_url,
-            ) from e
-        except httpx.HTTPError as e:
-            raise KyrosError(f"HTTP error: {e}") from e
+        import time
+        import random
+
+        max_retries = 3
+        backoff = 0.5
+
+        for attempt in range(max_retries):
+            try:
+                response = self._client.request(method, path, json=json)
+                if response.status_code in (429, 502, 503, 504) and attempt < max_retries - 1:
+                    sleep_time = backoff
+                    if response.status_code == 429:
+                        retry_after = response.headers.get("Retry-After")
+                        if retry_after and retry_after.isdigit():
+                            sleep_time = float(retry_after)
+                    sleep_time += random.uniform(0, 0.1)
+                    time.sleep(sleep_time)
+                    backoff *= 2
+                    continue
+                return self._handle_response(response)
+            except httpx.RequestError as e:
+                if attempt < max_retries - 1:
+                    sleep_time = backoff + random.uniform(0, 0.1)
+                    time.sleep(sleep_time)
+                    backoff *= 2
+                    continue
+                if isinstance(e, httpx.TimeoutException):
+                    raise TimeoutError(
+                        f"Request timed out after {self.timeout}s",
+                        timeout=self.timeout,
+                    ) from e
+                raise ConnectionError(
+                    f"Failed to connect to {self.base_url} ({e})",
+                    base_url=self.base_url,
+                ) from e
+            except httpx.HTTPError as e:
+                raise KyrosError(f"HTTP error: {e}") from e
+        raise ConnectionError(f"Failed to connect to {self.base_url} after {max_retries} attempts", base_url=self.base_url)
 
     def _handle_response(self, response: httpx.Response) -> Any:
         """Handle HTTP response and raise appropriate exceptions.

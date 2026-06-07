@@ -1,7 +1,7 @@
 """Tests for debug module."""
 
 import time
-from typing import Any, Never
+from typing import Any, NoReturn
 from unittest.mock import MagicMock
 
 import pytest
@@ -263,7 +263,7 @@ class TestTraceDecorator:
         """Test tracing failed operation."""
 
         @trace_memory_operation
-        def test_func() -> Never:
+        def test_func() -> NoReturn:
             raise ValueError("test error")
 
         with pytest.raises(ValueError):
