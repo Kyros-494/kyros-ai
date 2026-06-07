@@ -114,3 +114,20 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100) 
     except Exception as e:
         logger.error("Unexpected error in get_semantic_graph", agent_id=agent_id, error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.put("/facts", response_model=FactResult)
+async def upsert_fact(request: Request, body: StoreFactRequest) -> FactResult:
+    """Upsert a semantic fact (subject-predicate-object triple) dynamically."""
+    tenant_id = getattr(request.state, "tenant_id", None)
+    service = get_memory_service(request)
+    try:
+        return await service.store_fact(tenant_id=tenant_id, request=body)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except SQLAlchemyError as e:
+        logger.error("DB error in upsert_fact", error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+    except Exception as e:
+        logger.error("Unexpected error in upsert_fact", error=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error") from e
