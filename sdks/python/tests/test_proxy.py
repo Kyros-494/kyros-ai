@@ -46,7 +46,7 @@ class TestKyrosProxyInit:
 
     def test_init_without_openai_package(self) -> None:
         """Test initialization fails gracefully without openai package."""
-        with patch.dict("sys.modules", {"openai": None}), pytest.raises(
+        with patch("kyros.proxy.openai", None), pytest.raises(
             ImportError, match="openai package is required"
         ):
             KyrosProxy(kyros_api_key="mk_test_123", openai_api_key="sk-test")

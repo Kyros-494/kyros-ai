@@ -88,30 +88,64 @@ export class KyrosClient {
   // ─── HTTP helpers ─────────────────────────
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeout);
+    const maxRetries = 3;
+    let backoff = 500; // ms
 
-    try {
-      const response = await fetch(`${this.baseUrl}${path}`, {
-        method,
-        headers: {
-          'X-API-Key': this.apiKey,
-          'Content-Type': 'application/json',
-          'User-Agent': 'kyros-sdk-typescript/0.1.0',
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), this.timeout);
 
-      if (!response.ok) {
-        await this.handleError(response);
+      try {
+        const response = await fetch(`${this.baseUrl}${path}`, {
+          method,
+          headers: {
+            'X-API-Key': this.apiKey,
+            'Content-Type': 'application/json',
+            'User-Agent': 'kyros-sdk-typescript/0.1.0',
+          },
+          body: body ? JSON.stringify(body) : undefined,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timer);
+
+        if (!response.ok) {
+          const transientStatuses = [429, 502, 503, 504];
+          if (transientStatuses.includes(response.status) && attempt < maxRetries - 1) {
+            let sleepTime = backoff;
+            if (response.status === 429) {
+              const retryAfter = response.headers.get('Retry-After');
+              if (retryAfter && !isNaN(Number(retryAfter))) {
+                sleepTime = Number(retryAfter) * 1000;
+              }
+            }
+            sleepTime += Math.random() * 100;
+            await new Promise((resolve) => setTimeout(resolve, sleepTime));
+            backoff *= 2;
+            continue;
+          }
+          await this.handleError(response);
+        }
+
+        if (response.status === 204) return undefined as T;
+        return (await response.json()) as T;
+      } catch (err: any) {
+        clearTimeout(timer);
+
+        if (attempt < maxRetries - 1) {
+          const sleepTime = backoff + Math.random() * 100;
+          await new Promise((resolve) => setTimeout(resolve, sleepTime));
+          backoff *= 2;
+          continue;
+        }
+
+        if (err.name === 'DOMException' && err.message.includes('abort')) {
+          throw new Error(`Request timed out after ${this.timeout / 1000}s`);
+        }
+        throw err;
       }
-
-      if (response.status === 204) return undefined as T;
-      return (await response.json()) as T;
-    } finally {
-      clearTimeout(timer);
     }
+    throw new Error(`Request failed after ${maxRetries} attempts`);
   }
 
   private async handleError(response: Response): Promise<never> {
