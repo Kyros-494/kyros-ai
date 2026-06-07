@@ -574,6 +574,114 @@ export default function Home() {
         </div>
       </section>
 
+      {/* System Architecture Section */}
+      <section className="border-t border-zinc-900 bg-zinc-950">
+        <div className="max-w-6xl mx-auto px-6 py-24">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              System Architecture & Data Flow
+            </h2>
+            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
+              Kyros coordinates ingestion, verification, intelligence processing, and hybrid storage in a low-latency pipeline.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 relative">
+            {[
+              {
+                step: "01",
+                layer: "Client & Ingestion",
+                desc: "Python SDK, TypeScript SDK, or direct REST requests hit the API endpoint. Uses custom retry backoff logic for connection robustness.",
+                nodes: ["Python SDK", "TypeScript SDK", "FastAPI Proxy"]
+              },
+              {
+                step: "02",
+                layer: "Gateway & Security",
+                desc: "FastAPI validates API keys or admin tokens. Bypasses authentication for public routes like Swagger docs and developer dashboard.",
+                nodes: ["Token Validation", "Public Path Bypass", "Rate Limiting"]
+              },
+              {
+                step: "03",
+                layer: "Intelligence Engine",
+                desc: "Processes memories through Ebbinghaus decay curve scaling, constructs Merkle Tree proofs, and runs graph-based belief propagation updates.",
+                nodes: ["Forgetting Decay", "Merkle Cryptography", "Belief Propagation"]
+              },
+              {
+                step: "04",
+                layer: "Hybrid Storage Layer",
+                desc: "Saves raw records, embeddings, and relationships into PostgreSQL with pgvector, caching hot memory lookups in Redis.",
+                nodes: ["PostgreSQL + pgvector", "Redis Hot Caching", "Row-Level Security"]
+              }
+            ].map((tier, idx) => (
+              <div key={idx} className="relative p-6 rounded-xl border border-zinc-800 bg-zinc-900/20 backdrop-blur-md flex flex-col justify-between hover:border-zinc-700 transition-all">
+                <div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-xs font-mono font-bold text-blue-500">LAYER {tier.step}</span>
+                    <span className="text-xs text-zinc-600 font-mono">Verified</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">{tier.layer}</h3>
+                  <p className="text-sm text-zinc-400 leading-relaxed mb-6">{tier.desc}</p>
+                </div>
+                <div className="space-y-2">
+                  {tier.nodes.map((node, nIdx) => (
+                    <div key={nIdx} className="px-3 py-1.5 rounded bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-300 flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                      {node}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Deep-Dive */}
+      <section className="border-t border-zinc-900 bg-zinc-900/10">
+        <div className="max-w-5xl mx-auto px-6 py-24">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white tracking-tight">
+              Biologically Inspired, Cryptographically Audited
+            </h2>
+            <p className="mt-3 text-zinc-400 max-w-xl mx-auto">
+              How Kyros manages memory persistence and database security under the hood.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="p-8 rounded-xl border border-zinc-800 bg-zinc-950 space-y-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <span className="text-blue-500">·</span> Forgetting Curve & Decay
+              </h3>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Kyros models cognitive recall using the Ebbinghaus forgetting curve equation:
+              </p>
+              <div className="py-4 px-6 rounded bg-zinc-900 border border-zinc-800 text-center font-mono text-sm text-blue-400">
+                w = w₀ · e^(-λ · t)
+              </div>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Where <code>w₀</code> is the initial importance weight, <code>λ</code> is the decay rate, and <code>t</code> is the elapsed time. Market stats fade in 1.4 days (half-life), while stable user identities last up to 693 days, keeping LLM contexts optimal and compact.
+              </p>
+            </div>
+
+            <div className="p-8 rounded-xl border border-zinc-800 bg-zinc-950 space-y-4">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <span className="text-blue-500">·</span> Cryptographic Merkle Trees
+              </h3>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Every memory entry generated is hashed via SHA-256 and appended to a local agent-specific Merkle Tree:
+              </p>
+              <div className="py-4 px-6 rounded bg-zinc-900 border border-zinc-800 text-center font-mono text-xs text-blue-400 break-all">
+                Root = SHA-256(Hash(Left) + Hash(Right))
+              </div>
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Kyros allows clients to request cryptographic proof paths for any memory block. The audit engine dynamically verifies that historical logs have not been tampered with or injected from external vectors.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Integration Code Blocks / Tabs */}
       <section id="quickstart" className="border-t border-zinc-900 bg-zinc-950">
         <div className="max-w-4xl mx-auto px-6 py-24">
@@ -618,7 +726,8 @@ cd kyros-ai
 docker compose up -d
 
 # API server running on: http://localhost:8000
-# API documentation: http://localhost:8000/docs`}</code>
+# Visual Dashboard: http://localhost:8000/dashboard
+# Dev API Key: mk_live_default_dev_key_123456`}</code>
                 </pre>
               )}
 
@@ -631,7 +740,7 @@ pip install kyros-sdk
 import kyros
 client = kyros.Client(
     base_url="http://localhost:8000",
-    api_key="your_api_key"
+    api_key="mk_live_default_dev_key_123456"
 )
 
 # Store episodic memory
@@ -653,7 +762,7 @@ npm install @kyros/sdk
 import { KyrosClient } from '@kyros/sdk';
 const client = new KyrosClient({
   baseUrl: 'http://localhost:8000',
-  apiKey: 'your_api_key'
+  apiKey: 'mk_live_default_dev_key_123456'
 });
 
 // Store and recall memories

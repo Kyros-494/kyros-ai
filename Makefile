@@ -92,34 +92,40 @@ benchmark-quick:
 	docker-compose exec kyros-server python tests/benchmarks/run_local.py \
 		--locomo /data/locomo10.json \
 		--msc    /data/msc_personas_all.json \
-		--quick
+		--quick \
+		--verbose
 
 benchmark-locomo:
 	docker-compose exec kyros-server python tests/benchmarks/run_local.py \
 		--locomo /data/locomo10.json \
-		--only locomo
+		--only locomo \
+		--verbose
 
 benchmark-msc:
 	docker-compose exec kyros-server python tests/benchmarks/run_local.py \
 		--msc /data/msc_personas_all.json \
-		--only msc
+		--only msc \
+		--verbose
 
 benchmark-latency:
 	docker-compose exec kyros-server python tests/benchmarks/run_local.py \
-		--only latency --scales 1000 10000
+		--only latency --scales 1000 10000 \
+		--verbose
 
 benchmark-tamper:
 	docker-compose exec kyros-server python tests/benchmarks/run_local.py \
-		--only tamper
+		--only tamper \
+		--verbose
 
 benchmark-all:
 	docker-compose exec kyros-server python tests/benchmarks/run_local.py \
 		--locomo /data/locomo10.json \
-		--msc    /data/msc_personas_all.json
+		--msc    /data/msc_personas_all.json \
+		--verbose
 
 # ─── Full CI locally ──────────────────────────
 ci: lint test sdk-test
-	@echo "✅ All checks passed"
+	@echo " All checks passed"
 
 # ─── Website ──────────────────────────────────
 website-dev:

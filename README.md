@@ -52,7 +52,7 @@ Kyros provides a **complete memory system** in a single SDK:
 ```python
 import kyros
 
-client = kyros.Client(api_key="your_api_key")
+client = kyros.Client(api_key="mk_live_default_dev_key_123456")
 
 # Store a memory
 client.remember("agent-1", "User prefers Python for backend development")
@@ -174,7 +174,7 @@ import kyros
 # Initialize client
 client = kyros.Client(
     base_url="http://localhost:8000",  # or https://api.kyros.ai
-    api_key="your_api_key"
+    api_key="mk_live_default_dev_key_123456"
 )
 
 # Store episodic memory (what happened)
@@ -217,7 +217,7 @@ import { KyrosClient } from '@kyros/sdk';
 // Initialize client
 const client = new KyrosClient({
   baseUrl: 'http://localhost:8000',  // or https://api.kyros.ai
-  apiKey: 'your_api_key'
+  apiKey: 'mk_live_default_dev_key_123456'
 });
 
 // Store and query memories
@@ -252,7 +252,7 @@ from langchain.llms import OpenAI
 # Initialize Kyros memory
 memory = KyrosMemory(
     agent_id="chatbot-1",
-    api_key="your_api_key"
+    api_key="mk_live_default_dev_key_123456"
 )
 
 # Create conversation chain
@@ -274,7 +274,7 @@ response = conversation.predict(input="What's my name?")
 ```python
 import kyros
 
-client = kyros.Client(api_key="your_api_key")
+client = kyros.Client(api_key="mk_live_default_dev_key_123456")
 
 # Agent 1: Research agent
 client.remember("researcher", "Found 3 relevant papers on neural networks")
@@ -355,6 +355,7 @@ for link in chain:
 - [Introduction](./docs/introduction.md) - Learn about Kyros and its architecture
 - [Quick Start Guide](./docs/quickstart.md) - Get up and running in 5 minutes
 - [Core Concepts](./docs/concepts.md) - Understand memory types and features
+- [SDK Publication & LLM Integrations](./docs/sdk-publication-and-integrations.md) - Guide to packaging, local installations, and LLM integrations
 
 ### SDK References
 - [Python SDK](./docs/python-sdk.md) - Complete Python API reference
