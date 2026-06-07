@@ -11,7 +11,12 @@ Usage:
 from __future__ import annotations
 
 import random
-from datetime import UTC, datetime
+from datetime import datetime
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 
 from kyros.intelligence.compression import BATCH_SIZE_L1, CompressionEngine
 from kyros.logging import get_logger
@@ -122,20 +127,20 @@ def run_quality_review() -> None:
         # Quality checks
         checks = []
         if result.compression_ratio >= 3.0:
-            checks.append("✅ Ratio ≥ 3:1")
+            checks.append("Success Ratio ≥ 3:1")
         else:
-            checks.append("⚠️ Ratio < 3:1")
+            checks.append("WARNING Ratio < 3:1")
 
         if len(result.summary) > 20:
-            checks.append("✅ Non-trivial output")
+            checks.append("Success Non-trivial output")
         else:
-            checks.append("⚠️ Output too short")
+            checks.append("WARNING Output too short")
 
         if result.summary and not result.summary.startswith("Error"):
-            checks.append("✅ No errors")
+            checks.append("Success No errors")
             passing += 1
         else:
-            checks.append("❌ Error in output")
+            checks.append("ERROR Error in output")
 
         print(f"### Checks: {' | '.join(checks)}")
         print()

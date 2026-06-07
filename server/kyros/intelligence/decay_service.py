@@ -13,7 +13,12 @@ B13: Re-verification workflow (flag stale, require confirmation)
 from __future__ import annotations
 
 import math
-from datetime import UTC, datetime
+from datetime import datetime
+try:
+    from datetime import UTC
+except ImportError:
+    from datetime import timezone
+    UTC = timezone.utc
 from typing import Any
 from uuid import UUID
 
@@ -303,24 +308,24 @@ def _generate_recommendations(stale: list[dict], by_category: dict[str, int]) ->
     # Identify worst categories
     if "market_data" in by_category:
         recs.append(
-            f"⚠️  {by_category['market_data']} market data memories are stale. "
+            f"WARNING  {by_category['market_data']} market data memories are stale. "
             f"Market data decays quickly (half-life: 1.4 days). Consider refreshing."
         )
     if "product_pricing" in by_category:
         recs.append(
-            f"⚠️  {by_category['product_pricing']} pricing memories are stale. "
+            f"WARNING  {by_category['product_pricing']} pricing memories are stale. "
             f"Verify current pricing before agent uses outdated information."
         )
     if "user_preference" in by_category:
         recs.append(
-            f"ℹ️  {by_category['user_preference']} user preference memories may be outdated. "
+            f"ℹ  {by_category['user_preference']} user preference memories may be outdated. "
             f"Consider prompting users to confirm their preferences."
         )
 
     critical = sum(1 for m in stale if m["status"] == "critical")
     if critical > 0:
         recs.append(
-            f"🚨 {critical} memories are in CRITICAL freshness state. "
+            f" {critical} memories are in CRITICAL freshness state. "
             f"These should be re-verified or archived immediately."
         )
 
