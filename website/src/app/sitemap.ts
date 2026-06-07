@@ -10,33 +10,22 @@ import { MetadataRoute } from "next";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://jai-sathvik.github.io/kyros-ai";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kyros-494.github.io/kyros-ai";
 
-  return [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1.0,
-    },
-    // Add more pages as they are created
-    // {
-    //   url: `${baseUrl}/docs`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'weekly',
-    //   priority: 0.9,
-    // },
-    // {
-    //   url: `${baseUrl}/blog`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'daily',
-    //   priority: 0.8,
-    // },
-    // {
-    //   url: `${baseUrl}/pricing`,
-    //   lastModified: new Date(),
-    //   changeFrequency: 'monthly',
-    //   priority: 0.7,
-    // },
+  const paths = [
+    { url: baseUrl, priority: 1.0, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/docs`, priority: 0.9, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/developers`, priority: 0.8, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/usecases`, priority: 0.8, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/research`, priority: 0.7, changeFrequency: "monthly" as const },
+    { url: `${baseUrl}/simulation`, priority: 0.8, changeFrequency: "weekly" as const },
+    { url: `${baseUrl}/architecture`, priority: 0.7, changeFrequency: "monthly" as const },
   ];
+
+  return paths.map((p) => ({
+    url: p.url,
+    lastModified: new Date(),
+    changeFrequency: p.changeFrequency,
+    priority: p.priority,
+  }));
 }
