@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from kyros.api.v1 import admin, causal, episodic, procedural, search, semantic, trust
+from kyros.api.v1 import admin, causal, episodic, procedural, search, semantic, smart, trust
 from kyros.config import get_settings
 from kyros.logging import get_logger, setup_logging
 from kyros.middleware.auth import AuthMiddleware
@@ -30,13 +30,13 @@ logger = get_logger("kyros.main")
 _background_tasks: set[asyncio.Task] = set()
 
 
-def create_background_task(coro) -> asyncio.Task:
+def create_background_task(coro, name: str | None = None) -> asyncio.Task:
     """Create a tracked background task with exception logging.
 
     All fire-and-forget tasks should use this instead of asyncio.create_task()
     directly so they are properly cancelled on shutdown and exceptions are logged.
     """
-    task = asyncio.create_task(coro)
+    task = asyncio.create_task(coro, name=name)
     _background_tasks.add(task)
 
     def _on_done(t: asyncio.Task) -> None:
@@ -52,14 +52,50 @@ def create_background_task(coro) -> asyncio.Task:
     return task
 
 
+async def wait_for_background_tasks(timeout: float = 300.0) -> None:
+    """Await all pending background tasks to complete.
+
+    Used by benchmarks and tests to ensure fire-and-forget intelligence
+    tasks (entities, causal, summaries) finish before proceeding.
+    """
+    if not _background_tasks:
+        return
+
+    logger.info("Waiting for all background tasks to complete...", count=len(_background_tasks))
+    print(f"      [SYSTEM] Waiting for {len(_background_tasks)} intelligence tasks to complete...")
+    
+    # We use a loop because tasks might spawn more tasks
+    start_time = asyncio.get_event_loop().time()
+    while _background_tasks:
+        if asyncio.get_event_loop().time() - start_time > timeout:
+            logger.warning("Timeout waiting for background tasks", count=len(_background_tasks))
+            print(f"      [SYSTEM] WARNING: Timeout waiting for {len(_background_tasks)} tasks")
+            break
+            
+        pending = list(_background_tasks)
+        await asyncio.gather(*pending, return_exceptions=True)
+        # Small sleep to allow any new tasks spawned by done_callbacks to register
+        await asyncio.sleep(0.1)
+
+    print("      [SYSTEM] All background tasks completed.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Startup: load ML models, connect to stores. Shutdown: cleanup."""
     logger.info("Starting Kyros", environment=settings.environment, version="0.1.0")
 
     try:
+        # Ensure we never load the deprecated L6 model
+        model_name = settings.embedding_model
+        if model_name.lower().startswith("all-minilm-l6"):
+            logger.warning(
+                "Embedding model set to L6; overriding to L12 for compatibility",
+                original=model_name,
+            )
+            model_name = "all-MiniLM-L12-v2"
         app.state.embedder = EmbeddingModel(
-            settings.embedding_model,
+            model_name,
             secondary_model_name=settings.secondary_embedding_model,
         )
         logger.info(
@@ -83,8 +119,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if settings.environment in ("development", "test"):
         try:
             await run_migrations()
+            from kyros.storage.postgres import bootstrap_default_tenant
+            if settings.api_key:
+                await bootstrap_default_tenant(settings.api_key)
         except Exception as e:
-            logger.warning("Migration check skipped (non-fatal in dev)", error=str(e))
+            logger.warning("Migration check or auto-bootstrap skipped (non-fatal in dev)", error=str(e))
 
     logger.info("Kyros ready")
     yield
@@ -201,6 +240,7 @@ async def add_request_id(request: Request, call_next: Any) -> Response:
 
 
 # ─── Routes ────────────────────────────────────
+app.include_router(smart.router, prefix="/v1", tags=["Smart Gateway"])
 app.include_router(episodic.router, prefix="/v1/memory/episodic", tags=["Episodic Memory"])
 app.include_router(semantic.router, prefix="/v1/memory/semantic", tags=["Semantic Memory"])
 app.include_router(procedural.router, prefix="/v1/memory/procedural", tags=["Procedural Memory"])
@@ -208,6 +248,14 @@ app.include_router(search.router, prefix="/v1/search", tags=["Search"])
 app.include_router(admin.router, prefix="/v1/admin", tags=["Admin"])
 app.include_router(causal.router, prefix="/v1/memory/causal", tags=["Causal Memory"])
 app.include_router(trust.router, prefix="/v1/trust", tags=["Trust"])
+
+# ─── Dashboard Static Files ────────────────────
+import os
+from fastapi.staticfiles import StaticFiles
+
+dashboard_dir = os.path.join(os.path.dirname(__file__), "dashboard")
+os.makedirs(dashboard_dir, exist_ok=True)
+app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
 
 
 # ─── Health Checks ─────────────────────────────
