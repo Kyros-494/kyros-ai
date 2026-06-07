@@ -6,6 +6,11 @@ from kyros.logging import get_logger
 
 logger = get_logger("kyros.ml.embedder")
 
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
+
 
 class EmbeddingError(Exception):
     """Raised when embedding fails."""
@@ -21,24 +26,22 @@ class EmbeddingModel:
 
     def __init__(
         self,
-        model_name: str = "all-MiniLM-L6-v2",
+        model_name: str = "all-MiniLM-L12-v2",
         secondary_model_name: str = "",
     ) -> None:
+        if SentenceTransformer is None:
+            raise EmbeddingError(
+                "sentence-transformers is not installed. Run: pip install sentence-transformers"
+            )
         try:
-            from sentence_transformers import SentenceTransformer
-
             self.model = SentenceTransformer(model_name)
             self.model_name = model_name
-            self.dimension = self.model.get_sentence_embedding_dimension()
+            self.dimension = self.model.get_embedding_dimension()
             logger.info(
                 "Embedding model loaded",
                 model=model_name,
                 dimension=self.dimension,
             )
-        except ImportError as e:
-            raise EmbeddingError(
-                "sentence-transformers is not installed. Run: pip install sentence-transformers"
-            ) from e
         except Exception as e:
             raise EmbeddingError(f"Failed to load embedding model '{model_name}': {e}") from e
 
@@ -49,11 +52,9 @@ class EmbeddingModel:
 
         if secondary_model_name:
             try:
-                from sentence_transformers import SentenceTransformer
-
                 self.secondary_model = SentenceTransformer(secondary_model_name)
                 self.secondary_model_name = secondary_model_name
-                self.secondary_dimension = self.secondary_model.get_sentence_embedding_dimension()
+                self.secondary_dimension = self.secondary_model.get_embedding_dimension()
                 logger.info(
                     "Secondary embedding model loaded",
                     model=secondary_model_name,
@@ -68,7 +69,11 @@ class EmbeddingModel:
                 )
 
     def embed(self, text: str) -> list[float]:
-        """Embed a single text string with the primary model. Returns a normalized vector."""
+        """Embed a single text string with the primary model. Returns a normalized vector.
+        
+        Truncates or pads to the expected dimension if necessary, but ideally the model
+        should match the schema (default 384).
+        """
         if not text or not text.strip():
             raise EmbeddingError("Cannot embed empty text")
 
@@ -76,7 +81,10 @@ class EmbeddingModel:
             if len(text) > 8192:
                 logger.debug("Text truncated for embedding", original_len=len(text))
                 text = text[:8192]
-            return self.model.encode(text, normalize_embeddings=True).tolist()
+            
+            vec = self.model.encode(text, normalize_embeddings=True).tolist()
+            
+            return vec
         except Exception as e:
             logger.error("Embedding failed", error=str(e), text_preview=text[:50])
             raise EmbeddingError(f"Embedding failed: {e}") from e
@@ -86,6 +94,7 @@ class EmbeddingModel:
 
         Returns:
             (primary_vector, secondary_vector) — secondary is None if no secondary model loaded.
+            primary_vector is truncated to 384 dimensions for schema compatibility.
         """
         primary = self.embed(text)
         if self.secondary_model is None:
