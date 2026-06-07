@@ -46,7 +46,7 @@ def upgrade() -> None:
         # F01, F02: Dual Embeddings for Portability
         sa.Column("embedding_secondary", Vector(1536), nullable=True),
         sa.Column(
-            "embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L6-v2"
+            "embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L12-v2"
         ),
         sa.Column("metadata", JSONB, nullable=False, server_default="{}"),
         sa.Column("importance", sa.Float(), nullable=False, server_default="0.5"),

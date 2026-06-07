@@ -43,7 +43,7 @@ def upgrade() -> None:
         # F01, F02: Dual Embeddings for Portability
         sa.Column("embedding_secondary", Vector(1536), nullable=True),
         sa.Column(
-            "embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L6-v2"
+            "embedding_model", sa.String(100), nullable=False, server_default="all-MiniLM-L12-v2"
         ),
         sa.Column("source_type", sa.String(50), nullable=False, server_default="explicit"),
         # B01: Ebbinghaus Decay Engine columns
