@@ -196,6 +196,9 @@ class StoreFactRequest(BaseModel):
     event_time: dict | None = Field(
         default=None, description="Optional absolute or relative temporal information"
     )
+    source_episodic_id: str | None = Field(
+        default=None, description="Optional link to original episodic turn"
+    )
 
 
 class FactResult(BaseModel):

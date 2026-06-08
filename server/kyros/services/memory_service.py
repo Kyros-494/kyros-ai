@@ -165,6 +165,38 @@ class MemoryService:
         # Fallback to current time if parsing fails
         return datetime.now(UTC).replace(tzinfo=None)
 
+    def _build_tsquery(self, query_text: str) -> str:
+        """Construct a flexible prefix-matching tsquery string from query_text."""
+        if not query_text:
+            return ""
+        import string
+        translator = str.maketrans("", "", string.punctuation)
+        clean_text = query_text.translate(translator).lower()
+        words = clean_text.split()
+        
+        stop_words = {
+            'the', 'and', 'for', 'in', 'of', 'to', 'a', 'an', 'on', 'at', 'by', 'is', 'are', 'was', 'were', 
+            'with', 'about', 'from', 'her', 'his', 'she', 'he', 'they', 'who', 'what', 'when', 'where', 
+            'why', 'how', 'did', 'does', 'do', 'go', 'went', 'gone', 'likely', 'would', 'want', 'still', 
+            'be', 'has', 'have', 'had', 'been', 'or', 'more', 'less', 'than', 'as', 'to', 'from', 'at', 'in',
+            'of', 'on', 'with', 'about', 'for', 'by'
+        }
+        
+        sig_words = []
+        for w in words:
+            w_clean = w.strip()
+            if w_clean and w_clean not in stop_words and len(w_clean) >= 2:
+                sig_words.append(f"{w_clean}:*")
+                
+        if not sig_words:
+            # Fallback to all words if nothing is left
+            for w in words:
+                w_clean = w.strip()
+                if w_clean:
+                    sig_words.append(f"{w_clean}:*")
+                    
+        return " | ".join(sig_words) if sig_words else ""
+
     def _extract_temporal_info(self, content: str, now: datetime) -> str | None:
         """Extract event time/date from content relative to `now`.
         
@@ -657,6 +689,14 @@ class MemoryService:
                         except Exception:
                             q_vec = query_embedding
 
+                    q_tsquery = self._build_tsquery(q_text)
+                    if q_tsquery:
+                        tsquery_expr = "to_tsquery('english', :q_tsquery)"
+                        text_params = {**params, "q_tsquery": q_tsquery}
+                    else:
+                        tsquery_expr = "plainto_tsquery('english', :q_text)"
+                        text_params = {**params, "q_text": q_text}
+
                     # 1. Episodic vector search candidate IDs
                     res_ep_vec = await session.execute(
                         text(f"""
@@ -673,10 +713,10 @@ class MemoryService:
                         text(f"""
                         SELECT id FROM episodic_memories
                         WHERE agent_id = :agent_id AND (deleted_at IS NULL OR (metadata->>'archived_by_summarizer')::boolean = true) {session_filter}
-                          AND to_tsvector('english', content || ' ' || COALESCE(role, '')) @@ plainto_tsquery('english', :q_text)
+                          AND to_tsvector('english', content || ' ' || COALESCE(role, '')) @@ {tsquery_expr}
                         LIMIT :k_fetch
                         """),
-                        {**params, "q_text": q_text}
+                        text_params
                     )
                     candidate_ids.extend(r.id for r in res_ep_text.fetchall())
                     
@@ -693,13 +733,13 @@ class MemoryService:
                     
                     # 4. Semantic keyword search candidate IDs
                     res_sem_text = await session.execute(
-                        text("""
+                        text(f"""
                         SELECT id FROM semantic_memories
                         WHERE agent_id = :agent_id AND valid_to IS NULL AND deleted_at IS NULL
-                          AND to_tsvector('english', subject || ' ' || predicate || ': ' || object) @@ plainto_tsquery('english', :q_text)
+                          AND to_tsvector('english', subject || ' ' || predicate || ': ' || object) @@ {tsquery_expr}
                         LIMIT :k_fetch
                         """),
-                        {**params, "q_text": q_text}
+                        text_params
                     )
                     candidate_ids.extend(r.id for r in res_sem_text.fetchall())
                     
@@ -716,13 +756,13 @@ class MemoryService:
                     
                     # 6. Procedural keyword search candidate IDs
                     res_proc_text = await session.execute(
-                        text("""
+                        text(f"""
                         SELECT id FROM procedural_memories
                         WHERE agent_id = :agent_id AND deleted_at IS NULL
-                          AND to_tsvector('english', name || ': ' || description) @@ plainto_tsquery('english', :q_text)
+                          AND to_tsvector('english', name || ': ' || description) @@ {tsquery_expr}
                         LIMIT :k_fetch
                         """),
-                        {**params, "q_text": q_text}
+                        text_params
                     )
                     candidate_ids.extend(r.id for r in res_proc_text.fetchall())
                 
@@ -752,12 +792,19 @@ class MemoryService:
                     rows = []
                 else:
                     params["matched_ids"] = unique_candidate_ids
+                    primary_tsquery = self._build_tsquery(request.query)
+                    if primary_tsquery:
+                        stage2_tsquery_expr = "to_tsquery('english', :primary_tsquery)"
+                        params["primary_tsquery"] = primary_tsquery
+                    else:
+                        stage2_tsquery_expr = "plainto_tsquery('english', :query_text)"
+
                     # Stage 2: Fetch metadata and perform exact Postgres calculations for ONLY the matched candidate IDs
                     stage2_query = f"""
                         SELECT e.id, e.content, e.importance, e.created_at, e.metadata, e.freshness_score, 'episodic' as memory_type, e.event_time, e.role,
                                a.display_name as agent_name,
                                1 - (e.embedding <=> :query_vec) AS similarity,
-                               ts_rank_cd(to_tsvector('english', e.content || ' ' || COALESCE(e.role, '')), plainto_tsquery('english', :query_text)) AS bm25_score
+                               ts_rank_cd(to_tsvector('english', e.content || ' ' || COALESCE(e.role, '')), {stage2_tsquery_expr}) AS bm25_score
                         FROM episodic_memories e
                         LEFT JOIN agents a ON e.agent_id = a.id
                         WHERE e.id = ANY(:matched_ids) AND (e.deleted_at IS NULL OR (e.metadata->>'archived_by_summarizer')::boolean = true)
@@ -765,7 +812,7 @@ class MemoryService:
                         SELECT s.id, (s.subject || ' ' || s.predicate || ': ' || s.object) as content, s.confidence as importance, s.created_at, s.metadata, s.freshness_score, 'semantic' as memory_type, s.event_time, 'assistant' as role,
                                a.display_name as agent_name,
                                1 - (s.embedding <=> :query_vec) AS similarity,
-                               ts_rank_cd(to_tsvector('english', s.subject || ' ' || s.predicate || ': ' || s.object), plainto_tsquery('english', :query_text)) AS bm25_score
+                               ts_rank_cd(to_tsvector('english', s.subject || ' ' || s.predicate || ': ' || s.object), {stage2_tsquery_expr}) AS bm25_score
                         FROM semantic_memories s
                         LEFT JOIN agents a ON s.agent_id = a.id
                         WHERE s.id = ANY(:matched_ids) AND s.valid_to IS NULL AND s.deleted_at IS NULL
@@ -773,7 +820,7 @@ class MemoryService:
                         SELECT p.id, (p.name || ': ' || p.description) as content, 0.8 as importance, p.created_at, p.metadata, p.freshness_score, 'procedural' as memory_type, p.event_time, 'assistant' as role,
                                a.display_name as agent_name,
                                1 - (p.embedding <=> :query_vec) AS similarity,
-                               ts_rank_cd(to_tsvector('english', p.name || ': ' || p.description), plainto_tsquery('english', :query_text)) AS bm25_score
+                               ts_rank_cd(to_tsvector('english', p.name || ': ' || p.description), {stage2_tsquery_expr}) AS bm25_score
                         FROM procedural_memories p
                         LEFT JOIN agents a ON p.agent_id = a.id
                         WHERE p.id = ANY(:matched_ids) AND p.deleted_at IS NULL
@@ -974,9 +1021,14 @@ class MemoryService:
                             overlap_count = 0
                             for ew in e_sig:
                                 for qw in q_sig:
-                                    if qw == ew or (len(qw) >= 4 and len(ew) >= 4 and (qw.startswith(ew[:4]) or ew.startswith(qw[:4]))):
+                                    if qw == ew:
                                         overlap_count += 1
                                         break
+                                    else:
+                                        prefix_len = 5 if (len(qw) >= 5 and len(ew) >= 5) else 4
+                                        if len(qw) >= prefix_len and len(ew) >= prefix_len and (qw.startswith(ew[:prefix_len]) or ew.startswith(qw[:prefix_len])):
+                                            overlap_count += 1
+                                            break
                             
                             # Matching rule:
                             # - If entity name has only 1 significant word, we need at least 1 match.
@@ -1249,8 +1301,37 @@ class MemoryService:
                 )
                 old = existing.fetchone()
 
-            valid_from = now
+            # Fetch source episodic memory if provided for chronological metadata context
+            source_episodic_id = getattr(request, "source_episodic_id", None)
+            source_created_at = None
+            source_event_time = None
+
+            if source_episodic_id:
+                try:
+                    source_res = await session.execute(
+                        text("SELECT created_at, event_time FROM episodic_memories WHERE id = :id LIMIT 1"),
+                        {"id": source_episodic_id},
+                    )
+                    source_row = source_res.fetchone()
+                    if source_row:
+                        source_created_at = source_row.created_at
+                        source_event_time = source_row.event_time
+                except Exception as e:
+                    logger.warning("Failed to fetch source episodic memory context", error=str(e))
+
+            fact_created_at = source_created_at if source_created_at else now
+            valid_from = fact_created_at
             valid_to = None
+
+            # Inherit event_time from episodic context if not explicitly set
+            fact_event_time = None
+            if getattr(request, "event_time", None):
+                fact_event_time = json.dumps(request.event_time)
+            elif source_event_time:
+                if isinstance(source_event_time, (dict, list)):
+                    fact_event_time = json.dumps(source_event_time)
+                else:
+                    fact_event_time = source_event_time
 
             if old and old.object != request.object:
                 was_contradiction = True
@@ -1271,12 +1352,12 @@ class MemoryService:
                     (id, agent_id, tenant_id, subject, predicate, object,
                      confidence, embedding, embedding_secondary, embedding_model,
                      metadata, source_type, created_at, updated_at, event_time,
-                     content_hash, merkle_leaf, nonce, valid_from, valid_to)
+                     content_hash, merkle_leaf, nonce, valid_from, valid_to, source_episodic_id)
                 VALUES
                     (:id, :agent_id, :tenant_id, :subject, :predicate, :object,
                      :confidence, :embedding, :embedding_secondary, :embedding_model,
-                     :metadata, :source_type, :now, :now, :event_time,
-                     :content_hash, :merkle_leaf, :nonce, :valid_from, :valid_to)
+                     :metadata, :source_type, :created_at, :now, :event_time,
+                     :content_hash, :merkle_leaf, :nonce, :valid_from, :valid_to, :source_episodic_id)
                 """),
                 {
                     "id": fact_id,
@@ -1291,13 +1372,15 @@ class MemoryService:
                     "embedding_model": self.embedder.model_name,
                     "metadata": json.dumps(getattr(request, "metadata", {})),
                     "source_type": request.source_type,
+                    "created_at": fact_created_at,
                     "now": now,
-                    "event_time": json.dumps(getattr(request, "event_time", None)) if getattr(request, "event_time", None) else None,
+                    "event_time": fact_event_time,
                     "content_hash": stamp.content_hash,
                     "merkle_leaf": stamp.merkle_leaf,
                     "nonce": stamp.nonce,
                     "valid_from": valid_from,
                     "valid_to": valid_to,
+                    "source_episodic_id": source_episodic_id,
                 },
             )
 
@@ -1742,10 +1825,10 @@ class MemoryService:
                     text("""
                     INSERT INTO semantic_memories
                         (id, agent_id, tenant_id, subject, predicate, object,
-                         confidence, embedding, source_type, created_at, updated_at)
+                         confidence, embedding, source_type, created_at, updated_at, source_episodic_id)
                     VALUES
                         (:id, :agent_id, :tenant_id, :subject, :predicate, :object,
-                         :confidence, :embedding, :source_type, :created_at, :created_at)
+                         :confidence, :embedding, :source_type, :created_at, :created_at, :source_episodic_id)
                     ON CONFLICT DO NOTHING
                     """),
                     {
@@ -1759,6 +1842,7 @@ class MemoryService:
                         "embedding": embedding,
                         "source_type": fact.get("source_type", "explicit"),
                         "created_at": _parse_dt(fact.get("created_at")),
+                        "source_episodic_id": fact.get("source_episodic_id"),
                     },
                 )
                 counts["semantic"] += 1
