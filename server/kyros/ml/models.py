@@ -25,8 +25,9 @@ logger = get_logger("kyros.ml.models")
 # Global rate limiter to prevent "Gemini rate limit exceeded"
 # Ensures at least 0.5 seconds between LLM calls
 _llm_rate_limit_lock = asyncio.Lock()
+_llm_execution_lock = asyncio.Lock()
 _last_llm_call_time = 0.0
-_LLM_MIN_DELAY = 0.5
+_LLM_MIN_DELAY = 2.0
 
 # Persistent counter for benchmark tracking
 _STATS_FILE = "benchmark_stats.json"
@@ -114,99 +115,100 @@ async def call_llm(
     """
     global _last_llm_call_time, _global_llm_call_count
     
-    attempt = 0
-    while True:
-        attempt += 1
-        
-        # 1. Pre-emptive Rate Limiting (Internal)
-        async with _llm_rate_limit_lock:
-            now = time.monotonic()
-            elapsed = now - _last_llm_call_time
-            if elapsed < _LLM_MIN_DELAY:
-                delay = _LLM_MIN_DELAY - elapsed
-                logger.info(f"Rate limiting LLM call, sleeping for {delay:.2f}s")
-                print(f"      [LLM] Rate limiting LLM call, sleeping for {delay:.2f}s")
-                if _llm_trace_callback:
-                    _llm_trace_callback("LLM_RATE_LIMIT", f"Sleeping for {delay:.2f}s", {"delay": delay})
-                await asyncio.sleep(delay)
+    async with _llm_execution_lock:
+        attempt = 0
+        while True:
+            attempt += 1
             
-            _last_llm_call_time = time.monotonic()
-            if attempt == 1: # Only count unique calls
-                _global_llm_call_count += 1
-                _save_stats(_global_llm_call_count)
-
-        settings = get_settings()
-        
-        active_provider = provider
-        if not active_provider:
-            if settings.mistral_api_key:
-                active_provider = "mistral"
-            elif settings.gemini_api_key:
-                active_provider = "gemini"
-            elif settings.openai_api_key:
-                active_provider = "openai"
-            elif settings.anthropic_api_key:
-                active_provider = "anthropic"
-            else:
-                raise LLMError(
-                    "No LLM API key found. Set MISTRAL_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY."
-                )
-
-        if attempt > 1:
-            print(f"      [LLM] Retry attempt #{attempt} for {active_provider}...")
-
-        logger.info(f"--- Calling LLM Provider: {active_provider} ---")
-        print(f"      [LLM] Calling Provider: {active_provider}")
-        if _llm_trace_callback:
-            _llm_trace_callback("LLM_CALL", f"Calling {active_provider} (Attempt {attempt})", {"provider": active_provider, "prompt_preview": prompt[:100]})
-        
-        start_time = time.perf_counter()
-        try:
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                if active_provider == "mistral":
-                    res = await _call_mistral(client, prompt, system_prompt, temperature)
-                elif active_provider == "openai":
-                    res = await _call_openai(client, prompt, system_prompt, temperature)
-                elif active_provider == "gemini":
-                    res = await _call_gemini(client, prompt, system_prompt)
-                elif active_provider == "anthropic":
-                    res = await _call_anthropic(client, prompt, system_prompt, temperature)
-                else:
-                    raise LLMError(f"Unsupported provider: {active_provider!r}")
+            # 1. Pre-emptive Rate Limiting (Internal)
+            async with _llm_rate_limit_lock:
+                now = time.monotonic()
+                elapsed = now - _last_llm_call_time
+                if elapsed < _LLM_MIN_DELAY:
+                    delay = _LLM_MIN_DELAY - elapsed
+                    logger.info(f"Rate limiting LLM call, sleeping for {delay:.2f}s")
+                    print(f"      [LLM] Rate limiting LLM call, sleeping for {delay:.2f}s")
+                    if _llm_trace_callback:
+                        _llm_trace_callback("LLM_RATE_LIMIT", f"Sleeping for {delay:.2f}s", {"delay": delay})
+                    await asyncio.sleep(delay)
                 
-                duration = (time.perf_counter() - start_time) * 1000
-                logger.info(f"--- LLM Response Received ({duration:.2f}ms) ---")
-                snippet = res.replace('\n', ' ')[:100] + "..." if len(res) > 100 else res.replace('\n', ' ')
-                print(f"      [LLM] Response Received ({duration:.2f}ms): {snippet}")
-                if _llm_trace_callback:
-                    _llm_trace_callback("LLM_RESPONSE", f"Received response from {active_provider}", {"duration_ms": duration, "response": res})
-                return res
+                if attempt == 1: # Only count unique calls
+                    _global_llm_call_count += 1
+                    _save_stats(_global_llm_call_count)
 
-        except LLMError as e:
-            err_str = str(e).lower()
-            # If it's a fatal error (Auth, Bad Request), raise immediately
-            if any(x in err_str for x in ["api key is invalid", "bad request", "unsupported provider", "lacks permissions"]):
-                print(f"      [LLM FATAL ERROR] {str(e)}")
-                raise
+            settings = get_settings()
             
-            # If it's a rate limit or server error, wait and retry
-            wait_time = 20.0 if "rate limit" in err_str else 5.0
-            print(f"      [LLM RETRYABLE ERROR] {str(e)}. Retrying in {wait_time}s...")
+            active_provider = provider
+            if not active_provider:
+                if settings.mistral_api_key:
+                    active_provider = "mistral"
+                elif settings.gemini_api_key:
+                    active_provider = "gemini"
+                elif settings.openai_api_key:
+                    active_provider = "openai"
+                elif settings.anthropic_api_key:
+                    active_provider = "anthropic"
+                else:
+                    raise LLMError(
+                        "No LLM API key found. Set MISTRAL_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY."
+                    )
+
+            if attempt > 1:
+                print(f"      [LLM] Retry attempt #{attempt} for {active_provider}...")
+
+            logger.info(f"--- Calling LLM Provider: {active_provider} ---")
+            print(f"      [LLM] Calling Provider: {active_provider}")
             if _llm_trace_callback:
-                _llm_trace_callback("LLM_RETRY", f"Retrying due to error: {e}", {"attempt": attempt, "wait": wait_time})
-            await asyncio.sleep(wait_time)
-            continue
+                _llm_trace_callback("LLM_CALL", f"Calling {active_provider} (Attempt {attempt})", {"provider": active_provider, "prompt_preview": prompt[:100]})
+            
+            start_time = time.perf_counter()
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    if active_provider == "mistral":
+                        res = await _call_mistral(client, prompt, system_prompt, temperature)
+                    elif active_provider == "openai":
+                        res = await _call_openai(client, prompt, system_prompt, temperature)
+                    elif active_provider == "gemini":
+                        res = await _call_gemini(client, prompt, system_prompt)
+                    elif active_provider == "anthropic":
+                        res = await _call_anthropic(client, prompt, system_prompt, temperature)
+                    else:
+                        raise LLMError(f"Unsupported provider: {active_provider!r}")
+                    
+                    duration = (time.perf_counter() - start_time) * 1000
+                    logger.info(f"--- LLM Response Received ({duration:.2f}ms) ---")
+                    snippet = res.replace('\n', ' ')[:100] + "..." if len(res) > 100 else res.replace('\n', ' ')
+                    print(f"      [LLM] Response Received ({duration:.2f}ms): {snippet}")
+                    if _llm_trace_callback:
+                        _llm_trace_callback("LLM_RESPONSE", f"Received response from {active_provider}", {"duration_ms": duration, "response": res})
+                    _last_llm_call_time = time.monotonic()
+                    return res
 
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
-            wait_time = 10.0
-            print(f"      [LLM NETWORK ERROR] {str(e)}. Retrying in {wait_time}s...")
-            await asyncio.sleep(wait_time)
-            continue
+            except LLMError as e:
+                err_str = str(e).lower()
+                # If it's a fatal error (Auth, Bad Request), raise immediately
+                if any(x in err_str for x in ["api key is invalid", "bad request", "unsupported provider", "lacks permissions"]):
+                    print(f"      [LLM FATAL ERROR] {str(e)}")
+                    raise
+                
+                # If it's a rate limit or server error, wait and retry
+                wait_time = 20.0 if "rate limit" in err_str else 5.0
+                print(f"      [LLM RETRYABLE ERROR] {str(e)}. Retrying in {wait_time}s...")
+                if _llm_trace_callback:
+                    _llm_trace_callback("LLM_RETRY", f"Retrying due to error: {e}", {"attempt": attempt, "wait": wait_time})
+                await asyncio.sleep(wait_time)
+                continue
 
-        except Exception as e:
-            print(f"      [LLM UNEXPECTED ERROR] {str(e)}. Retrying in 5.0s...")
-            await asyncio.sleep(5.0)
-            continue
+            except (httpx.TimeoutException, httpx.ConnectError) as e:
+                wait_time = 10.0
+                print(f"      [LLM NETWORK ERROR] {str(e)}. Retrying in {wait_time}s...")
+                await asyncio.sleep(wait_time)
+                continue
+
+            except Exception as e:
+                print(f"      [LLM UNEXPECTED ERROR] {str(e)}. Retrying in 5.0s...")
+                await asyncio.sleep(5.0)
+                continue
 
 
 async def _call_mistral(
