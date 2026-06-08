@@ -115,6 +115,10 @@ class RecallRequest(BaseModel):
         default_factory=dict,
         description="Optional metadata for search context (e.g. reference_time)"
     )
+    strict: bool = Field(
+        default=False,
+        description="Strict deterministic recall mode (bypass vector search and use only canonical fact store)",
+    )
 
     @field_validator("query")
     @classmethod
