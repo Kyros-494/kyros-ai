@@ -64,6 +64,54 @@ Format:
 """
 
 
+def merge_properties(existing: Any, new: Any) -> Any:
+    """Recursively merges two property values.
+
+    Rules:
+    - If both are dictionaries: merge key-by-key recursively.
+    - If both are lists: merge them preserving order and uniqueness.
+    - If one is a list and other is a scalar: convert scalar to list and merge uniquely.
+    - If both are scalar values:
+      - If they are equal, return the value.
+      - If they are different, return a list containing both uniquely.
+    - If either is None, return the non-None one.
+    """
+    if existing is None:
+        return new
+    if new is None:
+        return existing
+
+    if isinstance(existing, dict) and isinstance(new, dict):
+        merged = dict(existing)
+        for k, v in new.items():
+            if k in merged:
+                merged[k] = merge_properties(merged[k], v)
+            else:
+                merged[k] = v
+        return merged
+
+    if isinstance(existing, list) and isinstance(new, list):
+        merged_list = list(existing)
+        for item in new:
+            if item not in merged_list:
+                merged_list.append(item)
+        return merged_list
+
+    if isinstance(existing, list):
+        if new not in existing:
+            return existing + [new]
+        return existing
+
+    if isinstance(new, list):
+        if existing not in new:
+            return [existing] + new
+        return new
+
+    if existing == new:
+        return existing
+    return [existing, new]
+
+
 async def extract_entities(text_content: str) -> list[dict[str, Any]]:
     """Extract named entities and their properties from content using LLM."""
     if not text_content or not text_content.strip():
@@ -153,8 +201,8 @@ async def resolve_and_update_entities(
                     # Resolve to existing and merge properties
                     entity_id = row.id
                     existing_state = dict(row.state or {})
-                    # Merge logic (new overrides old where present)
-                    merged_state = {**existing_state, **properties}
+                    # Merge logic (recursive/deep merge)
+                    merged_state = merge_properties(existing_state, properties)
 
                     await session.execute(
                         text("""
@@ -241,7 +289,7 @@ async def resolve_and_update_entities(
                             # Resolve to existing and merge properties
                             existing_entity_id = row.id
                             existing_state = dict(row.state or {})
-                            merged_state = {**existing_state, **properties}
+                            merged_state = merge_properties(existing_state, properties)
                             
                             await session.execute(
                                 text("""

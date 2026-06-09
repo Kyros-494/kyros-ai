@@ -115,6 +115,10 @@ class RecallRequest(BaseModel):
         default_factory=dict,
         description="Optional metadata for search context (e.g. reference_time)"
     )
+    strict: bool = Field(
+        default=False,
+        description="Strict deterministic recall mode (bypass vector search and use only canonical fact store)",
+    )
 
     @field_validator("query")
     @classmethod
@@ -191,6 +195,9 @@ class StoreFactRequest(BaseModel):
     # E05: Event Time support
     event_time: dict | None = Field(
         default=None, description="Optional absolute or relative temporal information"
+    )
+    source_episodic_id: str | None = Field(
+        default=None, description="Optional link to original episodic turn"
     )
 
 

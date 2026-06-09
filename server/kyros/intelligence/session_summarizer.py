@@ -102,8 +102,12 @@ async def summarize_session_if_needed(
             )
 
             # 2. Extract the oldest N turns for compression
-            to_compress = turns[:compress_count]
-            remaining = turns[compress_count:]
+            # We want to compress all historical turns except for the most recent `keep_turns`.
+            # This ensures we reduce the total active turns below `max_turns` in a single run.
+            keep_turns = max_turns - compress_count
+            actual_compress_count = max(compress_count, len(turns) - keep_turns)
+            to_compress = turns[:actual_compress_count]
+            remaining = turns[actual_compress_count:]
 
             # Format history string for LLM summarizer
             history_parts = []

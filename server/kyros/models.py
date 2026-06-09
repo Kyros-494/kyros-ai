@@ -179,6 +179,9 @@ class SemanticMemory(Base):
     # Bitemporal modeling fields
     valid_from = Column(DateTime, nullable=False, server_default=func.now())
     valid_to = Column(DateTime, nullable=True)
+    source_episodic_id = Column(
+        UUID(as_uuid=True), ForeignKey("episodic_memories.id", ondelete="SET NULL"), nullable=True
+    )
 
     __table_args__ = (
         Index("ix_semantic_agent_subject", "agent_id", "subject"),
@@ -188,6 +191,7 @@ class SemanticMemory(Base):
     )
 
     agent = relationship("Agent", back_populates="semantic_memories")
+    source_episodic = relationship("EpisodicMemory")
 
 
 # ─── E18: Procedural Memories ─────────────────
