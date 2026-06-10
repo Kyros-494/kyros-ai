@@ -94,7 +94,7 @@ class RememberResponse(BaseModel):
 class RecallRequest(BaseModel):
     agent_id: str = Field(..., min_length=1, max_length=255)
     query: str = Field(
-        ..., min_length=1, max_length=5_000, description="Natural language search query"
+        default="", max_length=5_000, description="Natural language search query"
     )
     memory_type: MemoryType | None = None
     k: int = Field(default=10, ge=1, le=100, description="Number of results to return")
@@ -123,8 +123,6 @@ class RecallRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def query_not_blank(cls, v: str) -> str:
-        if not v.strip():
-            raise ValueError("query must not be blank")
         return v
 
     @field_validator("agent_id")
@@ -249,7 +247,7 @@ class StoreProcedureResponse(BaseModel):
 
 class MatchProcedureRequest(BaseModel):
     agent_id: str = Field(..., min_length=1, max_length=255)
-    task_description: str = Field(..., min_length=1, max_length=5_000)
+    task_description: str = Field(default="", max_length=5_000)
     k: int = Field(default=5, ge=1, le=20)
 
 
