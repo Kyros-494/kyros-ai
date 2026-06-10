@@ -203,10 +203,16 @@ async def get_stale_memories(
     ]
 
     for table, mem_type in tables:
+        content_expr = "content"
+        if table == "semantic_memories":
+            content_expr = "subject || ' ' || predicate || ' ' || object AS content"
+        elif table == "procedural_memories":
+            content_expr = "name || ': ' || description AS content"
+
         async with get_db_session() as session:
             result = await session.execute(
                 text(f"""
-                SELECT id, content, freshness_score, memory_category,
+                SELECT id, {content_expr}, freshness_score, memory_category,
                        decay_rate, created_at
                 FROM {table}
                 WHERE agent_id = :aid

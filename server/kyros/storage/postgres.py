@@ -108,8 +108,22 @@ async def run_migrations() -> None:
     This ensures migrations are applied automatically in development and test environments
     without risking async event loop issues.
     """
+    import os
     import subprocess
     import sys
+
+    # If running inside the container, script_location in alembic.ini needs to point to 'alembic' instead of 'server/alembic'
+    if not os.path.exists("server/alembic") and os.path.exists("alembic") and os.path.exists("alembic.ini"):
+        try:
+            with open("alembic.ini", "r") as f:
+                content = f.read()
+            if "script_location = server/alembic" in content:
+                content = content.replace("script_location = server/alembic", "script_location = alembic")
+                with open("alembic.ini", "w") as f:
+                    f.write(content)
+                logger.info("Adjusted alembic.ini script_location for container environment")
+        except Exception as e:
+            logger.warning("Failed to adjust alembic.ini for container environment", error=str(e))
 
     logger.info("Running database migrations via Alembic...")
     try:
