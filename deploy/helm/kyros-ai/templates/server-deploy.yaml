@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kyros-ai.fullname" . }}-server
+  labels:
+    app.kubernetes.io/name: {{ include "kyros-ai.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: server
+spec:
+  {{- if not .Values.server.autoscaling.enabled }}
+  replicas: {{ .Values.server.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kyros-ai.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kyros-ai.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: server
+    spec:
+      containers:
+        - name: server
+          image: "{{ .Values.server.image.repository }}:{{ .Values.server.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.server.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.server.service.port }}
+              protocol: TCP
+          env:
+            - name: KYROS_ENVIRONMENT
+              value: {{ .Values.global.environment | quote }}
+            - name: KYROS_DATABASE_URL
+              value: "postgresql+asyncpg://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ .Values.postgres.host }}:{{ .Values.postgres.port }}/{{ .Values.postgres.database }}"
+            - name: KYROS_REDIS_URL
+              value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}/{{ .Values.redis.db }}"
+            - name: KYROS_JWT_SECRET_KEY
+              value: {{ .Values.server.jwtSecretKey | quote }}
+            - name: KYROS_DB_POOL_SIZE
+              value: {{ .Values.postgres.poolSize | quote }}
+            - name: KYROS_DB_MAX_OVERFLOW
+              value: {{ .Values.postgres.maxOverflow | quote }}
+            {{- if .Values.server.extraEnv }}
+            {{- toYaml .Values.server.extraEnv | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.server.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.server.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.server.resources | nindent 12 }}

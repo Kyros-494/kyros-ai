@@ -1,0 +1,156 @@
+# Default values for kyros-ai.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  environment: production
+
+# Kyros API Server Configuration
+server:
+  replicaCount: 2
+
+  image:
+    repository: kyros-server
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "latest"
+
+  service:
+    type: ClusterIP
+    port: 8000
+
+  resources:
+    limits:
+      cpu: "1"
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health/ready
+      port: 8000
+    initialDelaySeconds: 30
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+    targetMemoryUtilizationPercentage: 80
+
+  # Secret key configuration for JWT tokens
+  jwtSecretKey: "production-ready-jwt-token-key-minimum-32-chars-long"
+
+  # Extra environment variables for the server
+  extraEnv: []
+
+# Kyros Website (Next.js frontend) Configuration
+web:
+  replicaCount: 2
+
+  image:
+    repository: kyros-website
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  service:
+    type: ClusterIP
+    port: 3000
+
+  resources:
+    limits:
+      cpu: "500m"
+      memory: 1Gi
+    requests:
+      cpu: 250m
+      memory: 512Mi
+
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+  # Extra environment variables for the web UI
+  extraEnv: []
+
+# External Database & Cache configuration (Enterprise Multi-AZ / Cloud Managed services)
+# In production, do not run stateful databases inside stateless Kubernetes pods.
+# Instead, connect to managed cloud databases (AWS RDS PostgreSQL / Azure Flexible Postgres, AWS ElastiCache / Azure Cache for Redis).
+postgres:
+  host: "kyros-postgres.production.internal"
+  port: 5432
+  database: "kyros"
+  user: "kyros"
+  password: "production-secure-postgres-password-to-be-overridden"
+  poolSize: 20
+  maxOverflow: 40
+
+redis:
+  host: "kyros-redis.production.internal"
+  port: 6379
+  db: 0
+
+# Ingress controller routing rules
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  hosts:
+    - host: kyros.local
+      paths:
+        - path: /v1
+          pathType: Prefix
+          backend: server
+        - path: /health
+          pathType: Prefix
+          backend: server
+        - path: /docs
+          pathType: Prefix
+          backend: server
+        - path: /openapi.json
+          pathType: Prefix
+          backend: server
+        - path: /
+          pathType: Prefix
+          backend: web
+  tls: []
+  #  - secretName: kyros-tls-secret
+  #    hosts:
+  #      - kyros.local
