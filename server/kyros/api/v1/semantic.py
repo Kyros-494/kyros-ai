@@ -87,13 +87,14 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100) 
 
             nodes = []
             if node_ids:
+                from uuid import UUID
                 res = await session.execute(
                     text("""
                     SELECT id, subject, predicate, object, confidence
                     FROM semantic_memories
-                    WHERE id = ANY(:ids::uuid[]) AND deleted_at IS NULL
+                    WHERE id = ANY(CAST(:ids AS uuid[])) AND deleted_at IS NULL
                     """),
-                    {"ids": list(node_ids)},
+                    {"ids": [UUID(nid) for nid in node_ids]},
                 )
                 for r in res.fetchall():
                     nodes.append(

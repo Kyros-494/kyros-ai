@@ -7,10 +7,29 @@ on:
     tags:
       - "v*.*.*"
   workflow_dispatch:
+    inputs:
+      service:
+        description: "Service to build and push"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - server
+          - proxy
+          - website
+      environment:
+        description: "Environment target"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - prod
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_BASE: ${{ github.repository }}
 
 permissions:
   contents: read
@@ -19,19 +38,34 @@ permissions:
   attestations: write
 
 jobs:
-  build-and-push:
-    name: Build & Push
+  # ─── Path Filtering ─────────────────────────────────────────────────
+  changes:
+    name: Detect Changes
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - context: ./server
-            dockerfile: ./server/Dockerfile
-            suffix: ""
-          - context: ./server
-            dockerfile: ./server/proxy.Dockerfile
-            suffix: "-proxy"
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      website: ${{ steps.filter.outputs.website }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - '.github/workflows/docker-publish.yml'
+            website:
+              - 'website/**'
+              - '.github/workflows/docker-publish.yml'
 
+  # ─── Build & Push Server ────────────────────────────────────────────
+  build-server:
+    name: Build & Push Server
+    runs-on: ubuntu-latest
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'server') ||
+      github.event_name == 'push' && needs.changes.outputs.server == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -43,7 +77,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
@@ -54,7 +87,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.suffix }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
@@ -62,14 +95,15 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.inputs.environment || 'dev' }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build and push
         id: push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: ${{ github.event_name != 'pull_request' }}
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -77,9 +111,126 @@ jobs:
           platforms: linux/amd64,linux/arm64
 
       - name: Generate artifact attestation
-        if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.suffix }}
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  # ─── Build & Push Proxy ─────────────────────────────────────────────
+  build-proxy:
+    name: Build & Push Proxy
+    runs-on: ubuntu-latest
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'proxy') ||
+      github.event_name == 'push' && needs.changes.outputs.server == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-proxy
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.inputs.environment || 'dev' }},enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          file: ./server/proxy.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-proxy
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  # ─── Build & Push Website ───────────────────────────────────────────
+  build-website:
+    name: Build & Push Website
+    runs-on: ubuntu-latest
+    needs: changes
+    if: >-
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.service == 'all' || github.event.inputs.service == 'website') ||
+      github.event_name == 'push' && needs.changes.outputs.website == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-website
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ github.event.inputs.environment || 'dev' }},enable=${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Build and push
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./website
+          file: ./website/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_BASE }}-website
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true

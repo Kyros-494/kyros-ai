@@ -119,11 +119,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     if settings.environment in ("development", "test"):
         try:
             await run_migrations()
+        except Exception as e:
+            logger.warning("Migration check skipped (non-fatal in dev)", error=str(e))
+
+        try:
             from kyros.storage.postgres import bootstrap_default_tenant
             if settings.api_key:
                 await bootstrap_default_tenant(settings.api_key)
         except Exception as e:
-            logger.warning("Migration check or auto-bootstrap skipped (non-fatal in dev)", error=str(e))
+            logger.warning("Auto-bootstrap skipped (non-fatal in dev)", error=str(e))
 
     logger.info("Kyros ready")
     yield
@@ -251,11 +255,27 @@ app.include_router(trust.router, prefix="/v1/trust", tags=["Trust"])
 
 # ─── Dashboard Static Files ────────────────────
 import os
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 
 dashboard_dir = os.path.join(os.path.dirname(__file__), "dashboard")
 os.makedirs(dashboard_dir, exist_ok=True)
-app.mount("/dashboard", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/dashboard/", response_class=HTMLResponse)
+@app.get("/dashboard/index.html", response_class=HTMLResponse)
+async def serve_dashboard():
+    """Serve dashboard with no-cache headers so edits are always visible."""
+    html_path = os.path.join(dashboard_dir, "index.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return HTMLResponse(
+        content=content,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+        },
+    )
 
 
 # ─── Health Checks ─────────────────────────────
