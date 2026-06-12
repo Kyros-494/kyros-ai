@@ -441,6 +441,7 @@ class MemoryService:
                 os.environ.get("OPENAI_API_KEY")
                 or os.environ.get("GEMINI_API_KEY")
                 or os.environ.get("ANTHROPIC_API_KEY")
+                or os.environ.get("MISTRAL_API_KEY")
             ):
                 self._run_task(
                     extract_and_store_causal_edges(
@@ -485,6 +486,74 @@ class MemoryService:
         import re
         start = time.monotonic()
         tenant_id_required = self._require_tenant_id(tenant_id)
+
+        # Bypass search and embed for empty queries (dashboard listing)
+        if not request.query or not request.query.strip():
+            async with get_db_session_for_tenant(str(tenant_id_required)) as session:
+                agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
+                results = []
+                
+                # Fetch recent episodic memories
+                if request.memory_type is None or request.memory_type == MemoryType.EPISODIC:
+                    res = await session.execute(
+                        text("""
+                        SELECT id, content, importance, created_at, metadata, freshness_score, role, memory_category
+                        FROM episodic_memories
+                        WHERE agent_id = :agent_id AND deleted_at IS NULL
+                        ORDER BY created_at DESC
+                        LIMIT :limit
+                        """),
+                        {"agent_id": agent_id, "limit": request.k}
+                    )
+                    for r in res.fetchall():
+                        meta = json.loads(r.metadata) if isinstance(r.metadata, str) else (r.metadata or {})
+                        results.append(MemoryResult(
+                            memory_id=r.id,
+                            content=r.content,
+                            memory_type=MemoryType.EPISODIC,
+                            relevance_score=1.0,
+                            importance=r.importance,
+                            created_at=r.created_at,
+                            metadata=meta,
+                            freshness_score=r.freshness_score,
+                            memory_category=r.memory_category
+                        ))
+                
+                # Fetch recent semantic memories
+                if request.memory_type is None or request.memory_type == MemoryType.SEMANTIC:
+                    res = await session.execute(
+                        text("""
+                        SELECT id, subject, predicate, object, confidence, created_at, metadata, freshness_score
+                        FROM semantic_memories
+                        WHERE agent_id = :agent_id AND valid_to IS NULL AND deleted_at IS NULL
+                        ORDER BY created_at DESC
+                        LIMIT :limit
+                        """),
+                        {"agent_id": agent_id, "limit": request.k}
+                    )
+                    for r in res.fetchall():
+                        meta = json.loads(r.metadata) if isinstance(r.metadata, str) else (r.metadata or {})
+                        results.append(MemoryResult(
+                            memory_id=r.id,
+                            content=f"{r.subject} {r.predicate} {r.object}",
+                            memory_type=MemoryType.SEMANTIC,
+                            relevance_score=1.0,
+                            importance=r.confidence,
+                            created_at=r.created_at,
+                            metadata=meta,
+                            freshness_score=r.freshness_score
+                        ))
+                        
+                results.sort(key=lambda x: x.created_at, reverse=True)
+                results = results[:request.k]
+                
+                return RecallResponse(
+                    agent_id=request.agent_id,
+                    query=request.query,
+                    results=results,
+                    total_searched=len(results),
+                    latency_ms=(time.monotonic() - start) * 1000.0
+                )
         
         # 1. Query Pre-processing: Use raw query only (no HyDE/expansion LLM calls)
         # HyDE and query expansion were removed because:
@@ -1426,6 +1495,43 @@ class MemoryService:
         """Query semantic memories by vector similarity."""
         start = time.monotonic()
         tenant_id_required = self._require_tenant_id(tenant_id)
+
+        # Bypass search and embed for empty queries (dashboard listing)
+        if not request.query or not request.query.strip():
+            async with get_db_session_for_tenant(str(tenant_id_required)) as session:
+                agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
+                result = await session.execute(
+                    text("""
+                    SELECT id, subject, predicate, object, confidence, created_at, metadata, freshness_score
+                    FROM semantic_memories
+                    WHERE agent_id = :agent_id AND valid_to IS NULL AND deleted_at IS NULL
+                    ORDER BY created_at DESC
+                    LIMIT :k
+                    """),
+                    {"agent_id": agent_id, "k": request.k}
+                )
+                rows = result.fetchall()
+                results = []
+                for row in rows:
+                    meta = json.loads(row.metadata) if isinstance(row.metadata, str) else (row.metadata or {})
+                    results.append(MemoryResult(
+                        memory_id=row.id,
+                        content=f"{row.subject} {row.predicate} {row.object}",
+                        memory_type=MemoryType.SEMANTIC,
+                        relevance_score=1.0,
+                        importance=row.confidence,
+                        created_at=row.created_at,
+                        metadata=meta,
+                        freshness_score=row.freshness_score
+                    ))
+                return RecallResponse(
+                    agent_id=request.agent_id,
+                    query=request.query,
+                    results=results,
+                    total_searched=len(results),
+                    latency_ms=(time.monotonic() - start) * 1000.0
+                )
+
         query_embedding = self.embedder.embed(request.query)
 
         async with get_db_session_for_tenant(str(tenant_id_required)) as session:
@@ -1541,6 +1647,49 @@ class MemoryService:
         """Find the best matching procedure by task similarity × success rate."""
         tenant_id_required = self._require_tenant_id(tenant_id)
         start = time.monotonic()
+
+        # Bypass search and embed for empty task descriptions (dashboard listing)
+        if not request.task_description or not request.task_description.strip():
+            async with get_db_session_for_tenant(str(tenant_id_required)) as session:
+                agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
+                result = await session.execute(
+                    text("""
+                    SELECT id, name, description, task_type, steps,
+                           success_count, failure_count, avg_duration_ms, created_at,
+                           1.0 AS similarity,
+                           CASE WHEN (success_count + failure_count) > 0
+                                THEN success_count::float / (success_count + failure_count)
+                                ELSE 0.5
+                           END AS success_rate
+                    FROM procedural_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL
+                    ORDER BY created_at DESC
+                    LIMIT :k
+                    """),
+                    {"agent_id": agent_id, "k": request.k}
+                )
+                rows = result.fetchall()
+                results = []
+                for row in rows:
+                    results.append(ProceduralResult(
+                        procedure_id=row.id,
+                        name=row.name,
+                        description=row.description,
+                        task_type=row.task_type,
+                        steps=row.steps,
+                        success_rate=row.success_rate,
+                        total_executions=row.success_count + row.failure_count,
+                        relevance_score=1.0,
+                        avg_duration_ms=row.avg_duration_ms,
+                        created_at=row.created_at
+                    ))
+                return ProceduralMatchResponse(
+                    agent_id=request.agent_id,
+                    task_description=request.task_description,
+                    results=results,
+                    latency_ms=(time.monotonic() - start) * 1000.0
+                )
+
         query_embedding = self.embedder.embed(request.task_description)
 
         # E64: Success rate weighting

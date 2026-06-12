@@ -107,7 +107,6 @@ async def summarize_session_if_needed(
             keep_turns = max_turns - compress_count
             actual_compress_count = max(compress_count, len(turns) - keep_turns)
             to_compress = turns[:actual_compress_count]
-            remaining = turns[actual_compress_count:]
 
             # Format history string for LLM summarizer
             history_parts = []
