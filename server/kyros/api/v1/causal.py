@@ -136,8 +136,14 @@ async def get_causal_graph(agent_id: str, request: Request, limit: int = 100) ->
             nodes = []
             if node_ids:
                 for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
+                    content_expr = "content"
+                    if table == "semantic_memories":
+                        content_expr = "subject || ' ' || predicate || ' ' || object AS content"
+                    elif table == "procedural_memories":
+                        content_expr = "name || ': ' || description AS content"
+
                     res = await session.execute(
-                        text(f"SELECT id, content FROM {table} WHERE id = ANY(:ids::uuid[])"),
+                        text(f"SELECT id, {content_expr} FROM {table} WHERE id = ANY(CAST(:ids AS uuid[]))"),
                         {"ids": list(node_ids)},
                     )
                     for r in res.fetchall():

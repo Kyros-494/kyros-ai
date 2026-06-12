@@ -130,7 +130,7 @@ async def find_archivable_memories() -> dict[str, list[dict]]:
     """Find deleted memories ready for archival, grouped by tenant."""
     from sqlalchemy import text
 
-    cutoff = datetime.now(UTC) - timedelta(days=ARCHIVE_AFTER_DAYS)
+    cutoff = (datetime.now(UTC) - timedelta(days=ARCHIVE_AFTER_DAYS)).replace(tzinfo=None)
 
     async with get_db_session() as session:
         result = await session.execute(

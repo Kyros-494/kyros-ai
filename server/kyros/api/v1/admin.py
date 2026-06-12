@@ -360,7 +360,7 @@ async def compliance_export(agent_id: str, request: Request, days: int = 90) -> 
     try:
         async with get_db_session_for_tenant(str(tenant_id)) as session:
             agent_id_internal = await service._resolve_agent(session, tenant_id, agent_id)
-            since = _utcnow() - timedelta(days=days)
+            since = (_utcnow() - timedelta(days=days)).replace(tzinfo=None)
             result = await session.execute(
                 text("""
                 SELECT id, merkle_root, tree_size, created_at
@@ -698,3 +698,56 @@ async def create_tenant(body: CreateTenantRequest, request: Request) -> dict[str
         "plan": body.plan,
         "status": "created",
     }
+
+
+@router.post("/configure-llm")
+async def configure_llm(request: Request) -> dict[str, str]:
+    """Dynamically configure LLM API key in memory without restarting Docker."""
+    import os
+    from kyros.config import get_settings
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body") from None
+
+    provider = body.get("provider")
+    api_key = body.get("api_key")
+    allow_mock = body.get("allow_mock", False)
+
+    if allow_mock:
+        os.environ["KYROS_ALLOW_MOCK_LLM"] = "true"
+
+    if not provider or not api_key:
+        raise HTTPException(status_code=400, detail="Missing 'provider' or 'api_key'")
+
+    provider = provider.lower()
+    supported = {"openai", "gemini", "mistral", "anthropic"}
+    if provider not in supported:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+
+    settings = get_settings()
+    env_keys = {
+        "openai": "OPENAI_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "mistral": "MISTRAL_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+    }
+    
+    target_env = env_keys[provider]
+    
+    # 1. Update os.environ
+    os.environ[target_env] = api_key
+    
+    # 2. Update cached Settings object properties
+    if provider == "openai":
+        settings.openai_api_key = api_key
+    elif provider == "gemini":
+        settings.gemini_api_key = api_key
+    elif provider == "mistral":
+        settings.mistral_api_key = api_key
+    elif provider == "anthropic":
+        settings.anthropic_api_key = api_key
+
+    logger.info(f"Dynamically updated LLM key in-memory for {provider} (allow_mock={allow_mock})")
+    return {"status": "success", "message": f"LLM provider {provider} configured dynamically in-memory (allow_mock={allow_mock})."}

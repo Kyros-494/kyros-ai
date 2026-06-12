@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- D3.js for Knowledge Graph Visualization -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   
   <style>
     :root {
@@ -560,28 +562,147 @@
       gap: 1rem;
     }
 
-    /* Knowledge Graph placeholder styles */
+    /* Knowledge Graph styles */
     .graph-canvas {
-      height: 380px;
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px dashed var(--glass-border);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      height: 480px;
+      background: radial-gradient(ellipse at center, rgba(79,172,254,0.04) 0%, rgba(0,0,0,0.3) 70%);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
       position: relative;
       overflow: hidden;
     }
 
+    .graph-controls {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      display: flex;
+      gap: 0.4rem;
+      z-index: 10;
+    }
+
+    .graph-controls button {
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-family: var(--font-inter);
+      transition: all 0.2s;
+    }
+
+    .graph-controls button:hover {
+      color: var(--text-main);
+      border-color: var(--accent-blue);
+      background: rgba(79,172,254,0.15);
+    }
+
     .graph-info {
       position: absolute;
-      top: 1rem;
-      left: 1rem;
-      font-size: 0.8rem;
+      top: 0.75rem;
+      left: 0.75rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
-      background: rgba(0, 0, 0, 0.5);
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 0.35rem 0.6rem;
+      border-radius: 6px;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .graph-legend {
+      position: absolute;
+      bottom: 0.75rem;
+      left: 0.75rem;
+      display: flex;
+      gap: 1rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: rgba(0,0,0,0.55);
+      padding: 0.35rem 0.7rem;
+      border-radius: 6px;
+      z-index: 10;
+    }
+
+    .graph-legend span::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    .graph-legend .legend-subject::before { background: #4facfe; }
+    .graph-legend .legend-object::before  { background: #10b981; }
+
+    .graph-empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      gap: 0.5rem;
+    }
+
+    .graph-empty svg {
+      opacity: 0.3;
+    }
+
+    .graph-canvas svg.graph-svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .graph-canvas svg .link {
+      stroke: rgba(79,172,254,0.25);
+      stroke-width: 1.5;
+    }
+
+    .graph-canvas svg .node-circle {
+      cursor: grab;
+      transition: filter 0.2s;
+    }
+
+    .graph-canvas svg .node-circle:hover {
+      filter: brightness(1.4) drop-shadow(0 0 6px currentColor);
+    }
+
+    .graph-canvas svg .node-label {
+      font-family: var(--font-inter);
+      font-size: 11px;
+      fill: var(--text-main);
+      pointer-events: none;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    .graph-canvas svg .edge-label {
+      font-family: var(--font-inter);
+      font-size: 9px;
+      fill: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .graph-tooltip {
+      position: absolute;
+      padding: 0.5rem 0.75rem;
+      background: rgba(10,15,30,0.95);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-main);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 100;
+      max-width: 260px;
+      backdrop-filter: blur(8px);
     }
 
     /* Loading state */
@@ -774,10 +895,25 @@
         <div class="panel">
           <div class="panel-header">
             <div class="panel-title">Semantic Knowledge Graph Visualizer</div>
+            <button id="refresh-graph-btn" class="btn secondary">Refresh Graph</button>
           </div>
           <div class="graph-canvas" id="graph-canvas-container">
-            <div class="graph-info">Interactive visual D3.js graph coming soon</div>
-            <svg id="visual-graph-svg" width="100%" height="100%"></svg>
+            <div class="graph-info" id="graph-info-badge">0 nodes · 0 edges</div>
+            <div class="graph-controls">
+              <button id="graph-zoom-in" title="Zoom In">+</button>
+              <button id="graph-zoom-out" title="Zoom Out">−</button>
+              <button id="graph-zoom-reset" title="Reset View">⟲</button>
+            </div>
+            <div class="graph-empty" id="graph-empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="16.5"/><line x1="8.5" y1="6" x2="15" y2="6"/></svg>
+              <span>Select an agent and store some facts to see the graph</span>
+            </div>
+            <svg id="visual-graph-svg" class="graph-svg"></svg>
+            <div class="graph-legend" id="graph-legend" style="display:none;">
+              <span class="legend-subject">Subject</span>
+              <span class="legend-object">Object</span>
+            </div>
+            <div class="graph-tooltip" id="graph-tooltip"></div>
           </div>
         </div>
       </div>
@@ -1078,6 +1214,7 @@
         loadEpisodicMemories();
       } else if (activePane === 'semantic') {
         loadSemanticFacts();
+        loadSemanticGraph();
       } else if (activePane === 'procedural') {
         loadProceduralSkills();
       }
@@ -1188,14 +1325,28 @@
       results.forEach(m => {
         const row = document.createElement('tr');
         
-        // Try parsing subject/predicate/object from fact content (format: "subject predicate value" or similar)
-        // Usually, the facts results might return actual triple fields or custom text
-        // Let's print the fact as is, or try standard split
-        let subject = m.subject || 'unknown';
-        let predicate = m.predicate || 'relation';
-        let object = m.content || m.object || '';
+        // The API returns MemoryResult with content = "subject predicate object".
+        // If explicit triple fields exist, use them; otherwise parse from content.
+        let subject = m.subject || '';
+        let predicate = m.predicate || '';
+        let object = m.object || '';
         
-        const confidence = m.confidence ?? 1.0;
+        if (!subject && m.content) {
+          // Parse "subject predicate object" — first word = subject, second = predicate, rest = object
+          const parts = m.content.split(' ');
+          if (parts.length >= 3) {
+            subject = parts[0];
+            predicate = parts[1];
+            object = parts.slice(2).join(' ');
+          } else if (parts.length === 2) {
+            subject = parts[0];
+            predicate = parts[1];
+          } else {
+            subject = m.content;
+          }
+        }
+        
+        const confidence = m.confidence ?? m.relevance_score ?? 1.0;
         const confidencePercent = Math.round(confidence * 100);
 
         row.innerHTML = `
@@ -1213,6 +1364,247 @@
       });
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    //  Semantic Knowledge Graph — D3.js Force-Directed Visualization
+    // ═══════════════════════════════════════════════════════════════
+
+    let graphSimulation = null;
+
+    async function loadSemanticGraph() {
+      const container = document.getElementById('graph-canvas-container');
+      const svgEl     = document.getElementById('visual-graph-svg');
+      const emptyState = document.getElementById('graph-empty-state');
+      const infoBadge  = document.getElementById('graph-info-badge');
+      const legend     = document.getElementById('graph-legend');
+      const tooltip    = document.getElementById('graph-tooltip');
+
+      // Clear previous graph
+      if (graphSimulation) { graphSimulation.stop(); graphSimulation = null; }
+      d3.select(svgEl).selectAll('*').remove();
+
+      if (!activeAgentId) {
+        emptyState.style.display = 'flex';
+        legend.style.display = 'none';
+        infoBadge.textContent = '0 nodes · 0 edges';
+        return;
+      }
+
+      try {
+        // First try the dedicated graph endpoint
+        let nodes = [], edges = [];
+
+        const graphRes = await fetch(`${baseUrl}/v1/memory/semantic/graph/${encodeURIComponent(activeAgentId)}?limit=200`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+
+        if (graphRes.ok) {
+          const graphData = await graphRes.json();
+          nodes = graphData.nodes || [];
+          edges = graphData.edges || [];
+        }
+
+        // If graph endpoint returned no nodes, build from query results
+        if (nodes.length === 0) {
+          const qRes = await fetch(`${baseUrl}/v1/memory/semantic/query`, {
+            method: 'POST',
+            headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ agent_id: activeAgentId, query: '', k: 100 })
+          });
+
+          if (qRes.ok) {
+            const qData = await qRes.json();
+            const facts = qData.results || [];
+
+            // Build a graph from fact triples
+            const nodeMap = new Map();
+            facts.forEach((f, i) => {
+              let subj = f.subject || '';
+              let pred = f.predicate || '';
+              let obj  = f.object || '';
+
+              if (!subj && f.content) {
+                const parts = f.content.split(' ');
+                if (parts.length >= 3) {
+                  subj = parts[0];
+                  pred = parts[1];
+                  obj  = parts.slice(2).join(' ');
+                } else {
+                  subj = f.content;
+                }
+              }
+
+              if (!subj) return;
+
+              const subjKey = subj.toLowerCase();
+              const objKey  = obj.toLowerCase();
+
+              if (!nodeMap.has(subjKey)) {
+                nodeMap.set(subjKey, { id: 'subj_' + i, label: subj, type: 'subject', confidence: f.confidence ?? f.relevance_score ?? 1 });
+              }
+              if (obj && !nodeMap.has(objKey)) {
+                nodeMap.set(objKey, { id: 'obj_' + i, label: obj, type: 'object', confidence: f.confidence ?? f.relevance_score ?? 1 });
+              }
+              if (obj) {
+                edges.push({
+                  source: nodeMap.get(subjKey).id,
+                  target: nodeMap.get(objKey).id,
+                  predicate: pred,
+                  relatedness: f.confidence ?? f.relevance_score ?? 0.8
+                });
+              }
+            });
+
+            nodes = Array.from(nodeMap.values());
+          }
+        }
+
+        // Show / hide empty state
+        if (nodes.length === 0) {
+          emptyState.style.display = 'flex';
+          legend.style.display = 'none';
+          infoBadge.textContent = '0 nodes · 0 edges';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+        legend.style.display = 'flex';
+        infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
+
+        // ── D3 Force Simulation ──────────────────────────────
+        const width  = container.clientWidth;
+        const height = container.clientHeight;
+
+        const svg = d3.select(svgEl)
+          .attr('viewBox', [0, 0, width, height])
+          .attr('width', width)
+          .attr('height', height);
+
+        // Zoom behavior
+        const g = svg.append('g');
+        const zoom = d3.zoom()
+          .scaleExtent([0.3, 4])
+          .on('zoom', (event) => g.attr('transform', event.transform));
+        svg.call(zoom);
+
+        // Zoom controls
+        document.getElementById('graph-zoom-in').onclick  = () => svg.transition().duration(300).call(zoom.scaleBy, 1.4);
+        document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+        document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+
+        // Arrow marker for edges
+        svg.append('defs').append('marker')
+          .attr('id', 'arrowhead')
+          .attr('viewBox', '0 -5 10 10')
+          .attr('refX', 25)
+          .attr('refY', 0)
+          .attr('markerWidth', 6)
+          .attr('markerHeight', 6)
+          .attr('orient', 'auto')
+          .append('path')
+          .attr('d', 'M0,-5L10,0L0,5')
+          .attr('fill', 'rgba(79,172,254,0.4)');
+
+        // Color scale
+        const colorSubject = '#4facfe';
+        const colorObject  = '#10b981';
+        const nodeColor = d => d.type === 'subject' ? colorSubject : colorObject;
+
+        // Simulation
+        const simulation = d3.forceSimulation(nodes)
+          .force('link', d3.forceLink(edges).id(d => d.id).distance(140))
+          .force('charge', d3.forceManyBody().strength(-350))
+          .force('center', d3.forceCenter(width / 2, height / 2))
+          .force('collision', d3.forceCollide().radius(40));
+
+        graphSimulation = simulation;
+
+        // Draw edges
+        const link = g.append('g')
+          .selectAll('line')
+          .data(edges)
+          .join('line')
+          .attr('class', 'link')
+          .attr('marker-end', 'url(#arrowhead)')
+          .attr('stroke-opacity', d => 0.2 + (d.relatedness || 0.5) * 0.6);
+
+        // Edge labels (predicates)
+        const edgeLabels = g.append('g')
+          .selectAll('text')
+          .data(edges)
+          .join('text')
+          .attr('class', 'edge-label')
+          .attr('text-anchor', 'middle')
+          .text(d => d.predicate || '');
+
+        // Draw nodes
+        const node = g.append('g')
+          .selectAll('circle')
+          .data(nodes)
+          .join('circle')
+          .attr('class', 'node-circle')
+          .attr('r', d => 8 + (d.confidence || 0.5) * 10)
+          .attr('fill', nodeColor)
+          .attr('stroke', d => d3.color(nodeColor(d)).darker(0.5))
+          .attr('stroke-width', 2)
+          .attr('opacity', 0.9)
+          .call(d3.drag()
+            .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag',  (event, d) => { d.fx = event.x; d.fy = event.y; })
+            .on('end',   (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+          );
+
+        // Node labels
+        const labels = g.append('g')
+          .selectAll('text')
+          .data(nodes)
+          .join('text')
+          .attr('class', 'node-label')
+          .attr('dx', 14)
+          .attr('dy', 4)
+          .text(d => d.label.length > 20 ? d.label.slice(0, 18) + '…' : d.label);
+
+        // Tooltip on hover
+        node.on('mouseover', (event, d) => {
+          tooltip.style.opacity = '1';
+          tooltip.innerHTML = `<strong>${d.label}</strong><br>Type: ${d.type}<br>Confidence: ${(d.confidence || 0).toFixed(2)}`;
+          tooltip.style.left = (event.offsetX + 15) + 'px';
+          tooltip.style.top  = (event.offsetY - 10) + 'px';
+        })
+        .on('mouseout', () => { tooltip.style.opacity = '0'; });
+
+        // Pulse animation on nodes
+        node.append('animate')
+          .attr('attributeName', 'opacity')
+          .attr('values', '0.9;0.6;0.9')
+          .attr('dur', '3s')
+          .attr('repeatCount', 'indefinite');
+
+        // Tick
+        simulation.on('tick', () => {
+          link
+            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+          edgeLabels
+            .attr('x', d => (d.source.x + d.target.x) / 2)
+            .attr('y', d => (d.source.y + d.target.y) / 2);
+          node
+            .attr('cx', d => d.x).attr('cy', d => d.y);
+          labels
+            .attr('x', d => d.x).attr('y', d => d.y);
+        });
+
+      } catch (err) {
+        console.error('Graph load error:', err);
+        emptyState.querySelector('span').textContent = 'Failed to load graph data.';
+        emptyState.style.display = 'flex';
+      }
+    }
+
+    // Wire up refresh button
+    document.getElementById('refresh-graph-btn').addEventListener('click', () => {
+      if (activeAgentId) loadSemanticGraph();
+    });
+
     async function loadProceduralSkills() {
       const tableBody = document.querySelector('#procedural-table tbody');
       tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
@@ -1221,7 +1613,7 @@
         const res = await fetch(`${baseUrl}/v1/memory/procedural/match`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_id: activeAgentId, task_description: '', k: 100 })
+          body: JSON.stringify({ agent_id: activeAgentId, task_description: '', k: 20 })
         });
         
         if (res.status === 200) {
@@ -1297,7 +1689,7 @@
       }
 
       const type = memInputType.value;
-      let url = `${baseUrl}/v1/memory/episodic/remember`;
+      let url = `${baseUrl}/v1/remember`;
       let body = {};
 
       if (type === 'episodic') {
@@ -1380,7 +1772,7 @@
       tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
 
       try {
-        const res = await fetch(`${baseUrl}/v1/memory/episodic/recall`, {
+        const res = await fetch(`${baseUrl}/v1/recall`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent_id: activeAgentId, query: query, k: k })
@@ -1408,7 +1800,8 @@
 
       results.forEach(r => {
         const row = document.createElement('tr');
-        const relevancePercent = Math.round(r.similarity * 100);
+        const score = r.relevance_score ?? r.similarity ?? 0.0;
+        const relevancePercent = Math.round(score * 100);
         const freshnessPercent = Math.round((r.freshness ?? 1.0) * 100);
 
         row.innerHTML = `
@@ -1417,7 +1810,7 @@
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${relevancePercent}%;"></div>
             </div>
-            <span>${r.similarity.toFixed(2)}</span>
+            <span>${score.toFixed(2)}</span>
           </td>
           <td>
             <div class="score-bar-container">
