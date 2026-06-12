@@ -114,9 +114,12 @@ class KyrosClient:
         json: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> httpx.Response:
-        """Make a raw HTTP request and return the response with automatic retries on transient errors."""
-        import time
+        """Make a raw HTTP request and return the response.
+
+        Retries automatically on transient errors.
+        """
         import random
+        import time
 
         max_retries = 3
         backoff = 0.5
@@ -147,7 +150,10 @@ class KyrosClient:
                 ) from e
             except httpx.HTTPError as e:
                 raise KyrosError(f"HTTP error: {e}") from e
-        raise ConnectionError(f"Failed to connect to {self.base_url} after {max_retries} attempts", base_url=self.base_url)
+        raise ConnectionError(
+            f"Failed to connect to {self.base_url} after {max_retries} attempts",
+            base_url=self.base_url,
+        )
 
     def post(
         self,
@@ -179,8 +185,8 @@ class KyrosClient:
             TimeoutError: On request timeout
             ConnectionError: On connection failure
         """
-        import time
         import random
+        import time
 
         max_retries = 3
         backoff = 0.5
@@ -216,7 +222,10 @@ class KyrosClient:
                 ) from e
             except httpx.HTTPError as e:
                 raise KyrosError(f"HTTP error: {e}") from e
-        raise ConnectionError(f"Failed to connect to {self.base_url} after {max_retries} attempts", base_url=self.base_url)
+        raise ConnectionError(
+            f"Failed to connect to {self.base_url} after {max_retries} attempts",
+            base_url=self.base_url,
+        )
 
     def _handle_response(self, response: httpx.Response) -> Any:
         """Handle HTTP response and raise appropriate exceptions.
