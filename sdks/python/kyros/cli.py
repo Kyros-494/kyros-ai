@@ -168,7 +168,10 @@ def main() -> None:
             print("="*60)
             print(summarize_res.summary)
             print("-"*60)
-            print(f"Memories compressed: {summarize_res.memory_count} | Ratio: {summarize_res.compression_ratio:.2%}")
+            print(
+                f"Memories compressed: {summarize_res.memory_count} | "
+                f"Ratio: {summarize_res.compression_ratio:.2%}"
+            )
 
     except KyrosError as e:
         print(f"Kyros API Error: {e}", file=sys.stderr)
