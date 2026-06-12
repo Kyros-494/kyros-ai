@@ -62,9 +62,6 @@ jobs:
       github.event_name == 'release' ||
       github.event.inputs.sdk == 'typescript' ||
       github.event.inputs.sdk == 'both'
-    environment:
-      name: npm
-      url: https://www.npmjs.com/package/@kyros.494/sdk
 
     steps:
       - uses: actions/checkout@v6
