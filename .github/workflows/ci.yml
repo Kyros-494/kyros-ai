@@ -15,10 +15,41 @@ permissions:
   contents: read
 
 jobs:
-  # ─── Lint & Format ──────────────────────────────────────────────────
+  # ─── Path Filtering ─────────────────────────────────────────────────
+  changes:
+    name: Detect Changed Components
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      sdk-python: ${{ steps.filter.outputs.sdk-python }}
+      sdk-typescript: ${{ steps.filter.outputs.sdk-typescript }}
+      website: ${{ steps.filter.outputs.website }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - 'tests/**'
+              - '.github/workflows/ci.yml'
+            sdk-python:
+              - 'sdks/python/**'
+              - '.github/workflows/ci.yml'
+            sdk-typescript:
+              - 'sdks/typescript/**'
+              - '.github/workflows/ci.yml'
+            website:
+              - 'website/**'
+              - '.github/workflows/ci.yml'
+
+  # ─── Lint & Format (Server) ─────────────────────────────────────────
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.server == 'true' }}
     defaults:
       run:
         working-directory: server
@@ -43,10 +74,12 @@ jobs:
       - name: Ruff format check
         run: uv run ruff format --check .
 
-  # ─── Type Checking ─────────────────────────────────────────────────
+  # ─── Type Checking (Server) ─────────────────────────────────────────
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.server == 'true' }}
     defaults:
       run:
         working-directory: server
@@ -65,10 +98,12 @@ jobs:
       - name: Mypy
         run: uv run mypy kyros/
 
-  # ─── Unit Tests ────────────────────────────────────────────────────
+  # ─── Unit Tests (Server) ────────────────────────────────────────────
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.server == 'true' }}
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
@@ -90,11 +125,12 @@ jobs:
       - name: Run unit tests
         run: uv run pytest tests/unit/ -v --tb=short -q
 
-  # ─── Edge Tests ────────────────────────────────────────────────────
+  # ─── Edge Tests (Server) ────────────────────────────────────────────
   edge-tests:
     name: Edge Tests
     runs-on: ubuntu-latest
-    needs: [lint, typecheck]
+    needs: [changes, lint, typecheck]
+    if: ${{ needs.changes.outputs.server == 'true' }}
     defaults:
       run:
         working-directory: server
@@ -117,7 +153,8 @@ jobs:
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
-    needs: [unit-tests, edge-tests]
+    needs: [changes, unit-tests, edge-tests]
+    if: ${{ needs.changes.outputs.server == 'true' }}
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -194,6 +231,8 @@ jobs:
   sdk-python:
     name: Python SDK
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.sdk-python == 'true' }}
     defaults:
       run:
         working-directory: sdks/python
@@ -219,6 +258,8 @@ jobs:
   sdk-typescript:
     name: TypeScript SDK
     runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.sdk-typescript == 'true' }}
     defaults:
       run:
         working-directory: sdks/typescript
@@ -237,11 +278,37 @@ jobs:
       - name: Lint
         run: npm run lint
 
+  # ─── Next.js Website ────────────────────────────────────────────────
+  website:
+    name: Website Build & Lint
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ needs.changes.outputs.website == 'true' }}
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
   # ─── CI Summary Gate ──────────────────────────────────────────────
   ci-pass:
     name: CI ✅
     if: always()
-    needs: [lint, typecheck, unit-tests, edge-tests, integration-tests, sdk-python, sdk-typescript]
+    needs: [changes, lint, typecheck, unit-tests, edge-tests, integration-tests, sdk-python, sdk-typescript, website]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs
@@ -253,12 +320,16 @@ jobs:
           echo "Integration: ${{ needs.integration-tests.result }}"
           echo "SDK Python: ${{ needs.sdk-python.result }}"
           echo "SDK TS: ${{ needs.sdk-typescript.result }}"
+          echo "Website: ${{ needs.website.result }}"
 
           if [[ "${{ needs.lint.result }}" == "failure" ]] || \
              [[ "${{ needs.typecheck.result }}" == "failure" ]] || \
              [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.edge-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+             [[ "${{ needs.integration-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.sdk-python.result }}" == "failure" ]] || \
+             [[ "${{ needs.sdk-typescript.result }}" == "failure" ]] || \
+             [[ "${{ needs.website.result }}" == "failure" ]]; then
             echo "❌ CI failed"
             exit 1
           fi

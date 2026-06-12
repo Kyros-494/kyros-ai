@@ -42,3 +42,10 @@ updates:
     schedule:
       interval: "weekly"
     labels: ["dependencies", "docker"]
+
+  # Next.js Website
+  - package-ecosystem: "npm"
+    directory: "/website"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "website"]
