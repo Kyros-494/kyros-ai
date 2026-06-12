@@ -64,7 +64,7 @@ jobs:
       github.event.inputs.sdk == 'both'
     environment:
       name: npm
-      url: https://www.npmjs.com/package/@kyros-ai/sdk
+      url: https://www.npmjs.com/package/@kyros.494/sdk
 
     steps:
       - uses: actions/checkout@v6
