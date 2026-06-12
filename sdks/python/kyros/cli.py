@@ -90,23 +90,22 @@ def main() -> None:
 
         elif args.command == "remember":
             client = KyrosClient(api_key=api_key, base_url=base_url)
-            res = client.remember(
+            remember_res = client.remember(
                 agent_id=args.agent,
                 content=args.content,
                 role=args.role,
                 session_id=args.session
             )
             print("Memory stored successfully.")
-            print(f"ID: {res.memory_id}")
-            print(f"Integrity Hash: {res.integrity_hash}")
+            print(f"ID: {remember_res.memory_id}")
 
         elif args.command == "recall":
             client = KyrosClient(api_key=api_key, base_url=base_url)
-            res = client.recall(agent_id=args.agent, query=args.query, k=args.k)
-            if not res.results:
+            recall_res = client.recall(agent_id=args.agent, query=args.query, k=args.k)
+            if not recall_res.results:
                 print("No matching memories found.")
             else:
-                for idx, item in enumerate(res.results, 1):
+                for idx, item in enumerate(recall_res.results, 1):
                     fresh = getattr(item, "freshness", 1.0)
                     print(f"\n[{idx}] Content: {item.content}")
                     print(f"    Relevance: {item.relevance_score:.2f} | Freshness: {fresh:.2f}")
@@ -152,24 +151,24 @@ def main() -> None:
 
         elif args.command == "audit":
             client = KyrosClient(api_key=api_key, base_url=base_url)
-            res = client.audit_integrity(agent_id=args.agent)
-            if res.get("is_intact"):
+            audit_res = client.audit_integrity(agent_id=args.agent)
+            if audit_res.get("is_intact"):
                 print(" Cryptographic Integrity Scan: INTACT (No tampering detected)")
             else:
                 print(" Cryptographic Integrity Scan: CORRUPTED")
-                print(f"Tampered records: {res.get('tampered_count')}")
-                for record in res.get("tampered_memories", []):
+                print(f"Tampered records: {audit_res.get('tampered_count')}")
+                for record in audit_res.get("tampered_memories", []):
                     print(f"  - ID: {record}")
 
         elif args.command == "summarize":
             client = KyrosClient(api_key=api_key, base_url=base_url)
-            res = client.summarise(agent_id=args.agent)
+            summarize_res = client.summarise(agent_id=args.agent)
             print("="*60)
             print(f"Agent Memory Summary: {args.agent}")
             print("="*60)
-            print(res.summary)
+            print(summarize_res.summary)
             print("-"*60)
-            print(f"Memories compressed: {res.memory_count} | Ratio: {res.compression_ratio:.2%}")
+            print(f"Memories compressed: {summarize_res.memory_count} | Ratio: {summarize_res.compression_ratio:.2%}")
 
     except KyrosError as e:
         print(f"Kyros API Error: {e}", file=sys.stderr)
