@@ -4,7 +4,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "TypeScript SDK for Kyros — persistent memory for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -13,28 +13,39 @@
     "test": "jest --passWithNoTests",
     "lint": "eslint src/"
   },
-  "keywords": ["ai", "agents", "memory", "llm", "rag", "kyros"],
+  "keywords": [
+    "ai",
+    "agents",
+    "memory",
+    "llm",
+    "rag",
+    "kyros"
+  ],
   "author": "Kyros Team <kyros.494@gmail.com>",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/Kyros-494/kyros-ai"
   },
-  "files": ["dist/"],
+  "files": [
+    "dist/"
+  ],
   "devDependencies": {
-    "typescript": "^6.0.3",
-    "@types/node": "^25.6.2",
-    "jest": "^30.4.2",
-    "ts-jest": "^29.1.0",
     "@types/jest": "^30.0.0",
+    "@types/node": "^25.6.2",
     "@typescript-eslint/eslint-plugin": "^8.61.0",
     "@typescript-eslint/parser": "^8.61.0",
-    "eslint": "^8.57.0"
+    "eslint": "^8.57.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.1.0",
+    "typescript": "^6.0.3"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.ts"],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
     "transform": {
       "^.+\\.tsx?$": [
         "ts-jest",
@@ -43,5 +54,8 @@
         }
       ]
     }
+  },
+  "dependencies": {
+    "@kyros.494/sdk": "^0.1.1"
   }
 }
