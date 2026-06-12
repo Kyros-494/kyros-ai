@@ -4,7 +4,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "TypeScript SDK for Kyros — persistent memory for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
