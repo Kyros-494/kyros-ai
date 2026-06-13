@@ -57,12 +57,16 @@ def main() -> None:
     )
     summarize_parser.add_argument("--agent", required=True, help="Agent ID")
 
+    # mcp command
+    mcp_parser = subparsers.add_parser("mcp", help="Start the Model Context Protocol (MCP) server")
+    mcp_parser.add_argument("action", choices=["start"], default="start", nargs="?", help="Action to perform")
+
     args = parser.parse_args()
 
     api_key = args.api_key or os.getenv("KYROS_API_KEY")
-    base_url = args.base_url or os.getenv("KYROS_BASE_URL") or "http://localhost:8000"
+    base_url = args.base_url or os.getenv("KYROS_BASE_URL")
 
-    if args.command != "tenant-create" and not api_key:
+    if args.command not in ("tenant-create", "mcp") and not api_key:
         print(
             "Error: No API key provided. Set KYROS_API_KEY environment variable or pass --api-key.",
             file=sys.stderr
@@ -172,6 +176,11 @@ def main() -> None:
                 f"Memories compressed: {summarize_res.memory_count} | "
                 f"Ratio: {summarize_res.compression_ratio:.2%}"
             )
+
+        elif args.command == "mcp":
+            if args.action == "start" or not args.action:
+                from kyros.mcp import run_server
+                run_server()
 
     except KyrosError as e:
         print(f"Kyros API Error: {e}", file=sys.stderr)

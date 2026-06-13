@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@kyros/sdk` are documented here.
+All notable changes to `@kyros.494/sdk` are documented here.
 
 ## [Unreleased]
 

@@ -1,17 +1,17 @@
-# @kyros/sdk
+# @kyros.494/sdk
 
 > TypeScript SDK for Kyros — persistent memory for AI agents.
 
 ## Install
 
 ```bash
-npm install @kyros/sdk
+npm install @kyros.494/sdk
 ```
 
 ## Quickstart
 
 ```typescript
-import { KyrosClient } from '@kyros/sdk';
+import { KyrosClient } from '@kyros.494/sdk';
 
 const client = new KyrosClient({ apiKey: 'mk_live_...' });
 

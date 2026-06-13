@@ -3,7 +3,7 @@
  *
  * @example
  * ```typescript
- * import { KyrosClient } from '@kyros/sdk';
+ * import { KyrosClient } from '@kyros.494/sdk';
  *
  * const client = new KyrosClient({ apiKey: 'mk_live_...' });
  * await client.remember('my-agent', 'User prefers dark mode');

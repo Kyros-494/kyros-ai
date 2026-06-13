@@ -10,7 +10,7 @@ The Kyros Python SDK provides a simple, type-safe interface to the Kyros Memory 
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -45,7 +45,7 @@ for memory in results.results:
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### From PyPI (Recommended)
 
@@ -82,7 +82,7 @@ pip install -e .
 
 ---
 
-## 🔑 Authentication
+## Authentication
 
 ### API Key
 
@@ -108,7 +108,7 @@ client = KyrosClient(
 
 ---
 
-## 📚 Core Features
+## Core Features
 
 ### Episodic Memory
 
@@ -206,7 +206,7 @@ results = client.search(
 
 ---
 
-## 🔌 Framework Integrations
+## Framework Integrations
 
 ### LangChain
 
@@ -215,10 +215,8 @@ from kyros.integrations.langchain import KyrosChatMemory
 from langchain.chains import ConversationChain
 from langchain.llms import OpenAI
 
-memory = KyrosChatMemory(
-    agent_id="agent-123",
-    api_key="your-api-key"
-)
+# Initialize memory (api_key and base_url are resolved from environment variables if omitted)
+memory = KyrosChatMemory(agent_id="agent-123")
 
 chain = ConversationChain(
     llm=OpenAI(),
@@ -261,7 +259,8 @@ inject_kyros_memory(agent, agent_id="agent-123", api_key="your-api-key")
 from kyros.integrations.crewai import get_kyros_tools
 from crewai import Agent, Task, Crew
 
-tools = get_kyros_tools(agent_id="agent-123", api_key="your-api-key")
+# Injects Kyros memory tools (api_key and base_url are resolved from environment variables if omitted)
+tools = get_kyros_tools(agent_id="agent-123")
 
 agent = Agent(
     role="Assistant",
@@ -274,7 +273,7 @@ agent = Agent(
 
 ---
 
-## 🎯 Advanced Features
+## Advanced Features
 
 ### Causal Reasoning
 
@@ -334,7 +333,7 @@ result = client.migrate_embeddings(
 
 ---
 
-## 🛠️ Development
+## Development
 
 ### Setup
 
@@ -371,7 +370,7 @@ pytest tests/test_client.py -v
 
 ---
 
-## 📖 API Reference
+## API Reference
 
 ### Client
 
@@ -493,7 +492,7 @@ Report procedure execution outcome.
 
 ---
 
-## 🐛 Error Handling
+## Error Handling
 
 ```python
 from kyros import (
@@ -528,13 +527,13 @@ except ConnectionError as e:
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](../../CONTRIBUTING.md) for details.
 
 ---
 
-## 📄 License
+## License
 
 This SDK is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
 
@@ -542,7 +541,7 @@ The Kyros server is licensed under the **Apache License 2.0**.
 
 ---
 
-## 🔗 Links
+## Links
 
 - **Homepage**: https://kyros.ai
 - **Documentation**: https://docs.kyros.ai
@@ -552,7 +551,7 @@ The Kyros server is licensed under the **Apache License 2.0**.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with:
 - [httpx](https://www.python-httpx.org/) - Modern HTTP client
@@ -560,4 +559,4 @@ Built with:
 
 ---
 
-**Made with ❤️ by the Kyros team**
+**Made by the Kyros team**
