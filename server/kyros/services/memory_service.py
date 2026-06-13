@@ -97,6 +97,17 @@ class MemoryService:
     def __init__(self, embedder: EmbeddingModel, cache: MemoryCache) -> None:
         self.embedder = embedder
         self.cache = cache
+        self.override_embedding_model: str | None = None
+
+    def _get_embedding_and_model(self, text: str) -> tuple[list[float], list[float] | None, str]:
+        model_override = getattr(self, "override_embedding_model", None)
+        emb, sec = self.embedder.embed_with_secondary(text, model_name=model_override)
+        model_name = model_override or self.embedder.model_name
+        return emb, sec, model_name
+
+    def _get_embedding(self, text: str) -> list[float]:
+        model_override = getattr(self, "override_embedding_model", None)
+        return self.embedder.embed(text, model_name=model_override)
 
     @staticmethod
     def _require_tenant_id(tenant_id: UUID | None) -> UUID:
@@ -104,7 +115,7 @@ class MemoryService:
             raise ValueError("tenant_id is required for memory operations")
         return tenant_id
 
-    def _run_task(self, coro: Any, name: str) -> asyncio.Task[Any]:
+    def _run_task(self, coro: Any, name: str, details: str | None = None) -> asyncio.Task[Any]:
         """Helper to run a fire-and-forget task with error logging.
 
         Uses the global tracked task registry from main.py when available
@@ -119,10 +130,11 @@ class MemoryService:
                 return await coro
 
         try:
-            from kyros.main import create_background_task
+            from kyros.services.background_tasks import create_background_task
 
-            return create_background_task(sem_wrapped_coro(), name=name)
-        except ImportError:
+            return create_background_task(sem_wrapped_coro(), name=name, details=details)
+        except Exception as e:
+            logger.error("Failed to import/run background task tracker", error=str(e))
             pass
 
         task = asyncio.create_task(sem_wrapped_coro(), name=name)
@@ -330,7 +342,7 @@ class MemoryService:
         self, tenant_id: UUID | None, request: RememberRequest, override_id: UUID | None = None
     ) -> RememberResponse:
         """Store an episodic memory: embed content → write DB → update cache."""
-        embedding, embedding_secondary = self.embedder.embed_with_secondary(request.content)
+        embedding, embedding_secondary, emb_model_name = self._get_embedding_and_model(request.content)
         memory_id = override_id or uuid4()
         now = self._parse_timestamp(getattr(request, "timestamp", None))
 
@@ -369,7 +381,7 @@ class MemoryService:
                     "session_id": request.session_id,
                     "embedding": embedding,
                     "embedding_secondary": embedding_secondary,
-                    "embedding_model": self.embedder.model_name,
+                    "embedding_model": emb_model_name,
                     "metadata": json.dumps(request.metadata),
                     "importance": request.importance,
                     "created_at": now,
@@ -404,7 +416,11 @@ class MemoryService:
         )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
+        self._run_task(
+            update_agent_merkle_root(agent_id, tenant_id_required),
+            "update_merkle",
+            details="Recalculating agent Merkle tree root hash"
+        )
 
         # D07: Store explicit causal edges if provided
         explicit_edges = []
@@ -433,6 +449,7 @@ class MemoryService:
             self._run_task(
                 store_causal_edges(tenant_id_required, agent_id, explicit_edges),
                 "store_causal",
+                details=f"Storing {len(explicit_edges)} explicit user causal linkages"
             )
 
         if os.environ.get("KYROS_DISABLE_BG_INTEL") != "true":
@@ -448,6 +465,7 @@ class MemoryService:
                         tenant_id_required, agent_id, memory_id, request.content, recent_memories
                     ),
                     "extract_causal",
+                    details=f"Extracting implicit causes for: {request.content[:40]}..."
                 )
 
             # Step 1: Asynchronously resolve and update entities from content
@@ -458,7 +476,8 @@ class MemoryService:
             content_with_speaker = f"[Speaker: {speaker_name}] {request.content}"
             self._run_task(
                 resolve_and_update_entities(agent_id, content_with_speaker),
-                "resolve_entities"
+                "resolve_entities",
+                details=f"Resolving entities from: {request.content[:40]}..."
             )
 
             # Step 6: Asynchronously check and compress session turns if needed
@@ -466,7 +485,8 @@ class MemoryService:
                 from kyros.intelligence.session_summarizer import summarize_session_if_needed
                 self._run_task(
                     summarize_session_if_needed(agent_id, request.session_id),
-                    "summarize_session"
+                    "summarize_session",
+                    details=f"Evaluating session compaction for ID: {request.session_id}"
                 )
 
         return RememberResponse(
@@ -561,7 +581,7 @@ class MemoryService:
         # - The embedding model cannot match factual questions to conversational turns regardless
         # - HyDE hallucinations pollute the search space
         expanded_queries = [request.query]
-        query_embedding = self.embedder.embed(request.query)
+        query_embedding = self._get_embedding(request.query)
 
         # 2. Advanced Temporal Anchoring (Production-Grade)
         # Resolve relative dates (e.g., "last Friday") based on the query reference time.
@@ -754,7 +774,7 @@ class MemoryService:
                         q_vec = query_embedding
                     else:
                         try:
-                            q_vec = self.embedder.embed(q_text)
+                            q_vec = self._get_embedding(q_text)
                         except Exception:
                             q_vec = query_embedding
 
@@ -1317,13 +1337,17 @@ class MemoryService:
             )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
+        self._run_task(
+            update_agent_merkle_root(agent_id, tenant_id_required),
+            "update_merkle",
+            details="Recalculating agent Merkle tree root hash after episodic delete"
+        )
 
     async def store_fact(self, tenant_id: UUID | None, request: StoreFactRequest, override_id: UUID | None = None) -> FactResult:
         """Store a semantic fact with automatic contradiction detection."""
         tenant_id_required = self._require_tenant_id(tenant_id)
         fact_text = f"{request.subject} {request.predicate} {request.object}"
-        embedding, embedding_secondary = self.embedder.embed_with_secondary(fact_text)
+        embedding, embedding_secondary, emb_model_name = self._get_embedding_and_model(fact_text)
         fact_id = override_id or uuid4()
         now = datetime.now(UTC).replace(tzinfo=None)
         was_contradiction = False
@@ -1438,7 +1462,7 @@ class MemoryService:
                     "confidence": request.confidence,
                     "embedding": embedding,
                     "embedding_secondary": embedding_secondary,
-                    "embedding_model": self.embedder.model_name,
+                    "embedding_model": emb_model_name,
                     "metadata": json.dumps(getattr(request, "metadata", {})),
                     "source_type": request.source_type,
                     "created_at": fact_created_at,
@@ -1459,12 +1483,17 @@ class MemoryService:
         )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
+        self._run_task(
+            update_agent_merkle_root(agent_id, tenant_id_required),
+            "update_merkle",
+            details="Recalculating agent Merkle tree root hash after semantic update"
+        )
 
         # E02: Index semantic relationships asynchronously
         self._run_task(
             index_fact_relationships(tenant_id_required, agent_id, fact_id, embedding),
             "index_fact",
+            details=f"Indexing semantic relations for fact ID: {fact_id}"
         )
 
         propagated_updates: list[dict] = []
@@ -1475,6 +1504,7 @@ class MemoryService:
                 self._run_task(
                     run_belief_propagation(agent_id, fact_id, delta, max_depth=3),
                     "belief_propagation",
+                    details=f"Propagating belief updates for contradicted fact: {fact_id} (confidence delta: {delta:.2f})"
                 )
 
         return FactResult(
@@ -1532,7 +1562,7 @@ class MemoryService:
                     latency_ms=(time.monotonic() - start) * 1000.0
                 )
 
-        query_embedding = self.embedder.embed(request.query)
+        query_embedding = self._get_embedding(request.query)
 
         async with get_db_session_for_tenant(str(tenant_id_required)) as session:
             agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
@@ -1585,7 +1615,7 @@ class MemoryService:
         """Store a learned procedure (workflow, tool-call sequence)."""
         tenant_id_required = self._require_tenant_id(tenant_id)
         desc_text = f"{request.name}: {request.description}"
-        embedding, embedding_secondary = self.embedder.embed_with_secondary(desc_text)
+        embedding, embedding_secondary, emb_model_name = self._get_embedding_and_model(desc_text)
         procedure_id = override_id or uuid4()
         now = datetime.now(UTC).replace(tzinfo=None)
         stamp = stamp_memory(desc_text, request.metadata, now.isoformat())
@@ -1618,7 +1648,7 @@ class MemoryService:
                     ),
                     "embedding": embedding,
                     "embedding_secondary": embedding_secondary,
-                    "embedding_model": self.embedder.model_name,
+                    "embedding_model": emb_model_name,
                     "metadata": json.dumps(request.metadata),
                     "now": now,
                     "event_time": json.dumps(getattr(request, "event_time", None)) if getattr(request, "event_time", None) else None,
@@ -1629,7 +1659,11 @@ class MemoryService:
             )
 
         # C08: Recalculate Merkle root asynchronously
-        self._run_task(update_agent_merkle_root(agent_id, tenant_id_required), "update_merkle")
+        self._run_task(
+            update_agent_merkle_root(agent_id, tenant_id_required),
+            "update_merkle",
+            details="Recalculating agent Merkle tree root hash after procedural update"
+        )
 
         return StoreProcedureResponse(
             procedure_id=procedure_id,
@@ -1690,7 +1724,7 @@ class MemoryService:
                     latency_ms=(time.monotonic() - start) * 1000.0
                 )
 
-        query_embedding = self.embedder.embed(request.task_description)
+        query_embedding = self._get_embedding(request.task_description)
 
         # E64: Success rate weighting
 
