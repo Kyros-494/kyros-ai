@@ -23,22 +23,28 @@ class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
     """Kyros-backed persistent memory for LangChain.
 
     Usage:
-        from kyros import KyrosClient
         from kyros.integrations.langchain import KyrosChatMemory
 
-        client = KyrosClient(api_key="mk_live_...")
-        memory = KyrosChatMemory(client=client, agent_id="my-agent")
+        # 1-line Setup with automatic env var discovery:
+        memory = KyrosChatMemory(agent_id="my-agent")
 
         chain = ConversationChain(llm=llm, memory=memory)
     """
 
-    client: KyrosClient
+    client: KyrosClient | None = None
+    api_key: str | None = None
+    base_url: str | None = None
     agent_id: str
     memory_key: str = "history"
     k: int = 10  # Number of memories to retrieve per turn
 
     class Config:
         arbitrary_types_allowed = True
+
+    def _get_client(self) -> KyrosClient:
+        if self.client is None:
+            self.client = KyrosClient(api_key=self.api_key, base_url=self.base_url)
+        return self.client
 
     @property
     def memory_variables(self) -> list[str]:
@@ -51,7 +57,8 @@ class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
             return {self.memory_key: ""}
 
         try:
-            response = self.client.recall(self.agent_id, query, k=self.k)
+            client = self._get_client()
+            response = client.recall(self.agent_id, query, k=self.k)
             context = "\n".join(r.content for r in response.results)
         except KyrosError:
             context = ""
@@ -64,10 +71,11 @@ class KyrosChatMemory(BaseMemory):  # type: ignore[misc]
         ai_msg = str(next(iter(outputs.values()), "")) if outputs else ""
 
         try:
+            client = self._get_client()
             if user_msg:
-                self.client.remember(self.agent_id, user_msg)
+                client.remember(self.agent_id, user_msg)
             if ai_msg:
-                self.client.remember(self.agent_id, ai_msg)
+                client.remember(self.agent_id, ai_msg)
         except KyrosError:
             pass  # Memory storage is best-effort — don't break the chain
 
