@@ -51,6 +51,7 @@ PUBLIC_PATHS = frozenset(
         "/redoc",
         "/openapi.json",
         "/v1/admin/tenants",
+        "/v1/admin/public/sandbox/keys",
     }
 )
 
