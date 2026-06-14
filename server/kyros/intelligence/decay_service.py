@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import math
 from datetime import datetime
+
 try:
     from datetime import UTC
 except ImportError:
@@ -275,6 +276,7 @@ async def generate_staleness_report(
     """
     if config is None:
         config = DecayConfig()
+    _ = config
 
     stale_40 = await get_stale_memories(agent_id, threshold=0.40, limit=200)
     stale_15 = [m for m in stale_40 if m["freshness_score"] < 0.15]

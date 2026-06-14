@@ -7,7 +7,9 @@ against the database, and maintains a unified, canonical entity state using JSON
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
+
 try:
     from datetime import UTC
 except ImportError:
@@ -125,12 +127,11 @@ async def extract_entities(text_content: str) -> list[dict[str, Any]]:
             return []
 
         cleaned = response_text.strip()
-        
-        # Robust JSON extraction: look for the first [ and last ]
-        import re
-        match = re.search(r'\[.*\]', cleaned, re.DOTALL)
-        if match:
-            cleaned = match.group()
+
+        start_idx = cleaned.find('[')
+        end_idx = cleaned.rfind(']')
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            cleaned = cleaned[start_idx:end_idx+1]
         elif cleaned.startswith("```"):
             # Fallback to the old cleaning method if regex fails but it looks like markdown
             cleaned = cleaned.split("```", 2)[-1] if cleaned.count("```") >= 2 else cleaned
@@ -140,6 +141,7 @@ async def extract_entities(text_content: str) -> list[dict[str, Any]]:
             entities = json.loads(cleaned)
             if isinstance(entities, list):
                 return entities
+            return []
         except json.JSONDecodeError:
             # If standard JSON parsing fails, try to fix common LLM JSON errors (like trailing commas)
             try:
@@ -148,11 +150,13 @@ async def extract_entities(text_content: str) -> list[dict[str, Any]]:
                 entities = json.loads(cleaned_fixed)
                 if isinstance(entities, list):
                     return entities
+                return []
             except Exception:
-                pass
-            
+                logger.debug("Failed to parse cleaned_fixed JSON in entity resolver")
+
             logger.warning("Entity extraction returned non-JSON response", error_raw=response_text[:200])
-            
+            return []
+
     except Exception as e:
         logger.error("Failed to extract entities", error=str(e))
         raise e
@@ -255,7 +259,7 @@ async def resolve_and_update_entities(
                         },
                     )
                     inserted_id = insert_result.scalar()
-                    
+
                     if inserted_id:
                         # Successfully inserted new entity
                         logger.info("Created new canonical entity", entity_id=str(inserted_id), name=name)
@@ -290,7 +294,7 @@ async def resolve_and_update_entities(
                             existing_entity_id = row.id
                             existing_state = dict(row.state or {})
                             merged_state = merge_properties(existing_state, properties)
-                            
+
                             await session.execute(
                                 text("""
                                 UPDATE entities
