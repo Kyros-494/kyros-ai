@@ -57,6 +57,10 @@ def main() -> None:
     )
     summarize_parser.add_argument("--agent", required=True, help="Agent ID")
 
+    # mcp command
+    mcp_parser = subparsers.add_parser("mcp", help="Model Context Protocol (MCP) subcommands")
+    mcp_parser.add_argument("action", choices=["start"], help="Action (start)")
+
     args = parser.parse_args()
 
     api_key = args.api_key or os.getenv("KYROS_API_KEY")
@@ -172,6 +176,11 @@ def main() -> None:
                 f"Memories compressed: {summarize_res.memory_count} | "
                 f"Ratio: {summarize_res.compression_ratio:.2%}"
             )
+
+        elif args.command == "mcp":
+            if args.action == "start":
+                from kyros.mcp import run_server
+                run_server()
 
     except KyrosError as e:
         print(f"Kyros API Error: {e}", file=sys.stderr)
