@@ -145,15 +145,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 This is the initial release of Kyros Memory OS, providing a complete foundation for persistent AI agent memory. The release includes:
 
-**🧠 Biological Memory Architecture**: Three distinct memory types (episodic, semantic, procedural) based on cognitive science research.
+**Biological Memory Architecture**: Three distinct memory types (episodic, semantic, procedural) based on cognitive science research.
 
-**🛡️ Self-Correcting Intelligence**: Automatic conflict resolution, natural forgetting, and cryptographic integrity protection.
+**Self-Correcting Intelligence**: Automatic conflict resolution, natural forgetting, and cryptographic integrity protection.
 
-**⚡ Production Ready**: High-performance architecture with <20ms memory recall and horizontal scaling support.
+**Production Ready**: High-performance architecture with <20ms memory recall and horizontal scaling support.
 
-**🔧 Developer Experience**: Complete SDKs for Python and TypeScript with comprehensive documentation and examples.
+**Developer Experience**: Complete SDKs for Python and TypeScript with comprehensive documentation and examples.
 
-**🐳 Easy Deployment**: Docker-based deployment with support for both development and production environments.
+**Easy Deployment**: Docker-based deployment with support for both development and production environments.
 
 ### Migration Guide
 
