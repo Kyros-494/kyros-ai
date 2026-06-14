@@ -5,8 +5,9 @@ import json
 import math
 import os
 import re
+import string
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 try:
     from datetime import UTC
@@ -22,7 +23,6 @@ from kyros.intelligence.belief import index_fact_relationships, run_belief_propa
 from kyros.intelligence.causal import (
     extract_and_store_causal_edges,
     store_causal_edges,
-    traverse_causal_chain,
 )
 from kyros.intelligence.decay import assign_decay_rate
 from kyros.intelligence.integrity import stamp_memory
@@ -70,7 +70,6 @@ from kyros.schemas.memory import (
     StoreProcedureRequest,
     StoreProcedureResponse,
 )
-
 
 # Module-level variable for lazy task semaphores to regulate background concurrency
 _task_semaphores = None
@@ -132,12 +131,9 @@ class MemoryService:
         try:
             from kyros.services.background_tasks import create_background_task
 
-            return create_background_task(sem_wrapped_coro(), name=name, details=details)
-        except Exception as e:
-            logger.error("Failed to import/run background task tracker", error=str(e))
-            pass
-
-        task = asyncio.create_task(sem_wrapped_coro(), name=name)
+            task = create_background_task(sem_wrapped_coro(), name=name, details=details)
+        except Exception:
+            task = asyncio.create_task(sem_wrapped_coro(), name=name)
 
         def handle_result(t: asyncio.Task) -> None:
             try:
@@ -152,7 +148,7 @@ class MemoryService:
         """Parse various timestamp formats (float, ISO string, Locomo format)."""
         if ts_input is None:
             return datetime.now(UTC).replace(tzinfo=None)
-        
+
         if isinstance(ts_input, (int, float)):
             try:
                 return datetime.fromtimestamp(ts_input, tz=UTC).replace(tzinfo=None)
@@ -165,14 +161,14 @@ class MemoryService:
                 # Remove Z or offset if present for replace(tzinfo=None)
                 return datetime.fromisoformat(ts_input.replace("Z", "+00:00")).replace(tzinfo=None)
             except ValueError:
-                pass
-            
+                logger.debug("ISO format timestamp parsing failed")
+
             # 2. Try Locomo format: "1:56 pm on 8 May, 2023"
             try:
                 # %p handles am/pm, %B handles full month name
                 return datetime.strptime(ts_input, "%I:%M %p on %d %B, %Y").replace(tzinfo=None)
             except ValueError:
-                pass
+                logger.debug("Locomo format timestamp parsing failed")
 
         # Fallback to current time if parsing fails
         return datetime.now(UTC).replace(tzinfo=None)
@@ -181,32 +177,30 @@ class MemoryService:
         """Construct a flexible prefix-matching tsquery string from query_text."""
         if not query_text:
             return ""
-        import string
         translator = str.maketrans("", "", string.punctuation)
         clean_text = query_text.translate(translator).lower()
         words = clean_text.split()
-        
+
         stop_words = {
-            'the', 'and', 'for', 'in', 'of', 'to', 'a', 'an', 'on', 'at', 'by', 'is', 'are', 'was', 'were', 
-            'with', 'about', 'from', 'her', 'his', 'she', 'he', 'they', 'who', 'what', 'when', 'where', 
-            'why', 'how', 'did', 'does', 'do', 'go', 'went', 'gone', 'likely', 'would', 'want', 'still', 
-            'be', 'has', 'have', 'had', 'been', 'or', 'more', 'less', 'than', 'as', 'to', 'from', 'at', 'in',
-            'of', 'on', 'with', 'about', 'for', 'by'
+            'the', 'and', 'for', 'in', 'of', 'to', 'a', 'an', 'on', 'at', 'by', 'is', 'are', 'was', 'were',
+            'with', 'about', 'from', 'her', 'his', 'she', 'he', 'they', 'who', 'what', 'when', 'where',
+            'why', 'how', 'did', 'does', 'do', 'go', 'went', 'gone', 'likely', 'would', 'want', 'still',
+            'be', 'has', 'have', 'had', 'been', 'or', 'more', 'less', 'than', 'as'
         }
-        
+
         sig_words = []
         for w in words:
             w_clean = w.strip()
             if w_clean and w_clean not in stop_words and len(w_clean) >= 2:
                 sig_words.append(f"{w_clean}:*")
-                
+
         if not sig_words:
             # Fallback to all words if nothing is left
             for w in words:
                 w_clean = w.strip()
                 if w_clean:
                     sig_words.append(f"{w_clean}:*")
-                    
+
         return " | ".join(sig_words) if sig_words else ""
 
     def _extract_temporal_info(self, content: str, now: datetime) -> str | None:
@@ -214,12 +208,9 @@ class MemoryService:
         
         Returns JSON string e.g. {"timestamp": "YYYY-MM-DD"} or None.
         """
-        import re
-        from datetime import timedelta
-        
         content_lower = content.lower()
         resolved_date = None
-        
+
         # 1. Check for relative dates
         if "yesterday" in content_lower:
             resolved_date = now.date() - timedelta(days=1)
@@ -239,7 +230,7 @@ class MemoryService:
             resolved_date = now.date() - timedelta(days=7)
         elif "two weekends ago" in content_lower or "two weekends before" in content_lower:
             resolved_date = now.date() - timedelta(days=14)
-        
+
         # "X days ago"
         if not resolved_date:
             days_ago_match = re.search(r'\b(\d+)\s+days?\s+ago\b', content_lower)
@@ -255,7 +246,7 @@ class MemoryService:
                 if word_days_match:
                     days = word_to_num[word_days_match.group(1)]
                     resolved_date = now.date() - timedelta(days=days)
-        
+
         # "last Friday", "last Monday", etc.
         if not resolved_date:
             weekday_map = {
@@ -291,15 +282,15 @@ class MemoryService:
                 try:
                     resolved_date = datetime.strptime(iso_match.group(0), "%Y-%m-%d").date()
                 except ValueError:
-                    pass
-        
+                    logger.debug("Failed parsing iso date pattern in temporal extractor")
+
         months_map = {
             "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
             "apr": 4, "april": 4, "may": 5, "jun": 6, "june": 6, "jul": 7, "july": 7,
             "aug": 8, "august": 8, "sep": 9, "september": 9, "oct": 10, "october": 10,
             "nov": 11, "november": 11, "dec": 12, "december": 12
         }
-        
+
         if not resolved_date:
             month_pattern = r'\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\b'
             date_pattern = rf'{month_pattern}\s+(\d{{1,2}})(?:st|nd|rd|th)?(?:\s*,\s*(\d{{4}}))?'
@@ -312,7 +303,7 @@ class MemoryService:
                 try:
                     resolved_date = datetime(year, month, day).date()
                 except ValueError:
-                    pass
+                    logger.debug("Failed parsing date pattern (month day, year) in temporal extractor")
 
         if not resolved_date:
             month_pattern = r'\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\b'
@@ -326,7 +317,7 @@ class MemoryService:
                 try:
                     resolved_date = datetime(year, month, day).date()
                 except ValueError:
-                    pass
+                    logger.debug("Failed parsing date pattern (day of month, year) in temporal extractor")
 
         if not resolved_date:
             year_match = re.search(r'\b(20\d{2}|19\d{2})\b', content)
@@ -503,7 +494,6 @@ class MemoryService:
         Uses similarity + recency + importance + freshness scoring.
         Query classification adjusts weights for temporal/factual/procedural queries.
         """
-        import re
         start = time.monotonic()
         tenant_id_required = self._require_tenant_id(tenant_id)
 
@@ -512,7 +502,7 @@ class MemoryService:
             async with get_db_session_for_tenant(str(tenant_id_required)) as session:
                 agent_id = await self._resolve_agent(session, tenant_id_required, request.agent_id)
                 results = []
-                
+
                 # Fetch recent episodic memories
                 if request.memory_type is None or request.memory_type == MemoryType.EPISODIC:
                     res = await session.execute(
@@ -538,7 +528,7 @@ class MemoryService:
                             freshness_score=r.freshness_score,
                             memory_category=r.memory_category
                         ))
-                
+
                 # Fetch recent semantic memories
                 if request.memory_type is None or request.memory_type == MemoryType.SEMANTIC:
                     res = await session.execute(
@@ -563,10 +553,10 @@ class MemoryService:
                             metadata=meta,
                             freshness_score=r.freshness_score
                         ))
-                        
+
                 results.sort(key=lambda x: x.created_at, reverse=True)
                 results = results[:request.k]
-                
+
                 return RecallResponse(
                     agent_id=request.agent_id,
                     query=request.query,
@@ -574,7 +564,7 @@ class MemoryService:
                     total_searched=len(results),
                     latency_ms=(time.monotonic() - start) * 1000.0
                 )
-        
+
         # 1. Query Pre-processing: Use raw query only (no HyDE/expansion LLM calls)
         # HyDE and query expansion were removed because:
         # - They add ~10s latency per recall (2+ LLM calls)
@@ -591,14 +581,14 @@ class MemoryService:
             try:
                 reference_time = self._parse_timestamp(reference_time_str)
             except Exception:
-                pass
-        
+                logger.debug("Failed parsing reference_time in recall context")
+
         # Fallback dummy QueryContext for builds where classifier is absent
         class QueryContext:
             def __init__(self, query: str = "", ref_time: datetime | None = None):
                 self.entities = []
                 self.temporal_info = {}
-                
+
                 # 1. Advanced Entity Extraction: Proper nouns, quoted strings, and common name patterns
                 # Matches "Caroline", "Melanie", "LGBTQ group", "Oliver", "Luna"
                 entity_patterns = [
@@ -615,24 +605,23 @@ class MemoryService:
                 year_match = re.search(r'\b(20\d{2})\b', query)
                 if year_match:
                     self.temporal_info["year"] = year_match.group(1)
-                
+
                 month_pattern = r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\b'
                 month_match = re.search(month_pattern, query, re.IGNORECASE)
                 if month_match:
                     self.temporal_info["month"] = month_match.group(1).capitalize()
-                
+
                 # Check for "Last Friday", "Next Tuesday" etc.
                 relative_day = re.search(r'\b(last|next|this)\s+(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\b', query, re.IGNORECASE)
                 if relative_day:
                     self.temporal_info["relative_day"] = relative_day.group(0).lower()
 
         qc = QueryContext(request.query)
-        
+
         # 4. Production-Grade Relative Temporal Resolution
         if reference_time and qc.temporal_info.get("relative_day"):
             # Resolve relative days using simple calendar math instead of LLM call
             try:
-                from datetime import timedelta
                 day_names = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
                 rel_text = qc.temporal_info["relative_day"].lower()
                 for i, day_name in enumerate(day_names):
@@ -659,7 +648,7 @@ class MemoryService:
             qc.intent = "temporal"
         elif len(qc.entities) >= 1:
             qc.intent = "entity_focused"
-        
+
         # Check for "Now", "Recent", "Latest"
         if re.search(r'\b(now|recent|latest|currently|today)\b', request.query, re.IGNORECASE):
             qc.intent = "recency_focused"
@@ -669,7 +658,7 @@ class MemoryService:
         base_w_sim = float(os.environ.get("KYROS_W_SIM", 0.50))
         base_w_bm25 = float(os.environ.get("KYROS_W_BM25", 0.20))
         base_w_recency = float(os.environ.get("KYROS_W_RECENCY", 0.10))
-        
+
         w_sim, w_bm25, w_recency = base_w_sim, base_w_bm25, base_w_recency
         entity_boost_val = float(os.environ.get("KYROS_W_ENTITY_BOOST", 0.20))
         temporal_boost_val = float(os.environ.get("KYROS_W_TEMPORAL_BOOST", 2.0))
@@ -722,43 +711,6 @@ class MemoryService:
                 session_filter = "AND session_id = :session_id"
                 params["session_id"] = request.session_id
 
-            # Entity Boost logic (Phase 2: Item 10) - Boost instead of strict filter
-            entity_boost_sql = "0"
-            if qc.entities:
-                boost_parts = []
-                for i, ent in enumerate(qc.entities[:5]):
-                    param_name = f"ent_boost_{i}"
-                    params[param_name] = f'{{"entities": ["{ent}"]}}'
-                    # Use CAST instead of ::jsonb to avoid SQLAlchemy parameter parsing issues
-                    boost_parts.append(f"(CASE WHEN metadata @> CAST(:{param_name} AS jsonb) THEN {entity_boost_val} ELSE 0 END)")
-                entity_boost_sql = " + ".join(boost_parts)
-
-            # Temporal Boost logic (Phase 5: Temporal Engine)
-            temporal_boost_sql = "0"
-            temporal_conditions = []
-            
-            if getattr(qc, "temporal_info", None):
-                if qc.temporal_info.get("resolved_date"):
-                    params["resolved_date"] = qc.temporal_info["resolved_date"]
-                    temporal_conditions.append(f"""
-                        (CASE 
-                            WHEN event_time IS NOT NULL AND event_time::jsonb->>'timestamp' = CAST(:resolved_date AS text) THEN {temporal_boost_val}
-                            WHEN created_at::date = CAST(:resolved_date AS date) THEN {temporal_boost_val / 4.0}
-                            ELSE 0 
-                        END)
-                    """)
-                
-                if qc.temporal_info.get("year"):
-                    params["t_year"] = qc.temporal_info["year"]
-                    temporal_conditions.append(f"(CASE WHEN content LIKE '%' || :t_year || '%' THEN {temporal_boost_val / 2.0} ELSE 0 END)")
-                
-                if qc.temporal_info.get("month"):
-                    params["t_month"] = qc.temporal_info["month"]
-                    temporal_conditions.append(f"(CASE WHEN content LIKE '%' || :t_month || '%' THEN {temporal_boost_val / 2.0} ELSE 0 END)")
-
-            if temporal_conditions:
-                temporal_boost_sql = " + ".join(temporal_conditions)
-
             # Phase 3: Strict Deterministic Mode
             if getattr(request, "strict", False):
                 # Bypass probabilistic vector/BM25 search entirely
@@ -766,7 +718,7 @@ class MemoryService:
             else:
                 # Stage 1: Get fast candidate IDs from lightweight index-only queries
                 candidate_ids = []
-                
+
                 # Iterate over all expanded queries (query expansion)
                 for q_idx, q_text in enumerate(expanded_queries):
                     # Embed each search variation if it is not the primary one
@@ -796,7 +748,7 @@ class MemoryService:
                         {**params, "q_vec": q_vec}
                     )
                     candidate_ids.extend(r.id for r in res_ep_vec.fetchall())
-                    
+
                     # 2. Episodic keyword search candidate IDs
                     res_ep_text = await session.execute(
                         text(f"""
@@ -808,7 +760,7 @@ class MemoryService:
                         text_params
                     )
                     candidate_ids.extend(r.id for r in res_ep_text.fetchall())
-                    
+
                     # 3. Semantic vector search candidate IDs
                     res_sem_vec = await session.execute(
                         text("""
@@ -819,7 +771,7 @@ class MemoryService:
                         {**params, "q_vec": q_vec}
                     )
                     candidate_ids.extend(r.id for r in res_sem_vec.fetchall())
-                    
+
                     # 4. Semantic keyword search candidate IDs
                     res_sem_text = await session.execute(
                         text(f"""
@@ -831,7 +783,7 @@ class MemoryService:
                         text_params
                     )
                     candidate_ids.extend(r.id for r in res_sem_text.fetchall())
-                    
+
                     # 5. Procedural vector search candidate IDs
                     res_proc_vec = await session.execute(
                         text("""
@@ -842,7 +794,7 @@ class MemoryService:
                         {**params, "q_vec": q_vec}
                     )
                     candidate_ids.extend(r.id for r in res_proc_vec.fetchall())
-                    
+
                     # 6. Procedural keyword search candidate IDs
                     res_proc_text = await session.execute(
                         text(f"""
@@ -854,7 +806,7 @@ class MemoryService:
                         text_params
                     )
                     candidate_ids.extend(r.id for r in res_proc_text.fetchall())
-                
+
                 # 7. ILIKE entity name search in episodic content (fallback for factual queries)
                 # Vector search often fails for factual questions about specific people
                 # because the embedding model can't connect "What is X's identity?" to
@@ -876,7 +828,7 @@ class MemoryService:
                             candidate_ids.extend(r.id for r in res_ilike.fetchall())
 
                 unique_candidate_ids = list(set(candidate_ids))
-                
+
                 if not unique_candidate_ids:
                     rows = []
                 else:
@@ -916,22 +868,22 @@ class MemoryService:
                     """
                     result = await session.execute(text(stage2_query), params)
                     raw_rows = result.fetchall()
-                    
+
                     # Compute hybrid score, recency decay, and boosts dynamically in the Python application layer
-                    
+
                     rows = []
-                    
+
                     for row in raw_rows:
                         # 1. Recency Decay Score (Ebbinghaus recency scoring)
                         time_diff_hours = 0.0
                         if row.created_at:
                             row_created = row.created_at.replace(tzinfo=None)
-                            base_time = (reference_time.replace(tzinfo=None) if reference_time 
+                            base_time = (reference_time.replace(tzinfo=None) if reference_time
                                          else datetime.now(UTC).replace(tzinfo=None))
                             time_diff_seconds = (base_time - row_created).total_seconds()
                             time_diff_hours = max(0.0, time_diff_seconds / 3600.0)
                         recency_score = math.exp(-1.0 * time_diff_hours / half_life_hours)
-                        
+
                         # 2. Entity Boost scoring in Python
                         entity_boost = 0.0
                         if getattr(qc, "entities", None):
@@ -946,7 +898,7 @@ class MemoryService:
                                         break
                             if has_entity:
                                 entity_boost = entity_boost_val
-                                    
+
                         # 3. Temporal Boost scoring in Python
                         temporal_boost = 0.0
                         if getattr(qc, "temporal_info", None):
@@ -958,25 +910,25 @@ class MemoryService:
                                         try:
                                             event_time = json.loads(event_time)
                                         except Exception:
-                                            pass
-                                    
+                                            logger.debug("Failed loading event_time json in recall scoring")
+
                                     if isinstance(event_time, dict) and event_time.get("timestamp") == str(resolved_date):
                                         temporal_boost += temporal_boost_val
                                     elif row.created_at and row.created_at.strftime("%Y-%m-%d") == str(resolved_date):
                                         temporal_boost += temporal_boost_val / 4.0
                                 except Exception:
-                                    pass
-                            
+                                    logger.debug("Failed parsing created_at date comparison in recall scoring")
+
                             if qc.temporal_info.get("year") and qc.temporal_info["year"] in row.content:
                                 temporal_boost += temporal_boost_val / 2.0
                             if qc.temporal_info.get("month") and qc.temporal_info["month"] in row.content:
                                 temporal_boost += temporal_boost_val / 2.0
-                                
+
                         # 4. Combined Hybrid Score computation
                         similarity = float(row.similarity or 0.0)
                         bm25_score = float(row.bm25_score or 0.0)
                         bm25_contrib = w_bm25 * (min(bm25_score * 5.0, 1.0) if bm25_score > 0 else 0.0)
-                        
+
                         hybrid_score = (
                             w_sim * similarity
                           + bm25_contrib
@@ -986,7 +938,7 @@ class MemoryService:
                           + entity_boost
                           + temporal_boost
                         )
-                        
+
                         class ScoringRow:
                             def __init__(self, original_row, h_score, sim, bm25, recency):
                                 self.id = original_row.id
@@ -1006,7 +958,7 @@ class MemoryService:
                                         if isinstance(et, dict) and et.get("timestamp"):
                                             event_str = f", Event Date: {et['timestamp']}"
                                     except Exception:
-                                        pass
+                                        logger.debug("Failed loading event_time json in scoring row formatting")
                                 time_tag = f" (Recorded: {created_str}{event_str})" if created_str else ""
                                 self.content = f"[{speaker_label}]{time_tag} {original_row.content}"
                                 self.importance = original_row.importance
@@ -1019,13 +971,13 @@ class MemoryService:
                                 self.bm25_score = bm25
                                 self.recency_score = recency
                                 self.hybrid_score = h_score
-                                
+
                         rows.append(ScoringRow(row, hybrid_score, similarity, bm25_score, recency_score))
-                        
+
                     # Filter by minimum relevance cosine threshold and sort by hybrid score
                     rows = [r for r in rows if r.similarity >= request.min_relevance]
                     rows.sort(key=lambda r: r.hybrid_score, reverse=True)
-                    
+
                     # --- STAGE 3: LLM RE-RANKING (High Precision Filter) ---
                     # Optimize: If local Cross-Encoder reranker is enabled, skip expensive LLM reranking and keep top 100 candidates
                     from kyros.ml.reranker import get_reranker
@@ -1041,11 +993,12 @@ class MemoryService:
                                 for i, c in enumerate(top_candidates):
                                     rerank_prompt += f"[{i}] {c.content[:250]}\n"
                                 rerank_prompt += f"\nSelect the indices of the {request.k} most relevant candidates that answer the question. Return ONLY a JSON list of integers."
-                                
+
                                 rerank_res = await call_llm(rerank_prompt, system_prompt="You are a retrieval re-ranker. Return ONLY a JSON list of integers.")
-                                match = re.search(r'\[.*\]', rerank_res, re.DOTALL)
-                                if match:
-                                    selected_indices = json.loads(match.group())
+                                start_idx = rerank_res.find('[')
+                                end_idx = rerank_res.rfind(']')
+                                if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                                    selected_indices = json.loads(rerank_res[start_idx:end_idx+1])
                                     final_rows = [top_candidates[i] for i in selected_indices if i < len(top_candidates)]
                                     # Append the rest of the score-based rows if re-ranker didn't pick enough
                                     if len(final_rows) < request.k:
@@ -1062,7 +1015,7 @@ class MemoryService:
                                 rows = rows[:request.k]
                         else:
                             rows = rows[:request.k]
-            
+
             # Dedicated Entity Search Channel (Step 5)
             deterministic_facts = []
             try:
@@ -1074,38 +1027,37 @@ class MemoryService:
                 """)
                 entity_result = await session.execute(entity_query, {"agent_id": agent_id})
                 all_agent_entities = entity_result.fetchall()
-                
+
                 # 2. Local fast substring/keyword-based matching (0 LLM calls, 100% genuine)
                 matched_entities = []
                 query_lower = request.query.lower()
-                
-                import string
+
                 translator = str.maketrans("", "", string.punctuation)
                 q_words = [w.translate(translator) for w in query_lower.split()]
-                
+
                 stop_words = {
-                    'the', 'and', 'for', 'in', 'of', 'to', 'a', 'an', 'on', 'at', 'by', 'is', 'are', 'was', 'were', 
-                    'with', 'about', 'from', 'her', 'his', 'she', 'he', 'they', 'who', 'what', 'when', 'where', 
-                    'why', 'how', 'did', 'does', 'do', 'go', 'went', 'gone', 'likely', 'would', 'want', 'still', 
-                    'be', 'has', 'have', 'had', 'been', 'or', 'more', 'less', 'than', 'likely', 'unlikely', 'as'
+                    'the', 'and', 'for', 'in', 'of', 'to', 'a', 'an', 'on', 'at', 'by', 'is', 'are', 'was', 'were',
+                    'with', 'about', 'from', 'her', 'his', 'she', 'he', 'they', 'who', 'what', 'when', 'where',
+                    'why', 'how', 'did', 'does', 'do', 'go', 'went', 'gone', 'likely', 'would', 'want', 'still',
+                    'be', 'has', 'have', 'had', 'been', 'or', 'more', 'less', 'than', 'unlikely', 'as'
                 }
                 q_sig = [w for w in q_words if w not in stop_words and len(w) >= 3]
                 clean_query = query_lower.replace("'s", "").translate(translator)
-                
+
                 for ent_row in all_agent_entities:
                     ent_name_lower = ent_row.name.lower()
                     clean_ent_name = ent_name_lower.replace("'s", "").translate(translator)
-                    
+
                     # Direct substring check on cleaned strings
                     is_match = False
                     if len(clean_ent_name) >= 3 and (clean_ent_name in clean_query or clean_query in clean_ent_name):
                         is_match = True
-                    
+
                     if not is_match and q_sig:
                         # Extract significant words from the entity name
                         e_words = [w.translate(translator) for w in ent_name_lower.replace("'s", "").split()]
                         e_sig = [w for w in e_words if w not in stop_words and len(w) >= 3]
-                        
+
                         if e_sig:
                             overlap_count = 0
                             for ew in e_sig:
@@ -1118,7 +1070,7 @@ class MemoryService:
                                         if len(qw) >= prefix_len and len(ew) >= prefix_len and (qw.startswith(ew[:prefix_len]) or ew.startswith(qw[:prefix_len])):
                                             overlap_count += 1
                                             break
-                            
+
                             # Matching rule:
                             # - If entity name has only 1 significant word, we need at least 1 match.
                             # - If entity name has multiple significant words, we need at least 2 matching words (or all of them if total is 2).
@@ -1129,15 +1081,15 @@ class MemoryService:
                                 min_required = min(2, len(e_sig))
                                 if overlap_count >= min_required:
                                     is_match = True
-                    
+
                     if is_match:
                         matched_entities.append(ent_row)
-                
+
                 # 3. Format matched entities into canonical facts
                 class MockRow:
                     def __init__(self, **kwargs):
                         self.__dict__.update(kwargs)
-                
+
                 for fact_row in matched_entities:
                     state_str = []
                     for key, value in fact_row.state.items():
@@ -1147,9 +1099,9 @@ class MemoryService:
                         else:
                             val_str = str(value)
                         state_str.append(f"  - {key.replace('_', ' ').title()}: {val_str}")
-                    
+
                     formatted_state = f"[CANONICAL FACT] Entity: {fact_row.name}\n" + "\n".join(state_str)
-                    
+
                     deterministic_facts.append(MockRow(
                         id=fact_row.id,
                         content=formatted_state,
@@ -1165,11 +1117,11 @@ class MemoryService:
                     ))
             except Exception as e:
                 logger.error(f"Dedicated local entity retrieval channel failed: {e}")
-            
+
             # Dynamically allocate slots for memory categories to prevent starvation (100% genuine hybrid blending)
             # 1. Classify query intent and check if it is temporal-focused
             temporal_keywords = {
-                "when", "date", "year", "month", "time", "how long", "ago", "yesterday", "last week", 
+                "when", "date", "year", "month", "time", "how long", "ago", "yesterday", "last week",
                 "tomorrow", "today", "weekend", "morning", "afternoon", "evening", "night", "day", "week", "since"
             }
             query_words = set(request.query.lower().split())
@@ -1199,12 +1151,12 @@ class MemoryService:
                     leftover_episodic = dedup_episodic[k_episodic:]
                     final_rows.extend(leftover_episodic[:remaining_slots])
                     remaining_slots = request.k - len(final_rows)
-                    
+
                 if remaining_slots > 0:
                     leftover_semantic = dedup_semantic[k_semantic:]
                     final_rows.extend(leftover_semantic[:remaining_slots])
                     remaining_slots = request.k - len(final_rows)
-                    
+
                 if remaining_slots > 0:
                     leftover_procedural = dedup_procedural[k_procedural:]
                     final_rows.extend(leftover_procedural[:remaining_slots])
@@ -1222,7 +1174,7 @@ class MemoryService:
 
             # Return structured results
             results = []
-            
+
             # Traverse graph sequentially using the same database connection to avoid pool exhaustion
             causal_results = []
             if request.include_causal_ancestry:
@@ -1245,7 +1197,7 @@ class MemoryService:
 
             for i, row in enumerate(rows):
                 causal_ancestry: list[dict] = []
-                
+
                 # Assign causal results
                 if request.include_causal_ancestry:
                     graph_res = causal_results[i]
@@ -1280,19 +1232,19 @@ class MemoryService:
         # A second reranking was removed because it corrupted hybrid scores
         # by re-scoring content that includes [speaker] metadata prefixes.
         results = results[:request.k]
-            
+
         # Phase 7: Memory Compression
         compressed_results = []
         for res in results:
             # 1. Drop highly irrelevant episodic noise that slipped through
             if res.memory_category == "episodic" and res.importance < 0.2:
                 continue
-                
+
             # 2. Strip conversational filler words from episodic chunks
             if not res.content.startswith("[CANONICAL FACT]"):
                 res.content = res.content.replace("This is a memory of ", "")
                 res.content = res.content.replace("The user said: ", "")
-                
+
             compressed_results.append(res)
         results = compressed_results
 
@@ -1360,7 +1312,7 @@ class MemoryService:
             # Try to get the cached fact value first to bypass database reads
             from unittest.mock import Mock
             cached_value = await self.cache.get_cached_semantic_fact(agent_id, request.subject, request.predicate)
-            
+
             # Handle mock objects safely in unit tests
             if isinstance(cached_value, Mock):
                 cached_value = None
@@ -1831,12 +1783,6 @@ class MemoryService:
             if row is None:
                 raise ValueError(f"Procedure {request.procedure_id} not found")
 
-            if row is None:
-                raise ValueError(f"Procedure {request.procedure_id} not found")
-
-            if row is None:
-                raise ValueError(f"Procedure {request.procedure_id} not found")
-
         total = row.success_count + row.failure_count
         return OutcomeResponse(
             procedure_id=request.procedure_id,
@@ -2079,9 +2025,7 @@ class MemoryService:
         # Fast path: Redis cache
         cached = await self.cache.get_agent_id(tenant_id, external_id)
         if cached:
-            from uuid import UUID as _UUID
-
-            return _UUID(cached)
+            return UUID(cached)
 
         # Cold path: DB lookup or insert
         result = await session.execute(
@@ -2110,31 +2054,31 @@ class MemoryService:
         This prevents the LLM context from being filled with multiple copies of the same event.
         """
         from difflib import SequenceMatcher
-        
+
         if not rows:
             return []
-            
+
         deduplicated = []
         # Store tuples of (raw_content_string, word_set) to avoid redundant tokenization in Jaccard loops
         seen_entries = []
-        
+
         for row in rows:
             content = str(row.content).strip().lower()
-            
+
             # Simple heuristic: remove metadata prefixes like "[user]: " for comparison
             if "]: " in content:
                 content = content.split("]: ", 1)[1]
-            
+
             is_duplicate = False
             content_words = set(content.split())
-            
+
             for seen_content, seen_words in seen_entries:
                 # Fast Path: Jaccard similarity (token-based set overlap) using pre-calculated set
                 if not content_words or not seen_words:
                     jaccard = 0.0
                 else:
                     jaccard = len(content_words.intersection(seen_words)) / len(content_words.union(seen_words))
-                
+
                 if jaccard > 0.85:
                     # Definitely a duplicate
                     is_duplicate = True
@@ -2142,17 +2086,17 @@ class MemoryService:
                 elif jaccard < 0.30:
                     # Definitely distinct, skip slow SequenceMatcher alignment
                     continue
-                
+
                 # Slow Path (Ambiguous Zone): SequenceMatcher for high-fidelity comparison
                 similarity = SequenceMatcher(None, content, seen_content).ratio()
                 if similarity > threshold:
                     is_duplicate = True
                     break
-            
+
             if not is_duplicate:
                 deduplicated.append(row)
                 seen_entries.append((content, content_words))
                 if len(deduplicated) >= max_results:
                     break
-                    
+
         return deduplicated

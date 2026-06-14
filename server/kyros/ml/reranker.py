@@ -6,7 +6,6 @@ between the user query and candidate memories. Automatically falls back graceful
 
 from __future__ import annotations
 
-import os
 import math
 from typing import Any
 
@@ -70,7 +69,7 @@ class CrossEncoderReranker:
                 try:
                     candidate.hybrid_score = candidate.relevance_score
                 except Exception:
-                    pass
+                    logger.debug("Candidate object does not support hybrid_score assignment")
                 scored_candidates.append(candidate)
 
             # Sort descending by the new relevance score

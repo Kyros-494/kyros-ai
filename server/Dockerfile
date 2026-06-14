@@ -2,6 +2,7 @@
 FROM python:3.14-slim AS base
 
 # Security: run as non-root
+WORKDIR /app
 RUN groupadd --gid 1001 kyros \
  && useradd --uid 1001 --gid kyros --shell /bin/bash --create-home kyros
 

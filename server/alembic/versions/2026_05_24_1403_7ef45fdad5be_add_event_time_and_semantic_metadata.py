@@ -34,3 +34,6 @@ def downgrade() -> None:
     op.drop_column('procedural_memories', 'event_time')
     op.drop_column('semantic_memories', 'event_time')
     op.drop_column('episodic_memories', 'event_time')
+
+
+_ = (revision, down_revision, branch_labels, depends_on)

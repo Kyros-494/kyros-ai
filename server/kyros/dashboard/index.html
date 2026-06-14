@@ -1756,6 +1756,7 @@
   </div>
 
   <script>
+<<<<<<< Updated upstream
     let lastDetailedErrorTime = 0;
 
     // Toast Notification System
@@ -1885,6 +1886,21 @@
 
     // Console State Controller
     let apiKey = localStorage.getItem('kyros_api_key') || 'mk_live_default_dev_key_123456';
+=======
+    // Helper to escape HTML characters and prevent DOM injection / reinterpretation
+    function escapeHtml(unsafe) {
+      if (unsafe === undefined || unsafe === null) return '';
+      return String(unsafe)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // State Variables
+    let apiKey = '';
+>>>>>>> Stashed changes
     let activeAgentId = '';
     let activePane = 'overview';
     let activeProject = 'default';
@@ -1899,6 +1915,7 @@
     const consolePanes = document.querySelectorAll('.console-pane');
     const projectSelect = document.getElementById('project-namespace-select');
 
+<<<<<<< Updated upstream
     // Pre-fill key
     if (apiKey) {
       apiKeyInput.value = apiKey;
@@ -1906,6 +1923,9 @@
     }
 
     // Health diagnostics
+=======
+    // Platform Health check
+>>>>>>> Stashed changes
     async function checkHealth() {
       try {
         const res = await fetch(`${baseUrl}/health/ready`);
@@ -1975,6 +1995,7 @@
         }
         
         li.innerHTML = `
+<<<<<<< Updated upstream
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="display: flex; flex-direction: column; gap: 0.15rem; flex-grow: 1;">
               <span>${agent.display_name}</span>
@@ -1984,6 +2005,10 @@
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
           </div>
+=======
+          <span>${escapeHtml(agent.display_name)}</span>
+          <span class="agent-item-id">${escapeHtml(agent.agent_id)}</span>
+>>>>>>> Stashed changes
         `;
         
         li.addEventListener('click', () => {
@@ -2249,7 +2274,11 @@
         
         const freshnessPercent = Math.round((m.freshness ?? 1.0) * 100);
         row.innerHTML = `
+<<<<<<< Updated upstream
           <td>${displayContent}</td>
+=======
+          <td style="max-width: 400px; word-break: break-word;">${escapeHtml(displayContent)}</td>
+>>>>>>> Stashed changes
           <td>${roleBadge}</td>
           <td>
             <div class="score-bar-container">
@@ -2262,6 +2291,11 @@
           <td>
             <button class="btn danger" style="padding: 0.2rem 0.45rem; font-size: 0.7rem; border-radius: 2px;" onclick="deleteMemory('${m.id}')">Delete</button>
           </td>
+<<<<<<< Updated upstream
+=======
+          <td><span style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(m.session_id || 'default')}</span></td>
+          <td style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(formattedDate)}</td>
+>>>>>>> Stashed changes
         `;
         tableBody.appendChild(row);
       });
@@ -2329,9 +2363,15 @@
         
         const confidencePercent = Math.round((m.confidence ?? 1.0) * 100);
         row.innerHTML = `
+<<<<<<< Updated upstream
           <td style="font-weight: 600; color: var(--cyan-400);">${subject}</td>
           <td style="font-family: var(--font-mono); color: var(--indigo-400);">${predicate}</td>
           <td>${object}</td>
+=======
+          <td style="font-weight: 600; color: var(--accent-blue);">${escapeHtml(subject)}</td>
+          <td style="font-family: monospace; color: var(--accent-purple);">${escapeHtml(predicate)}</td>
+          <td>${escapeHtml(object)}</td>
+>>>>>>> Stashed changes
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${confidencePercent}%; background: linear-gradient(90deg, var(--emerald-500) 0%, #059669 100%);"></div>
@@ -2466,6 +2506,145 @@
             labels.attr('x', d => d.x).attr('y', d => d.y);
           });
         }
+<<<<<<< Updated upstream
+=======
+
+        // Show / hide empty state
+        if (nodes.length === 0) {
+          emptyState.style.display = 'flex';
+          legend.style.display = 'none';
+          infoBadge.textContent = '0 nodes · 0 edges';
+          return;
+        }
+
+        emptyState.style.display = 'none';
+        legend.style.display = 'flex';
+        infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
+
+        // ── D3 Force Simulation ──────────────────────────────
+        const width  = container.clientWidth;
+        const height = container.clientHeight;
+
+        const svg = d3.select(svgEl)
+          .attr('viewBox', [0, 0, width, height])
+          .attr('width', width)
+          .attr('height', height);
+
+        // Zoom behavior
+        const g = svg.append('g');
+        const zoom = d3.zoom()
+          .scaleExtent([0.3, 4])
+          .on('zoom', (event) => g.attr('transform', event.transform));
+        svg.call(zoom);
+
+        // Zoom controls
+        document.getElementById('graph-zoom-in').onclick  = () => svg.transition().duration(300).call(zoom.scaleBy, 1.4);
+        document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+        document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+
+        // Arrow marker for edges
+        svg.append('defs').append('marker')
+          .attr('id', 'arrowhead')
+          .attr('viewBox', '0 -5 10 10')
+          .attr('refX', 25)
+          .attr('refY', 0)
+          .attr('markerWidth', 6)
+          .attr('markerHeight', 6)
+          .attr('orient', 'auto')
+          .append('path')
+          .attr('d', 'M0,-5L10,0L0,5')
+          .attr('fill', 'rgba(79,172,254,0.4)');
+
+        // Color scale
+        const colorSubject = '#4facfe';
+        const colorObject  = '#10b981';
+        const nodeColor = d => d.type === 'subject' ? colorSubject : colorObject;
+
+        // Simulation
+        const simulation = d3.forceSimulation(nodes)
+          .force('link', d3.forceLink(edges).id(d => d.id).distance(140))
+          .force('charge', d3.forceManyBody().strength(-350))
+          .force('center', d3.forceCenter(width / 2, height / 2))
+          .force('collision', d3.forceCollide().radius(40));
+
+        graphSimulation = simulation;
+
+        // Draw edges
+        const link = g.append('g')
+          .selectAll('line')
+          .data(edges)
+          .join('line')
+          .attr('class', 'link')
+          .attr('marker-end', 'url(#arrowhead)')
+          .attr('stroke-opacity', d => 0.2 + (d.relatedness || 0.5) * 0.6);
+
+        // Edge labels (predicates)
+        const edgeLabels = g.append('g')
+          .selectAll('text')
+          .data(edges)
+          .join('text')
+          .attr('class', 'edge-label')
+          .attr('text-anchor', 'middle')
+          .text(d => d.predicate || '');
+
+        // Draw nodes
+        const node = g.append('g')
+          .selectAll('circle')
+          .data(nodes)
+          .join('circle')
+          .attr('class', 'node-circle')
+          .attr('r', d => 8 + (d.confidence || 0.5) * 10)
+          .attr('fill', nodeColor)
+          .attr('stroke', d => d3.color(nodeColor(d)).darker(0.5))
+          .attr('stroke-width', 2)
+          .attr('opacity', 0.9)
+          .call(d3.drag()
+            .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+            .on('drag',  (event, d) => { d.fx = event.x; d.fy = event.y; })
+            .on('end',   (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+          );
+
+        // Node labels
+        const labels = g.append('g')
+          .selectAll('text')
+          .data(nodes)
+          .join('text')
+          .attr('class', 'node-label')
+          .attr('dx', 14)
+          .attr('dy', 4)
+          .text(d => d.label.length > 20 ? d.label.slice(0, 18) + '…' : d.label);
+
+        // Tooltip on hover
+        node.on('mouseover', (event, d) => {
+          tooltip.style.opacity = '1';
+          tooltip.innerHTML = `<strong>${escapeHtml(d.label)}</strong><br>Type: ${escapeHtml(d.type)}<br>Confidence: ${(d.confidence || 0).toFixed(2)}`;
+          tooltip.style.left = (event.offsetX + 15) + 'px';
+          tooltip.style.top  = (event.offsetY - 10) + 'px';
+        })
+        .on('mouseout', () => { tooltip.style.opacity = '0'; });
+
+        // Pulse animation on nodes
+        node.append('animate')
+          .attr('attributeName', 'opacity')
+          .attr('values', '0.9;0.6;0.9')
+          .attr('dur', '3s')
+          .attr('repeatCount', 'indefinite');
+
+        // Tick
+        simulation.on('tick', () => {
+          link
+            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+          edgeLabels
+            .attr('x', d => (d.source.x + d.target.x) / 2)
+            .attr('y', d => (d.source.y + d.target.y) / 2);
+          node
+            .attr('cx', d => d.x).attr('cy', d => d.y);
+          labels
+            .attr('x', d => d.x).attr('y', d => d.y);
+        });
+
+>>>>>>> Stashed changes
       } catch (err) {
         console.error('Failed to load semantic graph', err);
       }
@@ -2626,14 +2805,25 @@
         const row = document.createElement('tr');
         let stepsHtml = '';
         if (p.steps && Array.isArray(p.steps)) {
+<<<<<<< Updated upstream
           stepsHtml = p.steps.map((s, idx) => `<div>${idx + 1}. ${s.action || JSON.stringify(s)}</div>`).join('');
+=======
+          stepsHtml = p.steps.map((s, idx) => `<div>${idx+1}. ${escapeHtml(s.action || JSON.stringify(s))}</div>`).join('');
+>>>>>>> Stashed changes
         }
         const successRatePercent = Math.round((p.success_rate ?? 1.0) * 100);
         row.innerHTML = `
+<<<<<<< Updated upstream
           <td style="font-weight: 600;">${p.name}</td>
           <td style="color: var(--text-secondary); font-size: 0.8rem;">${p.description}</td>
           <td><span class="badge" style="background: rgba(255, 255, 255, 0.05);">${p.task_type || 'custom'}</span></td>
           <td style="font-size: 0.75rem; font-family: var(--font-mono);">${stepsHtml}</td>
+=======
+          <td style="font-weight: 600;">${escapeHtml(p.name)}</td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(p.description)}</td>
+          <td><span class="badge" style="background: rgba(255, 255, 255, 0.05);">${escapeHtml(p.task_type || 'custom')}</span></td>
+          <td style="font-size: 0.8rem; font-family: monospace;">${stepsHtml}</td>
+>>>>>>> Stashed changes
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${successRatePercent}%; background: linear-gradient(90deg, var(--cyan-500) 0%, var(--indigo-400) 100%);"></div>
@@ -2904,7 +3094,7 @@
         const relevancePercent = Math.round((r.relevance_score ?? 1.0) * 100);
         const freshnessPercent = Math.round((r.freshness ?? 1.0) * 100);
         row.innerHTML = `
-          <td>${r.content}</td>
+          <td>${escapeHtml(r.content)}</td>
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${relevancePercent}%;"></div>
@@ -2918,7 +3108,11 @@
             <span>${(r.freshness ?? 1.0).toFixed(2)}</span>
           </td>
           <td>
+<<<<<<< Updated upstream
             <button class="btn secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="viewMerkleProof('${r.id}')">Verify</button>
+=======
+            <button class="btn secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="viewMerkleProof('${escapeHtml(r.id)}')">Verify Proof</button>
+>>>>>>> Stashed changes
           </td>
         `;
         tableBody.appendChild(row);
@@ -3103,7 +3297,6 @@
       const val = apiKeyInput.value.trim();
       if (apiKey && val === apiKey) {
         apiKey = '';
-        localStorage.removeItem('kyros_api_key');
         apiKeyInput.value = '';
         saveKeyBtn.textContent = 'Connect';
         agentListUl.innerHTML = '<li class="agent-item text-tertiary">Select project...</li>';
@@ -3111,9 +3304,17 @@
         setOfflineStatus();
         alert('Disconnected.');
       } else {
+<<<<<<< Updated upstream
         if (!val) return alert('Enter a valid key');
         apiKey = val;
         localStorage.setItem('kyros_api_key', val);
+=======
+        // Connect
+        const inputKey = apiKeyInput.value.trim();
+        if (!inputKey) return alert('Enter a valid API key');
+        
+        apiKey = inputKey;
+>>>>>>> Stashed changes
         saveKeyBtn.textContent = 'Disconnect';
         const healthy = await checkHealth();
         if (healthy) await fetchAgents();

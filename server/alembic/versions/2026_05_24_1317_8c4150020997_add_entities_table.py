@@ -38,3 +38,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_index('ix_entity_agent_name', table_name='entities')
     op.drop_table('entities')
+
+
+_ = (revision, down_revision, branch_labels, depends_on)

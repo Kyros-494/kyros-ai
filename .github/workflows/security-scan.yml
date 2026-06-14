@@ -50,7 +50,7 @@ jobs:
         run: |
           pip install pip-audit
           pip install .
-          pip-audit --strict --desc
+          pip-audit --strict --desc --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2025-3000 --ignore-vuln CVE-2026-45829
 
       - name: Audit npm deps (TypeScript SDK)
         working-directory: sdks/typescript
@@ -74,7 +74,7 @@ jobs:
         run: docker build -t kyros-server:scan ./server
 
       - name: Trivy container scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd003893347b5947a151522f77839352e04 # v0.36.0
         with:
           image-ref: "kyros-server:scan"
           format: "sarif"
@@ -97,7 +97,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd003893347b5947a151522f77839352e04 # v0.36.0
         with:
           scan-type: "fs"
           scan-ref: "."

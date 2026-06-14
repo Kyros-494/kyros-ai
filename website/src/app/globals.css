@@ -1,15 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #030712; /* Slate/Gray 950 - ultra dark premium background */
-  --foreground: #f8fafc; /* Slate 50 */
+  --background: #000000; /* Kyros Dashboard base */
+  --foreground: #fafafa; /* Kyros Dashboard primary text */
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans), Inter, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), Courier, monospace;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Overwrite blue with Kyros Brand Orange/Red (#ff4a00) */
+  --color-blue-50: #fff1eb;
+  --color-blue-100: #ffdcd0;
+  --color-blue-200: #ffbba1;
+  --color-blue-300: #ff916a;
+  --color-blue-400: #ff5e28;
+  --color-blue-500: #ff4a00; /* Kyros Orange */
+  --color-blue-600: #e04100;
+  --color-blue-700: #b83200;
+  --color-blue-800: #912700;
+  --color-blue-900: #732000;
+  --color-blue-950: #401000;
+
+  /* Overwrite slate with Kyros Dashboard Charcoal palette */
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f4f4f5;
+  --color-slate-200: #e4e4e7;
+  --color-slate-300: #d4d4d8;
+  --color-slate-400: #a1a1aa;
+  --color-slate-500: #71717a;
+  --color-slate-600: #52525b;
+  --color-slate-700: #3f3f46;
+  --color-slate-800: #27272a; /* Dashboard border */
+  --color-slate-900: #09090b; /* Dashboard surface */
+  --color-slate-950: #000000; /* Dashboard base */
 }
 
 body {
@@ -29,86 +55,15 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #030712; /* Gray 950 */
+  background: #09090b; /* Slate 900 / Dashboard surface */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1f2937; /* Gray 800 */
-  border-radius: 9999px;
+  background: #27272a; /* Slate 800 / Dashboard border */
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151; /* Gray 700 */
+  background: #ff4a00; /* Kyros Orange */
 }
 
-/* Grid background pattern */
-.bg-grid-pattern {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: 24px 24px;
-  background-position: center;
-}
-
-/* Gradients and visual styling */
-.text-glow {
-  text-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
-}
-
-.gradient-bg-cyan-purple {
-  background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
-}
-
-.glow-card {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glow-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(to bottom right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-          mask-composite: exclude;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-
-.glow-card:hover::before {
-  background: linear-gradient(to bottom right, rgba(6, 182, 212, 0.4), rgba(168, 85, 247, 0.4));
-}
-
-/* Keyframes and Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Custom glow element pulse */
-@keyframes pulseGlow {
-  0%, 100% {
-    opacity: 0.2;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.35;
-    transform: scale(1.1);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 10s ease-in-out infinite;
-}

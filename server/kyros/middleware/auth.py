@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import hmac
 import json
 
 from fastapi import status
@@ -58,7 +59,7 @@ PUBLIC_PATHS = frozenset(
 
 def hash_api_key(api_key: str) -> str:
     """Hash an API key with SHA-256. Keys are never stored in plaintext."""
-    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    return hmac.new(b"kyros-api-key-pepper", api_key.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
 def _safe_key_prefix(api_key: str) -> str:

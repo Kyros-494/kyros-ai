@@ -7,6 +7,7 @@ memories into a directed graph of cause-and-effect.
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime
 try:
     from datetime import UTC
@@ -110,11 +111,10 @@ async def extract_and_store_causal_edges(
 
         cleaned = response_text.strip()
         
-        # Robust JSON extraction: look for the first [ and last ]
-        import re
-        match = re.search(r'\[.*\]', cleaned, re.DOTALL)
-        if match:
-            cleaned = match.group()
+        start_idx = cleaned.find('[')
+        end_idx = cleaned.rfind(']')
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            cleaned = cleaned[start_idx:end_idx+1]
         elif cleaned.startswith("```"):
             cleaned = cleaned.split("```", 2)[-1] if cleaned.count("```") >= 2 else cleaned
             cleaned = cleaned.removeprefix("json").strip().strip("`").strip()

@@ -7,7 +7,6 @@ Create Date: 2026-05-31 15:48:00.000000+00:00
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 from pgvector.sqlalchemy import Vector
 
 # revision identifiers, used by Alembic.
@@ -30,3 +29,6 @@ def downgrade() -> None:
     op.alter_column('episodic_memories', 'embedding', type_=Vector(768), existing_type=Vector(384))
     op.alter_column('semantic_memories', 'embedding', type_=Vector(768), existing_type=Vector(384))
     op.alter_column('procedural_memories', 'embedding', type_=Vector(768), existing_type=Vector(384))
+
+
+_ = (revision, down_revision, branch_labels, depends_on)

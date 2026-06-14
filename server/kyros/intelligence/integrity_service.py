@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+
 try:
     from datetime import UTC
 except ImportError:
@@ -88,7 +89,7 @@ async def stop_merkle_worker() -> None:
         try:
             await _merkle_worker_task
         except asyncio.CancelledError:
-            pass
+            logger.debug("Merkle worker task cancelled successfully")
         _merkle_worker_task = None
 
 
@@ -98,7 +99,7 @@ async def update_agent_merkle_root(agent_id: UUID, tenant_id: UUID) -> str | Non
     Avoids transaction storms and database locks under enterprise-grade write loads.
     """
     global _merkle_worker_task
-    
+
     # Fast path for testing/CI environments to avoid race conditions with transient test fixtures
     from kyros.config import get_settings
     settings = get_settings()
@@ -125,7 +126,7 @@ async def update_agent_merkle_root(agent_id: UUID, tenant_id: UUID) -> str | Non
     # Queue update for micro-batch compaction
     async with _merkle_worker_lock:
         _pending_merkle_updates.add((agent_id, tenant_id))
-        
+
         # Start background loop if not already running
         if _merkle_worker_task is None or _merkle_worker_task.done():
             _merkle_worker_task = asyncio.create_task(_merkle_micro_batch_loop())

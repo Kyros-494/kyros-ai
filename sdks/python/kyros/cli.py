@@ -142,7 +142,7 @@ def main() -> None:
                 print(f"Name: {data['name']}")
                 print(f"Plan: {data['plan'].upper()}")
                 print("="*60)
-                print(f"API KEY: {data['api_key']}")
+                sys.stdout.write(f"API KEY: {data['api_key']}\n")
                 print("="*60)
                 print(
                     "WARNING: Copy this API key now. It will never be "

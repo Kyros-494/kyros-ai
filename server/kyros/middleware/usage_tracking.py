@@ -130,17 +130,15 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
 
         operation = _resolve_operation(path, method)
         if operation:
-            # Use the global tracked task registry if available (main.py)
-            # Falls back to plain create_task if running outside the main app
-            try:
-                from kyros.main import create_background_task
-
-                create_background_task(
+            create_bg_task = getattr(request.app.state, "create_background_task", None)
+            if create_bg_task:
+                # Preserve name/details for the tracked background task API
+                create_bg_task(
                     _track(tenant_id, operation, _extract_memory_type(path), latency_ms, path),
                     name="track_usage",
-                    details=f"Logging API operation: {operation} (latency: {latency_ms}ms)"
+                    details=f"Logging API operation: {operation} (latency: {latency_ms}ms)",
                 )
-            except ImportError:
+            else:
                 task = asyncio.create_task(
                     _track(tenant_id, operation, _extract_memory_type(path), latency_ms, path)
                 )

@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import hmac
 import json
 import math
 import uuid
 from datetime import datetime, timedelta
+
 try:
     from datetime import UTC
 except ImportError:
@@ -114,7 +117,7 @@ async def export_memories(agent_id: str, request: Request) -> ExportResponse:
     try:
         return await service.export_memories(tenant_id, agent_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except SQLAlchemyError as e:
         logger.error("DB error in export_memories", agent_id=agent_id, error=str(e))
         raise HTTPException(status_code=503, detail="Database error, please retry") from e
@@ -140,7 +143,7 @@ async def import_memories(agent_id: str, request: Request) -> dict[str, Any]:
     try:
         return await service.import_memories(tenant_id, agent_id, body)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except SQLAlchemyError as e:
         logger.error("DB error in import_memories", agent_id=agent_id, error=str(e))
         raise HTTPException(status_code=503, detail="Database error, please retry") from e
@@ -411,7 +414,6 @@ async def migrate_embeddings(
     agent_id: str, request: Request, body: MigrationRequest
 ) -> dict[str, Any]:
     """Migrate all agent memory embeddings to a new embedding model space."""
-    import asyncio
 
     from kyros.ml.translation import MODEL_REGISTRY, EmbeddingTranslator
 
@@ -500,15 +502,14 @@ async def migrate_embeddings(
                 error=str(e),
             )
 
-    try:
-        from kyros.main import create_background_task
-
-        create_background_task(
+    create_bg_task = getattr(request.app.state, "create_background_task", None)
+    if create_bg_task:
+        create_bg_task(
             _run_migration(),
             name="migrate_embeddings",
-            details=f"Migrating embeddings for agent {agent_id} from {body.from_model} to {body.to_model}"
+            details=f"Migrating embeddings for agent {agent_id} from {body.from_model} to {body.to_model}",
         )
-    except ImportError:
+    else:
         asyncio.create_task(_run_migration())
 
     return {
@@ -601,7 +602,6 @@ async def hard_delete_agent_memories(
 @router.get("/agents")
 async def list_agents(request: Request) -> dict[str, Any]:
     """List all agents for the current tenant."""
-    service = get_memory_service(request)
     tenant_id = getattr(request.state, "tenant_id", None)
     if not tenant_id:
         raise HTTPException(status_code=401, detail="Unauthenticated")
@@ -649,14 +649,14 @@ async def create_tenant(body: CreateTenantRequest, request: Request) -> dict[str
 
     Requires the master admin token or jwt_secret_key for authentication.
     """
-    import os
     import secrets
+
     from kyros.config import get_settings
     from kyros.storage.postgres import get_db_session
 
     settings = get_settings()
     admin_token = settings.admin_token or settings.jwt_secret_key
-    
+
     auth_header = request.headers.get("Authorization", "")
     token = ""
     if auth_header.startswith("Bearer "):
@@ -668,7 +668,7 @@ async def create_tenant(body: CreateTenantRequest, request: Request) -> dict[str
         raise HTTPException(status_code=401, detail="Invalid admin token")
 
     api_key = f"mk_live_{secrets.token_hex(16)}"
-    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    key_hash = hmac.new(b"kyros-api-key-pepper", api_key.encode("utf-8"), hashlib.sha256).hexdigest()
     tenant_id = uuid.uuid4()
 
     try:
@@ -848,6 +848,7 @@ def _update_env_file(key: str, value: str) -> None:
 async def configure_llm(request: Request) -> dict[str, str]:
     """Dynamically configure LLM API key in memory and persist to .env."""
     import os
+
     from kyros.config import get_settings
 
     try:
@@ -881,13 +882,13 @@ async def configure_llm(request: Request) -> dict[str, str]:
         "mistral": "MISTRAL_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
     }
-    
+
     target_env = env_keys[provider]
-    
-    # 1. Update os.environ and cached Settings
+    # 1. Update os.environ and persist to .env
     os.environ[target_env] = api_key
     _update_env_file(target_env, api_key)
-    
+
+    # 2. Update cached Settings object properties
     if provider == "openai":
         settings.openai_api_key = api_key
     elif provider == "gemini":

@@ -10,15 +10,15 @@ without touching source code:
 
 from __future__ import annotations
 
-import os
 import asyncio
-import time
 import json
+import os
+import time
 
 import httpx
 
-from kyros.logging import get_logger
 from kyros.config import get_settings
+from kyros.logging import get_logger
 
 logger = get_logger("kyros.ml.models")
 
@@ -35,7 +35,7 @@ _STATS_FILE = "benchmark_stats.json"
 def _load_stats() -> int:
     if os.path.exists(_STATS_FILE):
         try:
-            with open(_STATS_FILE, "r") as f:
+            with open(_STATS_FILE) as f:
                 data = json.load(f)
                 return data.get("total_llm_calls", 0)
         except Exception:
@@ -47,7 +47,7 @@ def _save_stats(count: int) -> None:
         with open(_STATS_FILE, "w") as f:
             json.dump({"total_llm_calls": count, "last_updated": time.time()}, f)
     except Exception:
-        pass
+        logger.debug("Failed to save LLM call stats")
 
 _global_llm_call_count = _load_stats()
 
@@ -105,11 +105,11 @@ def get_global_llm_call_count() -> int:
 
 def _mock_llm_response(prompt: str, system_prompt: str) -> str:
     prompt_lower = prompt.lower()
-    
+
     # 1. Reranker
     if "rerank" in prompt_lower or "re-ranker" in system_prompt.lower():
         return "[0, 1, 2, 3, 4, 5]"
-        
+
     # 2. Entity Extraction
     if "entity" in prompt_lower or "extraction" in prompt_lower:
         text_content = ""
@@ -119,7 +119,7 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
                 text_content = parts[1].strip()
         else:
             text_content = prompt
-            
+
         entities = []
         import re
         found_names = set(re.findall(r'\b[A-Z][a-zA-Z0-9]+-[A-Z][a-zA-Z0-9]+(?:-[A-Z][a-zA-Z0-9]+)?\b', text_content))
@@ -127,7 +127,7 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
         for w in words:
             if w not in ["The", "And", "For", "With", "But", "This", "That", "From", "Based", "Quality", "Finance", "Risk", "Suez", "Dutch", "Munich", "Stuttgart"]:
                 found_names.add(w)
-                
+
         for name in found_names:
             ent_type = "Other"
             properties = {}
@@ -156,30 +156,30 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
             elif "cargo-" in name_lower or "container" in name_lower or "mrku-" in name_lower:
                 ent_type = "Object"
                 properties["type"] = "Cargo Shipment"
-                
+
             lines = text_content.split("\n")
             for line in lines:
                 if name in line:
-                    val_match = re.search(r'(\d+(?:\.\d+)?%|\$\d+(?:,\d+)*(?:\.\d+)?|\b\d+\s+units\b|\b\d+\s+days\b|\b\d+°C\b)', line)
+                    val_match = re.search(r'(\d+(?:\.\d+)?%|\$\d[\d,.]*|\b\d+\s+units\b|\b\d+\s+days\b|\b\d+°C\b)', line)
                     if val_match:
                         properties["value_or_metric"] = val_match.group(1)
                     status_match = re.search(r'\b(delay|shortage|contingency|audit|inspection|contamination|defect|halted|divert|reroute|normal|passed|completed|paid)\b', line, re.IGNORECASE)
                     if status_match:
                         properties["status"] = status_match.group(1).lower()
-            
+
             entities.append({
                 "name": name,
                 "type": ent_type,
                 "properties": properties
             })
-            
+
         if not entities:
             entities.append({
                 "name": "Supply-Chain-Network",
                 "type": "Concept",
                 "properties": {"status": "active"}
             })
-            
+
         return json.dumps(entities, indent=2)
 
     # 3. Causal Extraction
@@ -187,8 +187,30 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
         import re
         new_id_match = re.search(r'New Memory \(ID:\s*([a-f0-9\-]+)\)', prompt)
         new_id = new_id_match.group(1) if new_id_match else "new-id"
-        context_matches = re.findall(r'- ID:\s*([a-f0-9\-]+)\s*\n\s*Content:\s*(.*?)(?=\n\s*- ID:|\n\s*Extract|\Z)', prompt, re.DOTALL)
-        
+        context_matches = []
+        recent_idx = prompt.find("Recent Context Memories:")
+        if recent_idx != -1:
+            context_text = prompt[recent_idx + len("Recent Context Memories:"):]
+            lines = context_text.splitlines()
+            current_id = None
+            current_content_lines = []
+            for line in lines:
+                line_stripped = line.strip()
+                if line_stripped.startswith("- ID:"):
+                    if current_id and current_content_lines:
+                        context_matches.append((current_id, "\n".join(current_content_lines).strip()))
+                    current_id = line_stripped[len("- ID:"):].strip()
+                    current_content_lines = []
+                elif line_stripped.startswith("Content:"):
+                    if current_id:
+                        current_content_lines.append(line_stripped[len("Content:"):].strip())
+                elif current_id and line_stripped:
+                    if line_stripped.startswith("Extract") or line_stripped.startswith("New Memory") or line_stripped.startswith("Format:"):
+                        break
+                    current_content_lines.append(line_stripped)
+            if current_id and current_content_lines:
+                context_matches.append((current_id, "\n".join(current_content_lines).strip()))
+
         new_content = ""
         if "recent context memories:" in prompt_lower:
             parts = prompt.split("Recent Context Memories:")
@@ -196,15 +218,15 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
             if len(header_parts) > 1:
                 lines = header_parts[1].split("\n")[1:]
                 new_content = "\n".join(lines).strip()
-        
+
         edges = []
         new_content_lower = new_content.lower()
-        
+
         for cid, ccontent in context_matches:
             ccontent_lower = ccontent.lower()
             relation = None
             desc = ""
-            
+
             if any(x in new_content_lower for x in ["reroute", "divert", "contingency", "claim", "halt", "cancel"]) and \
                any(x in ccontent_lower for x in ["delay", "shortage", "storm", "contamination", "defect", "congestion", "fail"]):
                 relation = "causes"
@@ -220,7 +242,7 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
             elif len(set(new_content_lower.split()) & set(ccontent_lower.split())) >= 3:
                 relation = "motivates"
                 desc = f"Shared context links {cid[:8]} and {new_id[:8]}."
-                
+
             if relation:
                 edges.append({
                     "from_memory_id": cid,
@@ -229,7 +251,7 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
                     "confidence": 0.85,
                     "description": desc
                 })
-                
+
         if not edges and context_matches:
             last_cid = context_matches[-1][0]
             edges.append({
@@ -239,9 +261,9 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
                 "confidence": 0.70,
                 "description": "General sequence of logistics operations."
             })
-            
+
         return json.dumps(edges, indent=2)
-        
+
     # 4. Summarization
     if "summarize" in prompt_lower or "summarisation" in prompt_lower or "summary" in prompt_lower:
         return ("The supply chain dispatch operations tracked a procurement and transit cycle of battery cells. "
@@ -252,7 +274,7 @@ def _mock_llm_response(prompt: str, system_prompt: str) -> str:
 
     if "score" in prompt_lower and "reason" in prompt_lower:
         return '{"score": 0.95, "reason": "The memory matches the queried event history exactly."}'
-        
+
     return "Operational fact recorded and verified by the Kyros agent."
 
 
@@ -265,12 +287,12 @@ async def call_llm(
 ) -> str:
     """Universal LLM caller with integrated rate limiting, persistent retries, and local mock fallback."""
     global _last_llm_call_time, _global_llm_call_count
-    
+
     async with _llm_execution_lock:
         attempt = 0
         while True:
             attempt += 1
-            
+
             # 1. Pre-emptive Rate Limiting (Internal)
             async with _llm_rate_limit_lock:
                 now = time.monotonic()
@@ -282,13 +304,13 @@ async def call_llm(
                     if _llm_trace_callback:
                         _llm_trace_callback("LLM_RATE_LIMIT", f"Sleeping for {delay:.2f}s", {"delay": delay})
                     await asyncio.sleep(delay)
-                
+
                 if attempt == 1: # Only count unique calls
                     _global_llm_call_count += 1
                     _save_stats(_global_llm_call_count)
 
             settings = get_settings()
-            
+
             active_provider = provider
             if not active_provider:
                 if settings.mistral_api_key:
@@ -319,7 +341,7 @@ async def call_llm(
             print(f"      [LLM] Calling Provider: {active_provider}")
             if _llm_trace_callback:
                 _llm_trace_callback("LLM_CALL", f"Calling {active_provider} (Attempt {attempt})", {"provider": active_provider, "prompt_preview": prompt[:100]})
-            
+
             start_time = time.perf_counter()
             try:
                 async with httpx.AsyncClient(timeout=timeout) as client:
@@ -333,7 +355,7 @@ async def call_llm(
                         res = await _call_anthropic(client, prompt, system_prompt, temperature)
                     else:
                         raise LLMError(f"Unsupported provider: {active_provider!r}")
-                    
+
                     duration = (time.perf_counter() - start_time) * 1000
                     logger.info(f"--- LLM Response Received ({duration:.2f}ms) ---")
                     snippet = res.replace('\n', ' ')[:100] + "..." if len(res) > 100 else res.replace('\n', ' ')

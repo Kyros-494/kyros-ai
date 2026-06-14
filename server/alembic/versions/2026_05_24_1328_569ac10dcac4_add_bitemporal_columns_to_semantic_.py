@@ -25,3 +25,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_column('semantic_memories', 'valid_to')
     op.drop_column('semantic_memories', 'valid_from')
+
+
+_ = (revision, down_revision, branch_labels, depends_on)

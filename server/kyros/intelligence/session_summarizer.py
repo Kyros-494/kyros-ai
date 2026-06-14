@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
+
 try:
     from datetime import UTC
 except ImportError:
     from datetime import timezone
     UTC = timezone.utc
-from typing import Any
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
@@ -202,7 +202,6 @@ async def summarize_session_if_needed(
             try:
                 from kyros.intelligence.integrity_service import update_agent_merkle_root
                 # Spawn fire-and-forget task
-                import asyncio
                 asyncio.create_task(update_agent_merkle_root(agent_id, orig_row.tenant_id))
             except Exception as e:
                 logger.warning(f"Failed to trigger Merkle root update after summarization: {e}")
