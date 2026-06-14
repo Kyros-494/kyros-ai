@@ -155,7 +155,7 @@ async def extract_entities(text_content: str) -> list[dict[str, Any]]:
             
     except Exception as e:
         logger.error("Failed to extract entities", error=str(e))
-    return []
+        raise e
 
 
 async def resolve_and_update_entities(

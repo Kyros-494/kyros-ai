@@ -1,7 +1,7 @@
 /**
  * Vercel AI SDK integration for Kyros persistent memory.
  *
- * Requires: npm install ai @kyros/sdk
+ * Requires: npm install ai @kyros.494/sdk
  */
 
 import { KyrosClient } from '../client';
@@ -32,8 +32,8 @@ function extractText(content: CoreMessage['content']): string {
  *
  * Usage:
  * ```typescript
- * import { KyrosClient } from '@kyros/sdk';
- * import { withKyrosMemory } from '@kyros/sdk/integrations/vercel';
+ * import { KyrosClient } from '@kyros.494/sdk';
+ * import { withKyrosMemory } from '@kyros.494/sdk/integrations/vercel';
  *
  * const client = new KyrosClient({ apiKey: 'mk_live_...' });
  * const memory = withKyrosMemory(client, 'my-agent');

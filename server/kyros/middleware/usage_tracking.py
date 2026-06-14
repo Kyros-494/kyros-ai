@@ -136,7 +136,9 @@ class UsageTrackingMiddleware(BaseHTTPMiddleware):
                 from kyros.main import create_background_task
 
                 create_background_task(
-                    _track(tenant_id, operation, _extract_memory_type(path), latency_ms, path)
+                    _track(tenant_id, operation, _extract_memory_type(path), latency_ms, path),
+                    name="track_usage",
+                    details=f"Logging API operation: {operation} (latency: {latency_ms}ms)"
                 )
             except ImportError:
                 task = asyncio.create_task(

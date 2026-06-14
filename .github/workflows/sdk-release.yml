@@ -63,6 +63,10 @@ jobs:
       github.event.inputs.sdk == 'typescript' ||
       github.event.inputs.sdk == 'both'
 
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@kyros.494/sdk
+
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -80,4 +84,6 @@ jobs:
 
       - name: Publish to npm
         working-directory: sdks/typescript
-        run: npm publish --access public --provenance
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

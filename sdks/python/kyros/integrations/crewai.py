@@ -35,7 +35,9 @@ class KyrosRecallTool(BaseTool):  # type: ignore[misc]
     )
     args_schema: type[BaseModel] = _RecallInput
 
-    client: KyrosClient
+    client: KyrosClient | None = None
+    api_key: str | None = None
+    base_url: str | None = None
     agent_id: str
     k: int = 10
 
@@ -44,7 +46,8 @@ class KyrosRecallTool(BaseTool):  # type: ignore[misc]
 
     def _run(self, query: str) -> str:
         try:
-            response = self.client.recall(self.agent_id, query, k=self.k)
+            client = self.client or KyrosClient(api_key=self.api_key, base_url=self.base_url)
+            response = client.recall(self.agent_id, query, k=self.k)
             if not response.results:
                 return "No relevant memories found."
             return "\n".join(f"- {r.content}" for r in response.results)
@@ -62,7 +65,9 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
     )
     args_schema: type[BaseModel] = _RememberInput
 
-    client: KyrosClient
+    client: KyrosClient | None = None
+    api_key: str | None = None
+    base_url: str | None = None
     agent_id: str
 
     class Config:
@@ -70,25 +75,33 @@ class KyrosRememberTool(BaseTool):  # type: ignore[misc]
 
     def _run(self, fact: str) -> str:
         try:
-            self.client.remember(self.agent_id, fact)
+            client = self.client or KyrosClient(api_key=self.api_key, base_url=self.base_url)
+            client.remember(self.agent_id, fact)
             return "Memory successfully stored."
         except KyrosError as e:
             return f"Memory storage failed: {e!s}"
 
 
-def get_kyros_tools(client: KyrosClient, agent_id: str, k: int = 10) -> list[BaseTool]:
+def get_kyros_tools(
+    client: KyrosClient | None = None,
+    agent_id: str | None = None,
+    k: int = 10,
+    api_key: str | None = None,
+    base_url: str | None = None,
+) -> list[BaseTool]:
     """Get a list of Kyros memory tools ready to pass to a CrewAI agent.
 
     Usage:
-        from kyros import KyrosClient
         from kyros.integrations.crewai import get_kyros_tools
 
-        client = KyrosClient(api_key="mk_live_...")
-        tools = get_kyros_tools(client, agent_id="my-crew-agent")
+        # Automatic configuration via environment variables:
+        tools = get_kyros_tools(agent_id="my-crew-agent")
 
         agent = Agent(role="...", tools=tools)
     """
+    if not agent_id:
+        raise ValueError("agent_id must be provided")
     return [
-        KyrosRecallTool(client=client, agent_id=agent_id, k=k),
-        KyrosRememberTool(client=client, agent_id=agent_id),
+        KyrosRecallTool(client=client, agent_id=agent_id, k=k, api_key=api_key, base_url=base_url),
+        KyrosRememberTool(client=client, agent_id=agent_id, api_key=api_key, base_url=base_url),
     ]

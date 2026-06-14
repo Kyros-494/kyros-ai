@@ -62,46 +62,48 @@ async def get_semantic_graph(agent_id: str, request: Request, limit: int = 100) 
         async with get_db_session_for_tenant(str(tenant_id)) as session:
             agent_id_internal = await service._resolve_agent(session, tenant_id, agent_id)
 
-            result = await session.execute(
+            # Retrieve active semantic memories for this agent
+            mem_result = await session.execute(
                 text("""
-                SELECT from_fact_id, to_fact_id, relatedness_score
-                FROM semantic_edges
-                WHERE agent_id = :agent_id
+                SELECT id, subject, predicate, object, confidence
+                FROM semantic_memories
+                WHERE agent_id = :agent_id AND deleted_at IS NULL
                 ORDER BY created_at DESC
                 LIMIT :limit
                 """),
                 {"agent_id": agent_id_internal, "limit": limit},
             )
-            edges = []
-            node_ids: set[str] = set()
-            for row in result.fetchall():
-                edges.append(
+            
+            nodes = []
+            node_ids = []
+            for r in mem_result.fetchall():
+                nodes.append(
                     {
-                        "source": str(row.from_fact_id),
-                        "target": str(row.to_fact_id),
-                        "relatedness": row.relatedness_score,
+                        "id": str(r.id),
+                        "label": f"{r.subject} {r.predicate} {r.object}",
+                        "confidence": r.confidence,
                     }
                 )
-                node_ids.add(str(row.from_fact_id))
-                node_ids.add(str(row.to_fact_id))
+                node_ids.append(r.id)
 
-            nodes = []
+            edges = []
             if node_ids:
-                from uuid import UUID
-                res = await session.execute(
+                edge_result = await session.execute(
                     text("""
-                    SELECT id, subject, predicate, object, confidence
-                    FROM semantic_memories
-                    WHERE id = ANY(CAST(:ids AS uuid[])) AND deleted_at IS NULL
+                    SELECT from_fact_id, to_fact_id, relatedness_score
+                    FROM semantic_edges
+                    WHERE agent_id = :agent_id
+                      AND from_fact_id = ANY(CAST(:node_ids AS uuid[]))
+                      AND to_fact_id = ANY(CAST(:node_ids AS uuid[]))
                     """),
-                    {"ids": [UUID(nid) for nid in node_ids]},
+                    {"agent_id": agent_id_internal, "node_ids": node_ids},
                 )
-                for r in res.fetchall():
-                    nodes.append(
+                for row in edge_result.fetchall():
+                    edges.append(
                         {
-                            "id": str(r.id),
-                            "label": f"{r.subject} {r.predicate} {r.object}",
-                            "confidence": r.confidence,
+                            "source": str(row.from_fact_id),
+                            "target": str(row.to_fact_id),
+                            "relatedness": row.relatedness_score,
                         }
                     )
 

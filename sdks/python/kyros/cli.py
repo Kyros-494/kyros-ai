@@ -64,9 +64,9 @@ def main() -> None:
     args = parser.parse_args()
 
     api_key = args.api_key or os.getenv("KYROS_API_KEY")
-    base_url = args.base_url or os.getenv("KYROS_BASE_URL") or "http://localhost:8000"
+    base_url = args.base_url or os.getenv("KYROS_BASE_URL")
 
-    if args.command != "tenant-create" and not api_key:
+    if args.command not in ("tenant-create", "mcp") and not api_key:
         print(
             "Error: No API key provided. Set KYROS_API_KEY environment variable or pass --api-key.",
             file=sys.stderr
