@@ -6,7 +6,7 @@ Modern, responsive Next.js website built with React 19, TypeScript, and Tailwind
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -41,7 +41,7 @@ npm run build && npm run export
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 website/
@@ -69,7 +69,7 @@ website/
 
 ---
 
-## 🎨 Tech Stack
+## Tech Stack
 
 ### Core
 
@@ -80,18 +80,18 @@ website/
 
 ### Features
 
-- ✅ Server-side rendering (SSR)
-- ✅ Static site generation (SSG)
-- ✅ Responsive design (mobile-first)
-- ✅ Dark mode support
-- ✅ SEO optimization
-- ✅ Security headers
-- ✅ Image optimization
-- ✅ Font optimization (Geist Sans + Mono)
+- Server-side rendering (SSR)
+- Static site generation (SSG)
+- Responsive design (mobile-first)
+- Dark mode support
+- SEO optimization
+- Security headers
+- Image optimization
+- Font optimization (Geist Sans + Mono)
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -143,7 +143,7 @@ For Tailwind 3 compatibility, create `tailwind.config.ts`.
 
 ---
 
-## 🎯 Features
+## Features
 
 ### Landing Page
 
@@ -157,36 +157,36 @@ For Tailwind 3 compatibility, create `tailwind.config.ts`.
 
 ### SEO
 
-- ✅ Meta tags (title, description, keywords)
-- ✅ Open Graph tags (Facebook, LinkedIn)
-- ✅ Twitter Card tags
-- ✅ Canonical URLs
-- ✅ Sitemap (auto-generated)
-- ✅ Robots.txt
-- ✅ Structured data (future)
+- Meta tags (title, description, keywords)
+- Open Graph tags (Facebook, LinkedIn)
+- Twitter Card tags
+- Canonical URLs
+- Sitemap (auto-generated)
+- Robots.txt
+- Structured data (future)
 
 ### Security
 
-- ✅ Security headers configured
-- ✅ X-Content-Type-Options: nosniff
-- ✅ X-Frame-Options: DENY
-- ✅ X-XSS-Protection enabled
-- ✅ Referrer-Policy configured
-- ✅ Permissions-Policy configured
-- ✅ Powered-by header disabled
+- Security headers configured
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection enabled
+- Referrer-Policy configured
+- Permissions-Policy configured
+- Powered-by header disabled
 
 ### Performance
 
-- ✅ Static generation (SSG)
-- ✅ Image optimization (next/image)
-- ✅ Font optimization (next/font)
-- ✅ Compression enabled
-- ✅ Minimal JavaScript
-- ✅ Tree-shakeable CSS
+- Static generation (SSG)
+- Image optimization (next/image)
+- Font optimization (next/font)
+- Compression enabled
+- Minimal JavaScript
+- Tree-shakeable CSS
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Vercel (Recommended)
 
@@ -238,7 +238,7 @@ npm run export
 
 ---
 
-## 🧪 Development
+## Development
 
 ### Scripts
 
@@ -296,7 +296,7 @@ export function Button({ children }: { children: React.ReactNode }) {
 
 ---
 
-## 📊 Performance
+## Performance
 
 ### Lighthouse Scores (Target)
 
@@ -315,7 +315,7 @@ export function Button({ children }: { children: React.ReactNode }) {
 
 ---
 
-## 🎨 Styling
+## Styling
 
 ### Tailwind CSS
 
@@ -353,7 +353,7 @@ Add custom CSS in `src/app/globals.css`:
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Port Already in Use
 
@@ -388,7 +388,7 @@ npm install -D typescript@latest
 
 ---
 
-## 📚 Resources
+## Resources
 
 ### Documentation
 
@@ -406,7 +406,7 @@ npm install -D typescript@latest
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
 
@@ -422,13 +422,13 @@ We welcome contributions! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for d
 
 ---
 
-## 📄 License
+## License
 
 The Kyros website is part of the Kyros project and is licensed under the **Apache License 2.0**. See [LICENSE](../LICENSE) for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with:
 - [Next.js](https://nextjs.org/) - React framework
@@ -438,4 +438,4 @@ Built with:
 
 ---
 
-**Made with ❤️ by the Kyros team**
+**Made by the Kyros team**
