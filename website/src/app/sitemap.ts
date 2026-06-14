@@ -17,7 +17,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/docs`, priority: 0.9, changeFrequency: "weekly" as const },
     { url: `${baseUrl}/developers`, priority: 0.8, changeFrequency: "weekly" as const },
     { url: `${baseUrl}/usecases`, priority: 0.8, changeFrequency: "weekly" as const },
-    { url: `${baseUrl}/research`, priority: 0.7, changeFrequency: "monthly" as const },
     { url: `${baseUrl}/simulation`, priority: 0.8, changeFrequency: "weekly" as const },
     { url: `${baseUrl}/architecture`, priority: 0.7, changeFrequency: "monthly" as const },
   ];

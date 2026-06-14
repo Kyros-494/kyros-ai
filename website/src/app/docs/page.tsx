@@ -189,11 +189,11 @@ client = KyrosClient(
               Add the SDK dependency reference in your <code className="text-blue-400 font-mono">package.json</code>:
             </p>
             <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-300">
-{`"@kyros/sdk": "file:../kyros-ai/sdks/typescript"`}
+{`"@kyros.494/sdk": "file:../kyros-ai/sdks/typescript"`}
             </pre>
             <h2 className="text-lg font-bold text-white">Initialization</h2>
             <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-300">
-{`import { KyrosClient } from '@kyros/sdk';
+{`import { KyrosClient } from '@kyros.494/sdk';
 
 const client = new KyrosClient({
   apiKey: 'mk_live_default_dev_key_123456',

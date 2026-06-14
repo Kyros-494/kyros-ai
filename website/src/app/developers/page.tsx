@@ -60,7 +60,7 @@ pip install -e sdks/python[all]`}
               <p className="text-slate-300 text-sm">Add this path dependency inside your project package.json:</p>
               <pre className="p-4 bg-slate-950 border border-slate-800 rounded font-mono text-xs text-slate-300">
 {`"dependencies": {
-  "@kyros/sdk": "file:../kyros-ai/sdks/typescript"
+  "@kyros.494/sdk": "file:../kyros-ai/sdks/typescript"
 }`}
               </pre>
             </div>

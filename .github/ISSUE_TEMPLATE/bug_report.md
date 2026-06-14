@@ -29,7 +29,7 @@ assignees: ''
 - Kyros version: <!-- e.g. 0.1.0 or commit SHA -->
 - Deployment: <!-- Docker Compose / self-hosted / cloud -->
 - Python version: <!-- e.g. 3.12 -->
-- SDK version: <!-- e.g. kyros-sdk 0.1.0 or @kyros/sdk 0.1.0 -->
+- SDK version: <!-- e.g. kyros-sdk 0.1.0 or @kyros.494/sdk 0.1.0 -->
 - OS: <!-- e.g. Ubuntu 22.04, macOS 14 -->
 
 ## Logs
