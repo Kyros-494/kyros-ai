@@ -11,6 +11,7 @@ build/
 .venv/
 venv/
 server/.venv/
+kyros-server/
 
 # ─── Node ──────────────────────────────
 node_modules/
