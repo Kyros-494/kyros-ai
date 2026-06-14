@@ -503,7 +503,11 @@ async def migrate_embeddings(
     try:
         from kyros.main import create_background_task
 
-        create_background_task(_run_migration())
+        create_background_task(
+            _run_migration(),
+            name="migrate_embeddings",
+            details=f"Migrating embeddings for agent {agent_id} from {body.from_model} to {body.to_model}"
+        )
     except ImportError:
         asyncio.create_task(_run_migration())
 
@@ -700,9 +704,149 @@ async def create_tenant(body: CreateTenantRequest, request: Request) -> dict[str
     }
 
 
+class CreatePublicTenantRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    email: str = Field(..., min_length=1, max_length=255)
+
+
+@router.post("/public/sandbox/keys")
+async def create_public_sandbox_key(body: CreatePublicTenantRequest) -> dict[str, Any]:
+    """Create a new tenant with free tier/sandbox plan and return the generated API key."""
+    import secrets
+    from kyros.storage.postgres import get_db_session
+
+    api_key = f"mk_live_{secrets.token_hex(16)}"
+    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    tenant_id = uuid.uuid4()
+
+    try:
+        async with get_db_session() as session:
+            await session.execute(
+                text("""
+                INSERT INTO tenants (
+                    id, name, email, api_key_hash, plan, is_active, created_at, updated_at
+                )
+                VALUES (
+                    :id, :name, :email, :key_hash, 'free', true, NOW(), NOW()
+                )
+                """),
+                {
+                    "id": tenant_id,
+                    "name": body.name,
+                    "email": body.email,
+                    "key_hash": key_hash,
+                },
+            )
+    except SQLAlchemyError as e:
+        logger.error("DB error in create_public_sandbox_key", error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {
+        "api_key": api_key,
+        "status": "created",
+    }
+
+
+@router.get("/background-tasks")
+async def get_background_tasks(request: Request) -> list[dict[str, Any]]:
+    """Retrieve the recent background tasks and their execution statuses/errors."""
+    from kyros.services.background_tasks import get_task_history
+    return get_task_history()
+
+
+@router.get("/configure-llm")
+async def get_llm_config(request: Request) -> dict[str, Any]:
+    """Retrieve the current in-memory LLM configurations and active status."""
+    import os
+    from kyros.config import get_settings
+    
+    settings = get_settings()
+    
+    def mask_key(k: str | None) -> str:
+        if not k:
+            return ""
+        if len(k) <= 8:
+            return "********"
+        return f"{k[:4]}...{k[-4:]}"
+
+    active_provider = "none"
+    if settings.gemini_api_key:
+        active_provider = "gemini"
+    elif settings.openai_api_key:
+        active_provider = "openai"
+    elif settings.mistral_api_key:
+        active_provider = "mistral"
+    elif settings.anthropic_api_key:
+        active_provider = "anthropic"
+
+    allow_mock = os.getenv("KYROS_ALLOW_MOCK_LLM", "false").lower() == "true"
+
+    return {
+        "active_provider": active_provider,
+        "allow_mock": allow_mock,
+        "providers": {
+            "openai": {
+                "has_key": bool(settings.openai_api_key),
+                "masked_key": mask_key(settings.openai_api_key),
+                "model": settings.openai_model
+            },
+            "gemini": {
+                "has_key": bool(settings.gemini_api_key),
+                "masked_key": mask_key(settings.gemini_api_key),
+                "model": settings.gemini_model
+            },
+            "mistral": {
+                "has_key": bool(settings.mistral_api_key),
+                "masked_key": mask_key(settings.mistral_api_key),
+                "model": settings.mistral_model
+            },
+            "anthropic": {
+                "has_key": bool(settings.anthropic_api_key),
+                "masked_key": mask_key(settings.anthropic_api_key),
+                "model": settings.anthropic_model
+            }
+        }
+    }
+
+
+def _update_env_file(key: str, value: str) -> None:
+    import os
+    paths = ["/app/.env", ".env", "../.env"]
+    for path in paths:
+        try:
+            lines = []
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    lines = f.readlines()
+            
+            found = False
+            for i, line in enumerate(lines):
+                line_stripped = line.strip()
+                k_clean = key.removeprefix("KYROS_")
+                l_clean = line_stripped.removeprefix("KYROS_")
+                if l_clean.startswith(f"{k_clean}="):
+                    prefix = "KYROS_" if line_stripped.startswith("KYROS_") else ""
+                    lines[i] = f"{prefix}{k_clean}={value}\n"
+                    found = True
+                    break
+            
+            if not found:
+                prefix = ""
+                # Use KYROS_ prefix for standard config parameters if not specified
+                if key in ("DATABASE_URL", "REDIS_URL", "JWT_SECRET_KEY", "ENVIRONMENT", "API_KEY", "ADMIN_TOKEN", "ALLOW_MOCK_LLM", "OPENAI_MODEL", "GEMINI_MODEL", "MISTRAL_MODEL", "ANTHROPIC_MODEL") and not key.startswith("KYROS_"):
+                    prefix = "KYROS_"
+                lines.append(f"{prefix}{key}={value}\n")
+                
+            with open(path, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+            logger.info(f"Successfully updated env file at {path} with {key}")
+        except Exception as e:
+            logger.warning(f"Could not update env file at {path}: {e}")
+
+
 @router.post("/configure-llm")
 async def configure_llm(request: Request) -> dict[str, str]:
-    """Dynamically configure LLM API key in memory without restarting Docker."""
+    """Dynamically configure LLM API key in memory and persist to .env."""
     import os
     from kyros.config import get_settings
 
@@ -717,6 +861,10 @@ async def configure_llm(request: Request) -> dict[str, str]:
 
     if allow_mock:
         os.environ["KYROS_ALLOW_MOCK_LLM"] = "true"
+        _update_env_file("KYROS_ALLOW_MOCK_LLM", "true")
+    else:
+        os.environ["KYROS_ALLOW_MOCK_LLM"] = "false"
+        _update_env_file("KYROS_ALLOW_MOCK_LLM", "false")
 
     if not provider or not api_key:
         raise HTTPException(status_code=400, detail="Missing 'provider' or 'api_key'")
@@ -736,10 +884,10 @@ async def configure_llm(request: Request) -> dict[str, str]:
     
     target_env = env_keys[provider]
     
-    # 1. Update os.environ
+    # 1. Update os.environ and cached Settings
     os.environ[target_env] = api_key
+    _update_env_file(target_env, api_key)
     
-    # 2. Update cached Settings object properties
     if provider == "openai":
         settings.openai_api_key = api_key
     elif provider == "gemini":
@@ -749,5 +897,300 @@ async def configure_llm(request: Request) -> dict[str, str]:
     elif provider == "anthropic":
         settings.anthropic_api_key = api_key
 
-    logger.info(f"Dynamically updated LLM key in-memory for {provider} (allow_mock={allow_mock})")
-    return {"status": "success", "message": f"LLM provider {provider} configured dynamically in-memory (allow_mock={allow_mock})."}
+    model = body.get("model")
+    if model:
+        env_models = {
+            "openai": "KYROS_OPENAI_MODEL",
+            "gemini": "KYROS_GEMINI_MODEL",
+            "mistral": "KYROS_MISTRAL_MODEL",
+            "anthropic": "KYROS_ANTHROPIC_MODEL",
+        }
+        target_model_env = env_models[provider]
+        os.environ[target_model_env] = model
+        _update_env_file(target_model_env, model)
+        
+        if provider == "openai":
+            settings.openai_model = model
+        elif provider == "gemini":
+            settings.gemini_model = model
+        elif provider == "mistral":
+            settings.mistral_model = model
+        elif provider == "anthropic":
+            settings.anthropic_model = model
+
+    logger.info(f"Dynamically updated LLM key and model in-memory and in .env for {provider} (allow_mock={allow_mock})")
+    return {"status": "success", "message": f"LLM provider {provider} configured dynamically and written to .env."}
+
+
+@router.post("/test-llm")
+async def test_llm(request: Request) -> dict[str, Any]:
+    """Test if the provided LLM credentials are valid by making a lightweight test call."""
+    import os
+    from kyros.ml.models import call_llm
+    from kyros.config import get_settings
+    
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+        
+    provider = body.get("provider")
+    api_key = body.get("api_key")
+    model = body.get("model")
+    
+    if not provider or not api_key:
+        raise HTTPException(status_code=400, detail="Missing 'provider' or 'api_key'")
+        
+    provider = provider.lower()
+    supported = {"openai", "gemini", "mistral", "anthropic"}
+    if provider not in supported:
+        raise HTTPException(status_code=400, detail=f"Unsupported provider: {provider}")
+        
+    env_keys = {
+        "openai": "OPENAI_API_KEY",
+        "gemini": "GEMINI_API_KEY",
+        "mistral": "MISTRAL_API_KEY",
+        "anthropic": "ANTHROPIC_API_KEY",
+    }
+    target_env = env_keys[provider]
+    old_env_val = os.environ.get(target_env)
+    
+    env_models = {
+        "openai": "KYROS_OPENAI_MODEL",
+        "gemini": "KYROS_GEMINI_MODEL",
+        "mistral": "KYROS_MISTRAL_MODEL",
+        "anthropic": "KYROS_ANTHROPIC_MODEL",
+    }
+    target_model_env = env_models[provider]
+    old_model_env_val = os.environ.get(target_model_env)
+    
+    # Temporarily set credentials
+    os.environ[target_env] = api_key
+    if model:
+        os.environ[target_model_env] = model
+        
+    settings = get_settings()
+    old_settings_key = None
+    old_settings_model = None
+    
+    if provider == "openai":
+        old_settings_key = settings.openai_api_key
+        settings.openai_api_key = api_key
+        if model:
+            old_settings_model = settings.openai_model
+            settings.openai_model = model
+    elif provider == "gemini":
+        old_settings_key = settings.gemini_api_key
+        settings.gemini_api_key = api_key
+        if model:
+            old_settings_model = settings.gemini_model
+            settings.gemini_model = model
+    elif provider == "mistral":
+        old_settings_key = settings.mistral_api_key
+        settings.mistral_api_key = api_key
+        if model:
+            old_settings_model = settings.mistral_model
+            settings.mistral_model = model
+    elif provider == "anthropic":
+        old_settings_key = settings.anthropic_api_key
+        settings.anthropic_api_key = api_key
+        if model:
+            old_settings_model = settings.anthropic_model
+            settings.anthropic_model = model
+
+    # Disable mock LLM check for validation/testing
+    old_allow_mock = os.environ.get("KYROS_ALLOW_MOCK_LLM")
+    os.environ["KYROS_ALLOW_MOCK_LLM"] = "false"
+
+    try:
+        response = await call_llm(
+            prompt="Respond with 'OK' and nothing else.",
+            system_prompt="You are a connection testing bot. Answer 'OK' to show you are online.",
+            temperature=0.0,
+            provider=provider,
+            timeout=10.0
+        )
+        success = "ok" in response.lower()
+        return {
+            "status": "success" if success else "error",
+            "message": "API connection successful. Response: " + response.strip() if success else "API returned unexpected response: " + response
+        }
+    except Exception as e:
+        logger.error(f"API test connection failed for {provider}: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+    finally:
+        # Restore original environment variables and settings
+        if old_env_val is not None:
+            os.environ[target_env] = old_env_val
+        else:
+            os.environ.pop(target_env, None)
+            
+        if old_model_env_val is not None:
+            os.environ[target_model_env] = old_model_env_val
+        else:
+            os.environ.pop(target_model_env, None)
+            
+        if old_allow_mock is not None:
+            os.environ["KYROS_ALLOW_MOCK_LLM"] = old_allow_mock
+        else:
+            os.environ.pop("KYROS_ALLOW_MOCK_LLM", None)
+            
+        # Restore settings
+        if provider == "openai":
+            settings.openai_api_key = old_settings_key
+            if old_settings_model:
+                settings.openai_model = old_settings_model
+        elif provider == "gemini":
+            settings.gemini_api_key = old_settings_key
+            if old_settings_model:
+                settings.gemini_model = old_settings_model
+        elif provider == "mistral":
+            settings.mistral_api_key = old_settings_key
+            if old_settings_model:
+                settings.mistral_model = old_settings_model
+        elif provider == "anthropic":
+            settings.anthropic_api_key = old_settings_key
+            if old_settings_model:
+                settings.anthropic_model = old_settings_model
+
+
+class CreateAgentRequest(BaseModel):
+    agent_id: str = Field(..., min_length=1, max_length=255)
+    display_name: str | None = Field(default=None, max_length=255)
+    metadata: dict = Field(default_factory=dict)
+
+
+@router.post("/agents")
+async def create_agent(body: CreateAgentRequest, request: Request) -> dict[str, Any]:
+    """Explicitly register/create a new agent (project namespace)."""
+    service = get_memory_service(request)
+    tenant_id = getattr(request.state, "tenant_id", None)
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Unauthenticated")
+
+    try:
+        from kyros.storage.postgres import get_db_session_for_tenant
+        async with get_db_session_for_tenant(str(tenant_id)) as session:
+            # Look if it already exists
+            result = await session.execute(
+                text("SELECT id FROM agents WHERE external_id = :eid AND tenant_id = :tid"),
+                {"eid": body.agent_id, "tid": tenant_id},
+            )
+            row = result.fetchone()
+            if row:
+                raise HTTPException(status_code=400, detail="Agent namespace already exists")
+
+            agent_id = uuid.uuid4()
+            await session.execute(
+                text("""
+                INSERT INTO agents (id, tenant_id, external_id, display_name, metadata, created_at)
+                VALUES (:id, :tid, :eid, :display_name, :metadata, NOW())
+                """),
+                {
+                    "id": agent_id,
+                    "tid": tenant_id,
+                    "eid": body.agent_id,
+                    "display_name": body.display_name,
+                    "metadata": json.dumps(body.metadata),
+                },
+            )
+            await service.cache.set_agent_id(tenant_id, body.agent_id, str(agent_id))
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error("DB error in create_agent", error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {
+        "agent_id": body.agent_id,
+        "display_name": body.display_name,
+        "status": "created",
+    }
+
+
+@router.delete("/agents/{agent_id}")
+async def delete_agent(agent_id: str, request: Request) -> dict[str, str]:
+    """Delete an agent (project namespace) and all its associated memories completely."""
+    service = get_memory_service(request)
+    tenant_id = getattr(request.state, "tenant_id", None)
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Unauthenticated")
+
+    try:
+        from kyros.storage.postgres import get_db_session_for_tenant
+        async with get_db_session_for_tenant(str(tenant_id)) as session:
+            agent_id_internal = await service._resolve_agent(session, tenant_id, agent_id)
+            
+            # Delete from agents table (which cascades to memories/entities/etc.)
+            await session.execute(
+                text("DELETE FROM agents WHERE id = :id"),
+                {"id": agent_id_internal},
+            )
+            
+            # Clear redis cache for this agent
+            await service.cache.invalidate_agent(agent_id_internal)
+            
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except SQLAlchemyError as e:
+        logger.error("DB error in delete_agent", agent_id=agent_id, error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {"status": "success", "message": f"Agent {agent_id} and all associated memories completely deleted."}
+
+
+@router.post("/tenants/{target_tenant_id}/rotate-key")
+async def rotate_tenant_key(target_tenant_id: str, request: Request) -> dict[str, Any]:
+    """Generate and rotate a new API key for an existing tenant.
+
+    Requires master admin token.
+    """
+    import secrets
+    from kyros.config import get_settings
+    from kyros.storage.postgres import get_db_session
+
+    settings = get_settings()
+    admin_token = settings.admin_token or settings.jwt_secret_key
+
+    auth_header = request.headers.get("Authorization", "")
+    token = ""
+    if auth_header.startswith("Bearer "):
+        token = auth_header.replace("Bearer ", "").strip()
+    else:
+        token = request.headers.get("X-Admin-Token", "").strip()
+
+    if not token or token != admin_token:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+
+    api_key = f"mk_live_{secrets.token_hex(16)}"
+    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+
+    try:
+        async with get_db_session() as session:
+            # Check if tenant exists
+            result = await session.execute(
+                text("SELECT id FROM tenants WHERE id = :id"),
+                {"id": target_tenant_id},
+            )
+            row = result.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Tenant not found")
+
+            await session.execute(
+                text("UPDATE tenants SET api_key_hash = :key_hash, updated_at = NOW() WHERE id = :id"),
+                {"id": target_tenant_id, "key_hash": key_hash},
+            )
+    except HTTPException:
+        raise
+    except SQLAlchemyError as e:
+        logger.error("DB error in rotate_tenant_key", error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {
+        "tenant_id": target_tenant_id,
+        "api_key": api_key,
+        "status": "rotated",
+    }

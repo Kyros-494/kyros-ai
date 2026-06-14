@@ -3,29 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kyros AI — Developer Dashboard</title>
-  <!-- Google Fonts: Inter and Outfit -->
+  <title>Kyros AI — Developer Management Console</title>
+  
+  <!-- Premium Google Fonts: Inter and Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- D3.js for Knowledge Graph Visualization -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- D3.js for Complex Semantic and Causal Graph Rendering -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --accent-blue: #4facfe;
-      --accent-purple: #00f2fe;
-      --glass-bg: rgba(255, 255, 255, 0.03);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --glass-shadow: rgba(0, 0, 0, 0.5);
-      --success: #10b981;
-      --error: #ef4444;
-      --warning: #f59e0b;
-      --font-outfit: 'Outfit', sans-serif;
-      --font-inter: 'Inter', sans-serif;
+      --bg-base: #000000;
+      --bg-sidebar: #080808;
+      --bg-surface: #09090b;
+      --bg-surface-elevated: #121214;
+      
+      --border-color: #27272a;
+      --border-color-muted: #1e1e20;
+      --border-focus: #ff4a00;
+      
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #52525b;
+      
+      --primary: #ff4a00;
+      --primary-hover: #e04100;
+      --primary-light: rgba(255, 74, 0, 0.1);
+      
+      --emerald-400: #10b981;
+      --emerald-light: rgba(16, 185, 129, 0.1);
+      --rose-400: #ef4444;
+      --rose-light: rgba(239, 68, 68, 0.1);
+      --amber-400: #f59e0b;
+      --amber-light: rgba(245, 158, 11, 0.1);
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
 
     * {
@@ -35,279 +50,354 @@
     }
 
     body {
-      font-family: var(--font-inter);
-      background: var(--bg-gradient);
-      color: var(--text-main);
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
       min-height: 100vh;
-      overflow-x: hidden;
-      padding-bottom: 2rem;
-    }
-
-    header {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.5rem 3rem;
-      border-bottom: 1px solid var(--glass-border);
-      backdrop-filter: blur(12px);
-      background: rgba(11, 15, 25, 0.7);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      overflow: hidden;
     }
 
-    .brand {
+    /* Scrollbars styling */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--primary);
+    }
+
+    /* Full-height Left Sidebar */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-brand {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      font-family: var(--font-outfit);
-      font-size: 1.75rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color-muted);
+      cursor: pointer;
     }
 
     .brand-logo {
-      width: 2.25rem;
-      height: 2.25rem;
-      border-radius: 8px;
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #0b0f19;
-      font-weight: 900;
-      font-size: 1.25rem;
-      box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+      color: var(--primary);
     }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
+    .brand-text {
+      font-family: var(--font-sans);
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
     }
 
-    .status-badge {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.85rem;
-      padding: 0.4rem 0.8rem;
-      border-radius: 20px;
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.2);
-      color: var(--success);
-      font-weight: 500;
-      transition: all 0.3s ease;
+    .sidebar-section {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color-muted);
     }
 
-    .status-badge.error {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      color: var(--error);
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background-color: currentColor;
-      box-shadow: 0 0 8px currentColor;
-    }
-
-    /* Key Config Modal / Settings Banner */
-    .auth-config {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      padding: 0.35rem 0.75rem;
-    }
-
-    .auth-config input {
-      background: transparent;
-      border: none;
-      color: var(--text-main);
-      font-size: 0.9rem;
-      outline: none;
-      width: 260px;
-      font-family: monospace;
-    }
-
-    .auth-config button {
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-      border: none;
-      color: #0b0f19;
-      font-weight: 600;
-      padding: 0.35rem 0.85rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      transition: all 0.2s ease;
-    }
-
-    .auth-config button:hover {
-      opacity: 0.9;
-      transform: translateY(-1px);
-    }
-
-    /* Layout */
-    .dashboard-container {
-      max-width: 1400px;
-      margin: 2rem auto;
-      padding: 0 2rem;
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 2rem;
-    }
-
-    /* Sidebar Navigation */
-    .sidebar {
+    .sidebar-section.agents-section {
+      flex-grow: 1;
+      border-bottom: none;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
     }
 
-    .sidebar-card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 8px 32px var(--glass-shadow);
-    }
-
-    .sidebar-card h3 {
-      font-family: var(--font-outfit);
-      font-size: 1.1rem;
+    .sidebar-section-title {
+      font-size: 0.7rem;
       font-weight: 600;
-      margin-bottom: 1rem;
-      color: var(--accent-blue);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1.2px;
+      color: var(--text-tertiary);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Sidebar controls & selections */
+    .custom-select-wrapper {
+      position: relative;
+    }
+
+    select {
+      width: 100%;
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-primary);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      outline: none;
+      appearance: none;
+      cursor: pointer;
+      font-family: var(--font-sans);
+    }
+
+    select:focus {
+      border-color: var(--primary);
+    }
+
+    .custom-select-wrapper::after {
+      content: '';
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 4px solid transparent;
+      border-top-color: var(--text-secondary);
+      pointer-events: none;
     }
 
     .agent-list {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      max-height: 250px;
+      gap: 0.25rem;
+      max-height: 240px;
       overflow-y: auto;
-      padding-right: 0.5rem;
+      margin-bottom: 0.75rem;
     }
 
     .agent-item {
-      padding: 0.65rem 0.85rem;
-      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 0.95rem;
-      transition: all 0.2s ease;
-      background: rgba(255, 255, 255, 0.02);
+      font-size: 0.8rem;
+      transition: all 0.2s;
+      background: transparent;
       border: 1px solid transparent;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
+      gap: 0.15rem;
     }
 
-    .agent-item:hover, .agent-item.active {
-      background: rgba(79, 172, 254, 0.1);
-      border-color: rgba(79, 172, 254, 0.25);
-      color: var(--accent-blue);
+    .agent-item:hover {
+      background: #141416;
+      color: var(--text-primary);
+    }
+
+    .agent-item.active {
+      background: var(--primary-light);
+      border-color: rgba(255, 74, 0, 0.2);
+      color: var(--primary);
+    }
+
+    .agent-item span {
+      font-weight: 500;
     }
 
     .agent-item-id {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      font-family: monospace;
+      font-size: 0.7rem;
+      color: var(--text-tertiary);
+      font-family: var(--font-mono);
     }
 
-    .create-agent-btn {
+    .action-link-btn {
       width: 100%;
       background: transparent;
-      border: 1px dashed var(--glass-border);
-      color: var(--text-muted);
-      padding: 0.65rem;
-      border-radius: 8px;
+      border: 1px dashed var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.5rem;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.75rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      transition: all 0.3s ease;
-      margin-top: 0.75rem;
+      gap: 0.4rem;
+      transition: all 0.2s;
+      font-family: var(--font-sans);
     }
 
-    .create-agent-btn:hover {
-      border-color: var(--accent-purple);
-      color: var(--text-main);
-      background: rgba(255, 255, 255, 0.02);
+    .action-link-btn:hover {
+      border-color: var(--primary);
+      color: var(--text-primary);
+      background: #141416;
     }
 
+    /* Navigation list */
     .nav-list {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.15rem;
     }
 
     .nav-item {
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
+      padding: 0.55rem 0.75rem;
+      border-radius: 4px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
       font-weight: 500;
-      color: var(--text-muted);
+      font-size: 0.85rem;
+      color: var(--text-secondary);
     }
 
-    .nav-item:hover, .nav-item.active {
-      color: var(--text-main);
-      background: rgba(255, 255, 255, 0.04);
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: #141416;
     }
 
     .nav-item.active {
-      border-left: 3px solid var(--accent-blue);
-      color: var(--accent-blue);
+      color: var(--text-primary);
+      background: #141416;
+      border-left: 2px solid var(--primary);
+      border-radius: 0 4px 4px 0;
+      padding-left: calc(0.75rem - 2px);
     }
 
-    /* Main Console */
-    .main-console {
+    /* Main Area Layout */
+    .main-content {
+      flex-grow: 1;
       display: flex;
       flex-direction: column;
-      gap: 2rem;
+      height: 100vh;
+      background: var(--bg-base);
+    }
+
+    /* Header */
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border-color);
+      background: #000000;
+    }
+
+    .page-title-section {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .page-title-section h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 2px;
+      background: var(--emerald-light);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: var(--emerald-400);
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+
+    .status-badge.error {
+      background: var(--rose-light);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: var(--rose-400);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .auth-config {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 0.25rem 0.4rem;
+    }
+
+    .auth-config input {
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 0.8rem;
+      outline: none;
+      width: 200px;
+      font-family: var(--font-mono);
+      padding: 0.25rem;
+    }
+
+    .auth-config button {
+      background: var(--primary);
+      border: none;
+      color: #ffffff;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: background 0.2s;
+    }
+
+    .auth-config button:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Content Body Grid & Panes */
+    .content-body {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 2rem;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
     }
 
     .console-pane {
       display: none;
-      animation: fadeIn 0.35s ease-out;
+      flex-direction: column;
+      gap: 1.5rem;
+      animation: tabFadeIn 0.15s ease-out;
     }
 
     .console-pane.active {
       display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(2px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Panels/Cards styling: Minimalist, sharp corners, thin borders */
     .panel {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      padding: 2rem;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 32px var(--glass-shadow);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
@@ -317,32 +407,36 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--border-color-muted);
       padding-bottom: 0.75rem;
-      margin-bottom: 0.5rem;
     }
 
     .panel-title {
-      font-family: var(--font-outfit);
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--text-main);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
     }
 
-    /* Grid layout inside panels */
+    .panel-desc {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Stats Grid & Cards */
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
     }
 
     .stat-card {
-      background: rgba(255, 255, 255, 0.015);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
       padding: 1.25rem;
       display: flex;
       flex-direction: column;
@@ -350,30 +444,37 @@
     }
 
     .stat-label {
-      font-size: 0.85rem;
-      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-tertiary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     .stat-value {
-      font-family: var(--font-outfit);
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      word-break: break-all;
     }
 
-    /* Forms */
+    .stat-value.text-emerald-400 { color: var(--emerald-400); }
+    .stat-value.text-tertiary { color: var(--text-secondary); }
+
+    /* Forms & Inputs styling */
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
 
     .form-group label {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--text-muted);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .form-row {
@@ -382,86 +483,102 @@
       gap: 1rem;
     }
 
-    input[type="text"], input[type="email"], select, textarea {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      color: var(--text-main);
-      padding: 0.75rem 1rem;
-      font-size: 0.95rem;
+    input[type="text"], input[type="email"], input[type="password"], textarea {
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      color: var(--text-primary);
+      padding: 0.6rem 0.8rem;
+      font-size: 0.8rem;
       outline: none;
-      transition: all 0.2s ease;
-      font-family: var(--font-inter);
+      transition: border-color 0.2s;
+      font-family: var(--font-sans);
     }
 
-    input:focus, select:focus, textarea:focus {
-      border-color: var(--accent-blue);
-      background: rgba(255, 255, 255, 0.04);
-      box-shadow: 0 0 10px rgba(79, 172, 254, 0.15);
+    input:focus, textarea:focus {
+      border-color: var(--primary);
     }
 
+    /* Buttons styling */
     .btn {
-      background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-      border: none;
-      color: #0b0f19;
-      font-family: var(--font-outfit);
-      font-weight: 700;
-      padding: 0.8rem 1.5rem;
-      border-radius: 8px;
+      background: var(--primary);
+      border: 1px solid var(--primary);
+      color: #ffffff;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      padding: 0.55rem 1rem;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 1rem;
-      transition: all 0.3s ease;
+      font-size: 0.8rem;
+      transition: all 0.2s;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+      gap: 0.4rem;
     }
 
     .btn:hover {
-      opacity: 0.95;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 242, 254, 0.35);
+      background: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
     .btn.secondary {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--glass-border);
-      color: var(--text-main);
-      box-shadow: none;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
     }
 
     .btn.secondary:hover {
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-1px);
+      background: #141416;
+      border-color: var(--text-secondary);
     }
 
-    /* Tables & Memory Logs */
+    .btn.danger {
+      background: var(--rose-light);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: var(--rose-400);
+    }
+
+    .btn.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    /* Flat Tables */
     .table-container {
       overflow-x: auto;
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background: #09090b;
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
       text-align: left;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
     }
 
     th {
-      background: rgba(255, 255, 255, 0.02);
-      border-bottom: 1px solid var(--glass-border);
-      color: var(--text-muted);
+      background: #121214;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
       font-weight: 600;
-      padding: 1rem;
+      padding: 0.75rem 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 0.7rem;
     }
 
     td {
-      padding: 1rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-      vertical-align: top;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color-muted);
+      vertical-align: middle;
+      color: var(--text-primary);
     }
 
     tr:last-child td {
@@ -469,66 +586,65 @@
     }
 
     tr:hover td {
-      background: rgba(255, 255, 255, 0.005);
+      background: #141416;
     }
 
     .badge {
       display: inline-block;
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 2px;
+      font-size: 0.65rem;
       font-weight: 600;
       text-transform: uppercase;
+      font-family: var(--font-mono);
     }
 
-    .badge.role-user { background: rgba(79, 172, 254, 0.15); color: var(--accent-blue); border: 1px solid rgba(79, 172, 254, 0.3); }
-    .badge.role-assistant { background: rgba(0, 242, 254, 0.15); color: var(--accent-purple); border: 1px solid rgba(0, 242, 254, 0.3); }
-    .badge.role-system { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge.role-user { background: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid var(--border-color); }
+    .badge.role-assistant { background: var(--primary-light); color: var(--primary); border: 1px solid rgba(255, 74, 0, 0.2); }
+    .badge.role-system { background: var(--amber-light); color: var(--amber-400); border: 1px solid rgba(245, 158, 11, 0.2); }
 
     .score-bar-container {
-      width: 100px;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 4px;
+      width: 70px;
+      height: 4px;
+      background: #1e1e20;
+      border-radius: 1px;
       overflow: hidden;
       display: inline-block;
       vertical-align: middle;
-      margin-right: 0.5rem;
+      margin-right: 0.4rem;
     }
 
     .score-bar {
       height: 100%;
-      background: linear-gradient(90deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
-      border-radius: 4px;
+      background: var(--primary);
     }
 
     .console-log {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      font-family: monospace;
-      padding: 1rem;
-      font-size: 0.85rem;
-      color: #38bdf8;
-      max-height: 300px;
+      background: #000000;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--primary);
+      max-height: 220px;
       overflow-y: auto;
       white-space: pre-wrap;
+      line-height: 1.4;
     }
 
-    /* Modal dialog */
+    /* Modal Styling */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.8);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
-      animation: fadeIn 0.2s ease-out;
     }
 
     .modal-overlay.active {
@@ -536,38 +652,38 @@
     }
 
     .modal {
-      background: #0f1626;
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
       width: 480px;
-      max-width: 90%;
-      padding: 2rem;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      max-width: 95%;
+      padding: 1.5rem;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.25rem;
     }
 
     .modal-header {
-      font-family: var(--font-outfit);
-      font-size: 1.35rem;
-      font-weight: 700;
-      border-bottom: 1px solid var(--glass-border);
-      padding-bottom: 0.75rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+      color: var(--text-primary);
     }
 
     .modal-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 1rem;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
     }
 
-    /* Knowledge Graph styles */
+    /* D3 canvas layout & style */
     .graph-canvas {
       height: 480px;
-      background: radial-gradient(ellipse at center, rgba(79,172,254,0.04) 0%, rgba(0,0,0,0.3) 70%);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
+      background: #050505;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
       position: relative;
       overflow: hidden;
     }
@@ -577,39 +693,44 @@
       top: 0.75rem;
       right: 0.75rem;
       display: flex;
-      gap: 0.4rem;
+      gap: 0.25rem;
       z-index: 10;
     }
 
     .graph-controls button {
-      background: rgba(0,0,0,0.6);
-      border: 1px solid var(--glass-border);
-      color: var(--text-muted);
-      padding: 0.35rem 0.6rem;
-      border-radius: 6px;
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      font-size: 0.75rem;
-      font-family: var(--font-inter);
+      font-size: 0.85rem;
+      font-family: var(--font-mono);
       transition: all 0.2s;
     }
 
     .graph-controls button:hover {
-      color: var(--text-main);
-      border-color: var(--accent-blue);
-      background: rgba(79,172,254,0.15);
+      color: var(--text-primary);
+      border-color: var(--primary);
+      background: var(--primary-light);
     }
 
     .graph-info {
       position: absolute;
       top: 0.75rem;
       left: 0.75rem;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      background: rgba(0, 0, 0, 0.6);
-      padding: 0.35rem 0.6rem;
-      border-radius: 6px;
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+      background: #09090b;
+      padding: 0.25rem 0.5rem;
+      border-radius: 2px;
       z-index: 10;
       pointer-events: none;
+      font-family: var(--font-mono);
+      border: 1px solid var(--border-color);
     }
 
     .graph-legend {
@@ -617,27 +738,29 @@
       bottom: 0.75rem;
       left: 0.75rem;
       display: flex;
-      gap: 1rem;
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      background: rgba(0,0,0,0.55);
-      padding: 0.35rem 0.7rem;
-      border-radius: 6px;
+      gap: 0.75rem;
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      background: #09090b;
+      padding: 0.25rem 0.5rem;
+      border-radius: 2px;
       z-index: 10;
+      border: 1px solid var(--border-color);
     }
 
     .graph-legend span::before {
       content: '';
       display: inline-block;
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       margin-right: 4px;
       vertical-align: middle;
     }
 
-    .graph-legend .legend-subject::before { background: #4facfe; }
-    .graph-legend .legend-object::before  { background: #10b981; }
+    .graph-legend .legend-subj::before { background: var(--primary); }
+    .graph-legend .legend-obj::before  { background: var(--text-secondary); }
+    .graph-legend .legend-causal::before { background: var(--amber-400); }
 
     .graph-empty {
       position: absolute;
@@ -646,13 +769,11 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
-      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
       gap: 0.5rem;
-    }
-
-    .graph-empty svg {
-      opacity: 0.3;
+      background: #050505;
+      z-index: 5;
     }
 
     .graph-canvas svg.graph-svg {
@@ -661,139 +782,201 @@
     }
 
     .graph-canvas svg .link {
-      stroke: rgba(79,172,254,0.25);
+      stroke: var(--border-color);
       stroke-width: 1.5;
     }
 
     .graph-canvas svg .node-circle {
       cursor: grab;
-      transition: filter 0.2s;
+      stroke: var(--bg-base);
+      stroke-width: 2px;
+      transition: filter 0.25s, r 0.2s;
+      filter: drop-shadow(0 2px 8px rgba(255, 74, 0, 0.35));
     }
 
     .graph-canvas svg .node-circle:hover {
-      filter: brightness(1.4) drop-shadow(0 0 6px currentColor);
+      filter: drop-shadow(0 0 12px var(--primary));
+      r: 13;
+    }
+
+    .graph-canvas svg .link {
+      stroke-opacity: 0.5;
+      stroke-width: 1.5px;
+      transition: stroke 0.25s, stroke-width 0.25s, stroke-opacity 0.25s;
+    }
+
+    .graph-canvas svg .link:hover {
+      stroke-opacity: 1.0;
+      stroke: var(--primary) !important;
+      stroke-width: 2.5px;
     }
 
     .graph-canvas svg .node-label {
-      font-family: var(--font-inter);
-      font-size: 11px;
-      fill: var(--text-main);
-      pointer-events: none;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-    }
-
-    .graph-canvas svg .edge-label {
-      font-family: var(--font-inter);
-      font-size: 9px;
-      fill: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 10px;
+      fill: var(--text-primary);
       pointer-events: none;
     }
 
     .graph-tooltip {
       position: absolute;
-      padding: 0.5rem 0.75rem;
-      background: rgba(10,15,30,0.95);
-      border: 1px solid var(--glass-border);
-      border-radius: 8px;
-      font-size: 0.75rem;
-      color: var(--text-main);
+      padding: 0.4rem 0.6rem;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.7rem;
+      color: var(--text-primary);
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.15s;
       z-index: 100;
-      max-width: 260px;
-      backdrop-filter: blur(8px);
+      max-width: 220px;
     }
 
-    /* Loading state */
     .loading-spinner {
-      border: 3px solid rgba(255, 255, 255, 0.1);
-      width: 24px;
-      height: 24px;
+      border: 2px solid rgba(255, 255, 255, 0.05);
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      border-left-color: var(--accent-blue);
-      animation: spin 1s linear infinite;
+      border-left-color: var(--primary);
+      animation: generic-spin 0.8s linear infinite;
     }
 
-    @keyframes spin {
+    @keyframes generic-spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      z-index: 9999;
+    }
+
+    .toast {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-left: 3px solid var(--primary);
+      color: var(--text-primary);
+      padding: 0.75rem 1.25rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      min-width: 250px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      animation: toastIn 0.2s ease-out;
+    }
+
+    .toast.success {
+      border-left-color: var(--emerald-400);
+    }
+
+    .toast.error {
+      border-left-color: var(--rose-400);
+    }
+
+    @keyframes toastIn {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Navigation Bar -->
-  <header>
-    <div class="brand">
-      <div class="brand-logo">K</div>
-      Kyros AI
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand" onclick="location.reload()">
+      <svg class="brand-logo" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 20V4M20 4L12 12L20 20M12 12H4" />
+      </svg>
+      <span class="brand-text">Kyros AI</span>
     </div>
-    <div class="header-actions">
-      <!-- Status Badge -->
-      <div id="platform-status" class="status-badge">
-        <div class="status-dot"></div>
-        <span>Platform Offline</span>
-      </div>
-      <!-- API Key Field -->
-      <div class="auth-config">
-        <input type="password" id="api-key-input" placeholder="Enter X-API-Key..." autocomplete="off">
-        <button id="save-key-btn">Connect</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Dashboard Grid -->
-  <div class="dashboard-container">
     
-    <!-- Sidebar -->
-    <div class="sidebar">
-      
-      <!-- Agents Selection Card -->
-      <div class="sidebar-card">
-        <h3>Agents</h3>
-        <ul id="agent-list-ul" class="agent-list">
-          <li class="agent-item active">Select Agent...</li>
-        </ul>
-        <button id="show-create-agent-modal" class="create-agent-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-          New Agent
-        </button>
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Namespace</div>
+      <div class="custom-select-wrapper">
+        <select id="project-namespace-select">
+          <option value="default">Default Project</option>
+        </select>
       </div>
-
-      <!-- Navigation Pane Selection -->
-      <div class="sidebar-card">
-        <h3>Console</h3>
-        <ul class="nav-list">
-          <li class="nav-item active" data-pane="overview">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
-            Overview
-          </li>
-          <li class="nav-item" data-pane="episodic">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Episodic Memories
-          </li>
-          <li class="nav-item" data-pane="semantic">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18.36 5.64a9 9 0 11-12.73 0M12 2v10"/></svg>
-            Semantic Graph
-          </li>
-          <li class="nav-item" data-pane="procedural">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 21a1.94 1.94 0 00-3.47 0m0 0A8 8 0 1121 10.3a1.94 1.94 0 000 3.47m0 0a8 8 0 11-10.7 7.23"/></svg>
-            Procedural Skills
-          </li>
-          <li class="nav-item" data-pane="playground">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-            Playground & Audits
-          </li>
-        </ul>
-      </div>
-
     </div>
+    
+    <nav class="sidebar-nav sidebar-section">
+      <div class="sidebar-section-title">Control Panels</div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-pane="overview">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          Overview & Status
+        </li>
+        <li class="nav-item" data-pane="credentials">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Tenants & Keys
+        </li>
+        <li class="nav-item" data-pane="episodic">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Episodic Logs
+        </li>
+        <li class="nav-item" data-pane="semantic">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 5.64a9 9 0 11-12.73 0M12 2v10"/></svg>
+          Semantic Graph
+        </li>
+        <li class="nav-item" data-pane="causal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Causal Reasoning
+        </li>
+        <li class="nav-item" data-pane="procedural">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Procedural Workflows
+        </li>
+        <li class="nav-item" data-pane="config">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Proxy & LLM Config
+        </li>
+        <li class="nav-item" data-pane="trust">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Trust & Compliance
+        </li>
+      </ul>
+    </nav>
+    
+    <div class="sidebar-section agents-section">
+      <div class="sidebar-section-title">Projects (Agents)</div>
+      <ul id="agent-list-ul" class="agent-list">
+        <li class="agent-item text-tertiary">Select project...</li>
+      </ul>
+      <button id="show-create-agent-modal" class="action-link-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        Register New Project
+      </button>
+    </div>
+  </aside>
 
-    <!-- Main Console Panel -->
-    <div class="main-console">
+  <!-- Main Viewport -->
+  <main class="main-content">
+    <header class="content-header">
+      <div class="page-title-section">
+        <h1 id="page-title">Overview & Status</h1>
+      </div>
+      <div class="header-actions">
+        <div class="auth-config">
+          <input type="password" id="api-key-input" placeholder="X-API-Key (e.g. mk_live_...)" autocomplete="off">
+          <button id="save-key-btn">Connect</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-body">
       
-      <!-- 1. OVERVIEW PANE -->
+      <!-- 1. OVERVIEW & HEALTH PANE -->
       <div id="pane-overview" class="console-pane active">
         <div class="panel">
           <div class="panel-header">
@@ -817,75 +1000,297 @@
 
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">System Health & Latency Indicators</div>
+            <div class="panel-title">Component Liveness & Health Diagnostics</div>
           </div>
           <div class="stats-grid">
             <div class="stat-card">
               <span class="stat-label">PostgreSQL Vector DB</span>
-              <span id="health-postgres" class="stat-value">unknown</span>
+              <span id="health-postgres" class="stat-value text-tertiary">checking...</span>
             </div>
             <div class="stat-card">
               <span class="stat-label">Redis Context Cache</span>
-              <span id="health-redis" class="stat-value">unknown</span>
+              <span id="health-redis" class="stat-value text-tertiary">checking...</span>
             </div>
             <div class="stat-card">
               <span class="stat-label">Embedding Engine</span>
-              <span id="health-embedder" class="stat-value">unknown</span>
+              <span id="health-embedder" class="stat-value text-tertiary">checking...</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 2. EPISODIC PANE -->
-      <div id="pane-episodic" class="console-pane">
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Episodic Memory Stream</div>
-            <button id="refresh-episodic-btn" class="btn secondary">Refresh</button>
+            <div class="panel-title">Background Intelligence Tasks (LLM & Pipeline Status)</div>
+            <button id="refresh-bg-tasks-btn" class="btn secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Refresh Tasks</button>
           </div>
-          
-          <div class="table-container">
-            <table id="episodic-table">
+          <p class="panel-desc">
+            Monitor background execution of Kyros AI asynchronous intelligence operations (Entity Extraction, Causal Linkage, Merkle Root recalculation). If an LLM call fails, the exact error detail will be highlighted in red.
+          </p>
+          <div class="table-container" style="max-height: 250px; overflow-y: auto;">
+            <table id="bg-tasks-table" class="data-table">
               <thead>
                 <tr>
-                  <th>Content</th>
-                  <th>Role</th>
-                  <th>Freshness</th>
-                  <th>Session ID</th>
-                  <th>Added At</th>
+                  <th>Task Operation</th>
+                  <th>Task Description</th>
+                  <th>Status</th>
+                  <th>Started At</th>
+                  <th>Completed At</th>
+                  <th>Error / Failure Reason</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td colspan="5" style="text-align: center; color: var(--text-muted);">Select an agent to browse episodic memories.</td>
+                  <td colspan="6" style="text-align: center; color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No background tasks logged in this session.</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Cryptographic Mind Audit</div>
+          </div>
+          <p class="panel-desc">
+            Kyros hashes every ingested event and inserts it into a bitemporal Merkle tree. Run a verification audit to confirm that local PostgreSQL record hashes match the agent's current tree root, asserting tamper-proof state.
+          </p>
+          <div>
+            <button id="audit-integrity-btn" class="btn">Run Verification Scan</button>
+          </div>
+          <div id="audit-logs-container" style="display: none;">
+            <div id="audit-console" class="console-log">Initializing compliance checks...</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Memory Consolidation Card</div>
+            <button id="summarize-memories-btn" class="btn secondary">Consolidate History</button>
+          </div>
+          <p class="panel-desc">
+            Kyros periodically compresses episodic memory streams into dense summaries using hierarchical levels, lowering context token load.
+          </p>
+          <div id="consolidation-container" style="display: none; background: #000000; border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 4px; display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1rem;">
+            <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 0.5rem;">
+              <div class="stat-card">
+                <span class="stat-label">Memory Count</span>
+                <span id="consolidation-count" class="stat-value">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Compression Ratio</span>
+                <span id="consolidation-ratio" class="stat-value">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Hierarchy Levels</span>
+                <span id="consolidation-levels" class="stat-value">—</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span class="stat-label">Consolidated Summary</span>
+              <div id="consolidation-summary" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); line-height: 1.4; white-space: pre-wrap; word-break: break-all; background: #070708; border: 1px solid var(--border-color-muted); padding: 0.75rem; border-radius: 4px;">—</div>
+            </div>
+            <div style="font-size: 0.65rem; color: var(--text-tertiary); text-align: right;">Generated: <span id="consolidation-date">—</span></div>
+          </div>
+        </div>
       </div>
 
-      <!-- 3. SEMANTIC PANE -->
+      <!-- 2. TENANTS & KEYS PORTAL -->
+      <div id="pane-credentials" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Create Tenant Workspace</div>
+          </div>
+          <p class="panel-desc">
+            Instantiate isolated tenants/organizations programmatically. This generates distinct bitemporal tables and API access keys.
+          </p>
+          <div style="background: rgba(255, 74, 0, 0.05); border: 1px solid rgba(255, 74, 0, 0.2); padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5;">
+            <strong>Setup Guide:</strong> To generate a new tenant API key, you must be connected with the <strong>Master Admin Token</strong> (default: <code>mk_live_default_dev_key_123456</code>) in the console header. Once generated, use the new tenant API key in the header to manage that tenant's agents and databases.
+          </div>
+          <form id="create-tenant-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="tenant-name">Tenant Name</label>
+                <input type="text" id="tenant-name" placeholder="e.g. Acme Corp" required>
+              </div>
+              <div class="form-group">
+                <label for="tenant-email">Email Address</label>
+                <input type="email" id="tenant-email" placeholder="e.g. admin@acme.com" required>
+              </div>
+              <div class="form-group">
+                <label for="tenant-plan">Subscription Plan</label>
+                <select id="tenant-plan">
+                  <option value="free">Free Sandbox</option>
+                  <option value="pro" selected>Pro Tier</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <button type="submit" id="create-tenant-btn" class="btn">Generate API Key</button>
+            </div>
+          </form>
+
+          <div id="tenant-key-result-card" style="display: none; margin-top: 1rem;" class="stat-card">
+            <span class="stat-label">Generated Tenant API Key (Store Securely)</span>
+            <div id="tenant-key-value" style="font-family: var(--font-mono); font-size: 0.95rem; color: var(--primary); margin: 0.5rem 0;" class="stat-value select-all">—</div>
+            <p class="panel-desc">Save this key. It will not be shown again. Format: <code>mk_live_...</code></p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Rotate Credentials</div>
+          </div>
+          <p class="panel-desc">
+            Cycle or rotate active API keys for specific workspaces to enforce credentials rotation protocols.
+          </p>
+          <div class="form-row">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="rotate-tenant-id">Target Tenant UUID</label>
+              <input type="text" id="rotate-tenant-id" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000">
+            </div>
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button id="rotate-key-btn" class="btn danger">Rotate API Key</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. EPISODIC LOGS PANE -->
+      <div id="pane-episodic" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Episodic Memory Feeds</div>
+            <button id="refresh-episodic-btn" class="btn secondary">Sync Stream</button>
+          </div>
+          <p class="panel-desc">
+            The episodic engine stores bitemporal stream records. Items decay dynamically according to the Ebbinghaus forgetting curve.
+          </p>
+          <div class="table-container">
+            <table id="episodic-table">
+              <thead>
+                <tr>
+                  <th>Memory Content</th>
+                  <th>Role</th>
+                  <th>Retention</th>
+                  <th>Session Context</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--text-secondary);">Select an agent to read episodic logs.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Forgetting Curve Tuner -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Ebbinghaus Forgetting Curve Tuner</div>
+          </div>
+          <p class="panel-desc">
+            Kyros applies Ebbinghaus' forgetting curve equations to decay the retrieval freshness of episodic events. Modify the half-life configurations below to see how retention decays over time.
+          </p>
+          <div class="form-row" style="align-items: center;">
+            <div class="form-group">
+              <label for="decay-halflife-slider">Observation Half-Life (Days)</label>
+              <div style="display: flex; align-items: center; gap: 1rem;">
+                <input type="range" id="decay-halflife-slider" min="1" max="30" value="7" style="flex-grow: 1; accent-color: var(--primary);">
+                <span id="decay-halflife-val" style="font-family: var(--font-mono); font-size: 0.85rem; min-width: 50px;">7.0 days</span>
+              </div>
+            </div>
+            <div>
+              <button id="save-decay-btn" class="btn">Save Decay Settings</button>
+            </div>
+          </div>
+          <div style="border: 1px solid var(--border-color); border-radius: 4px; padding: 1rem; background: #050505;">
+            <svg id="forgetting-curve-svg" style="width: 100%; height: 180px;"></svg>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Staleness Diagnostics & Alerts</div>
+            <button id="refresh-staleness-btn" class="btn secondary">Scan Staleness</button>
+          </div>
+          <p class="panel-desc">
+            Identify memories that have decayed past acceptable freshness thresholds. Kyros automatically alerts on items below critical levels and triggers re-verification checks.
+          </p>
+          <div id="staleness-container" style="display: none; margin-top: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr);">
+              <div class="stat-card">
+                <span class="stat-label">Warning (Freshness &lt; 0.4)</span>
+                <span id="stale-warn-count" class="stat-value">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Critical (Freshness &lt; 0.15)</span>
+                <span id="stale-crit-count" class="stat-value text-amber-400">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Stale (Freshness &lt; 0.05)</span>
+                <span id="stale-dead-count" class="stat-value text-rose-400">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Total Flagged</span>
+                <span id="stale-total-count" class="stat-value">—</span>
+              </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+              <span class="stat-label">System Recommendations</span>
+              <ul id="staleness-recommendations" style="font-size: 0.72rem; color: var(--text-secondary); padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.35rem; line-height: 1.4;">
+                <!-- Recommendations will be populated here -->
+              </ul>
+            </div>
+
+            <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+              <table id="staleness-memories-table">
+                <thead>
+                  <tr>
+                    <th>Memory Type</th>
+                    <th>Content Preview</th>
+                    <th>Freshness</th>
+                    <th>Half-Life</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- List of stale memories -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. SEMANTIC GRAPH PANE -->
       <div id="pane-semantic" class="console-pane">
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Semantic Fact Triples</div>
-            <button id="refresh-semantic-btn" class="btn secondary">Refresh</button>
+            <div class="panel-title">Semantic Knowledge Base</div>
+            <button id="refresh-semantic-btn" class="btn secondary">Refresh Triples</button>
           </div>
-          
+          <p class="panel-desc">
+            Structured subject-predicate-object semantic triples. Contradictory statements auto-trigger graph belief propagation routines.
+          </p>
           <div class="table-container">
             <table id="semantic-table">
               <thead>
                 <tr>
                   <th>Subject</th>
                   <th>Predicate</th>
-                  <th>Object / Value</th>
-                  <th>Confidence</th>
+                  <th>Object / Fact value</th>
+                  <th>Confidence Score</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td colspan="4" style="text-align: center; color: var(--text-muted);">Select an agent to view semantic facts.</td>
+                  <td colspan="4" style="text-align: center; color: var(--text-secondary);">Select an agent to query semantic assertions.</td>
                 </tr>
               </tbody>
             </table>
@@ -894,9 +1299,20 @@
 
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Semantic Knowledge Graph Visualizer</div>
-            <button id="refresh-graph-btn" class="btn secondary">Refresh Graph</button>
+            <div class="panel-title">Semantic Relationship Visualizer</div>
+            <button id="refresh-graph-btn" class="btn secondary">Re-Align Graph</button>
           </div>
+          
+          <!-- Warning block for LLM failures -->
+          <div id="graph-llm-warning-block" style="display: none; background: rgba(239, 68, 68, 0.08); border: 1px dashed var(--rose-400); border-radius: 4px; padding: 0.75rem 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: #fecaca; align-items: flex-start; gap: 0.75rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--rose-400)" stroke-width="2" style="margin-top: 2px; flex-shrink: 0;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+            <div>
+              <strong style="color: var(--rose-400); display: block; margin-bottom: 0.2rem;">LLM Pipeline Extraction Failure</strong>
+              <span id="graph-llm-warning-text">Background intelligence tasks are failing. Your API key might be invalid or expired.</span>
+              <a href="#" onclick="document.querySelector('[data-pane=config]').click(); return false;" style="color: var(--primary); text-decoration: underline; margin-left: 0.5rem; font-weight: 500;">Configure LLM</a>
+            </div>
+          </div>
+
           <div class="graph-canvas" id="graph-canvas-container">
             <div class="graph-info" id="graph-info-badge">0 nodes · 0 edges</div>
             <div class="graph-controls">
@@ -905,41 +1321,102 @@
               <button id="graph-zoom-reset" title="Reset View">⟲</button>
             </div>
             <div class="graph-empty" id="graph-empty-state">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="16.5"/><line x1="8.5" y1="6" x2="15" y2="6"/></svg>
-              <span>Select an agent and store some facts to see the graph</span>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><line x1="8.5" y1="7.5" x2="15.5" y2="16.5"/><line x1="8.5" y1="6" x2="15" y2="6"/></svg>
+              <span>Verify connection and ingest some facts to trace graph paths.</span>
             </div>
             <svg id="visual-graph-svg" class="graph-svg"></svg>
             <div class="graph-legend" id="graph-legend" style="display:none;">
-              <span class="legend-subject">Subject</span>
-              <span class="legend-object">Object</span>
+              <span class="legend-subj">Subject</span>
+              <span class="legend-obj">Object</span>
             </div>
             <div class="graph-tooltip" id="graph-tooltip"></div>
           </div>
         </div>
       </div>
 
-      <!-- 4. PROCEDURAL PANE -->
+      <!-- 5. CAUSAL REASONING PANE -->
+      <div id="pane-causal" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Causal Relationship Queries</div>
+          </div>
+          <p class="panel-desc">
+            Trace explicit relationship chains and dependencies to explain agent decisions.
+          </p>
+          <div class="form-row">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="causal-theme-input">Event / Theme to Analyze</label>
+              <input type="text" id="causal-theme-input" placeholder="e.g. database error, rate limit">
+            </div>
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button id="query-causes-btn" class="btn">Query Causes</button>
+            </div>
+          </div>
+
+          <div id="causal-frequency-results" style="display: none;" class="table-container">
+            <table id="causal-frequency-table">
+              <thead>
+                <tr>
+                  <th>Causal Concept</th>
+                  <th>Frequency Weight</th>
+                  <th>Relevance Score</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Causal Traversal Viewer</div>
+            <button id="refresh-causal-graph-btn" class="btn secondary">Reload Causal Links</button>
+          </div>
+          <div class="graph-canvas" id="causal-graph-container">
+            <div class="graph-info" id="causal-graph-info-badge">0 nodes · 0 edges</div>
+            <div class="graph-controls">
+              <button id="causal-zoom-in">+</button>
+              <button id="causal-zoom-out">−</button>
+              <button id="causal-zoom-reset">⟲</button>
+            </div>
+            <div class="graph-empty" id="causal-graph-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+              <span>No active causal relationships found in this namespace.</span>
+            </div>
+            <svg id="causal-graph-svg" class="graph-svg"></svg>
+            <div class="graph-legend">
+              <span class="legend-causal">Causal Node</span>
+            </div>
+            <div class="graph-tooltip" id="causal-graph-tooltip"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. PROCEDURAL WORKFLOWS PANE -->
       <div id="pane-procedural" class="console-pane">
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Procedural Skills</div>
-            <button id="refresh-procedural-btn" class="btn secondary">Refresh</button>
+            <div class="panel-title">Procedural Tasks & Skills</div>
+            <button id="refresh-procedural-btn" class="btn secondary">Scan Workflow States</button>
           </div>
-          
+          <p class="panel-desc">
+            Procedural skills track agent instructions, pipeline performance weights, and execute workflow states.
+          </p>
           <div class="table-container">
             <table id="procedural-table">
               <thead>
                 <tr>
-                  <th>Skill Name</th>
+                  <th>Skill Target</th>
                   <th>Description</th>
-                  <th>Category</th>
-                  <th>Steps</th>
-                  <th>Success Rate</th>
+                  <th>Task Category</th>
+                  <th>Workflow Steps</th>
+                  <th>Success Factor</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td colspan="5" style="text-align: center; color: var(--text-muted);">Select an agent to view procedural skills.</td>
+                  <td colspan="5" style="text-align: center; color: var(--text-secondary);">Select an agent to match procedural skills.</td>
                 </tr>
               </tbody>
             </table>
@@ -947,67 +1424,128 @@
         </div>
       </div>
 
-      <!-- 5. PLAYGROUND PANE -->
-      <div id="pane-playground" class="console-pane">
-        
-        <!-- Live Operations / Insertion -->
+      <!-- 7. CONFIG & PLAYGROUND PANE -->
+      <div id="pane-config" class="console-pane">
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Store New Memory</div>
+            <div class="panel-title">Ingest Memory Object</div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label for="mem-input-type">Memory Type</label>
+              <label for="mem-input-type">Module Destination</label>
               <select id="mem-input-type">
-                <option value="episodic">Episodic Event (remember)</option>
-                <option value="semantic">Semantic Fact (storeFact)</option>
+                <option value="episodic" selected>Episodic Event (remember)</option>
+                <option value="semantic">Semantic Triples (storeFact)</option>
               </select>
             </div>
             <div class="form-group" id="grp-role">
-              <label for="mem-input-role">Role</label>
+              <label for="mem-input-role">Turn Role</label>
               <select id="mem-input-role">
-                <option value="user">User</option>
+                <option value="user" selected>User Context</option>
                 <option value="assistant">Assistant</option>
-                <option value="system">System</option>
+                <option value="system">System Context</option>
               </select>
             </div>
           </div>
 
           <div class="form-group" id="grp-content">
-            <label for="mem-input-content">Memory Content / Text</label>
-            <textarea id="mem-input-content" rows="3" placeholder="Enter memory text (e.g. 'User prefers dark mode')"></textarea>
+            <label for="mem-input-content">Memory content</label>
+            <textarea id="mem-input-content" rows="3" placeholder="e.g. User prefers strict type guidelines..."></textarea>
           </div>
 
-          <!-- Fact specific row -->
           <div class="form-row" id="grp-fact-details" style="display: none;">
             <div class="form-group">
               <label for="fact-subject">Subject</label>
-              <input type="text" id="fact-subject" placeholder="user">
+              <input type="text" id="fact-subject" placeholder="user_1">
             </div>
             <div class="form-group">
               <label for="fact-predicate">Predicate</label>
               <input type="text" id="fact-predicate" placeholder="prefers">
             </div>
             <div class="form-group">
-              <label for="fact-value">Object / Value</label>
-              <input type="text" id="fact-value" placeholder="dark_mode">
+              <label for="fact-value">Object / Target</label>
+              <input type="text" id="fact-value" placeholder="strict_typing">
             </div>
           </div>
 
           <div>
-            <button id="store-memory-btn" class="btn">Store Memory</button>
+            <button id="store-memory-btn" class="btn">Commit Memory</button>
           </div>
         </div>
 
-        <!-- Live Recall Playground -->
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Recall Context Query</div>
+            <div class="panel-title">Dynamically Configure LLM Key</div>
+          </div>
+          <p class="panel-desc">
+            Provision API keys in memory to test third-party integrations (OpenAI, Gemini, Anthropic, Mistral) without restarting the Docker backend.
+          </p>
+          
+          <!-- Current Active LLM Status -->
+          <div id="llm-current-status" style="margin-bottom: 1.5rem; padding: 1.25rem; border-radius: 6px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08);">
+            <h4 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--text-primary);">Active Configuration Status</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; font-size: 0.85rem;">
+              <div>
+                <span style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Active LLM Provider:</span>
+                <span id="active-llm-provider-badge" class="badge" style="font-weight: 600; text-transform: uppercase;">None</span>
+              </div>
+              <div>
+                <span style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Active Model:</span>
+                <span id="active-llm-model-name" style="font-family: monospace; color: var(--text-primary); font-weight: 500;">—</span>
+              </div>
+              <div>
+                <span style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Mock LLM Fallback:</span>
+                <span id="active-llm-mock-status" class="badge" style="font-weight: 600;">Disabled</span>
+              </div>
+            </div>
+            
+            <div style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.75rem;">
+              <span style="color: var(--text-secondary); display: block; margin-bottom: 0.5rem; font-size: 0.8rem;">In-Memory Credentials Loaded:</span>
+              <div id="configured-keys-list" style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <!-- Key Badges -->
+              </div>
+            </div>
+          </div>
+
+          <form id="configure-llm-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="llm-provider">Provider</label>
+                <select id="llm-provider">
+                  <option value="openai">OpenAI</option>
+                  <option value="gemini" selected>Google Gemini</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="mistral">Mistral AI</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="llm-model">Model Name</label>
+                <input type="text" id="llm-model" placeholder="e.g. gpt-4o, gemini-2.5-pro">
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label for="llm-api-key">LLM API Credentials</label>
+                <input type="password" id="llm-api-key" placeholder="Enter API key for the chosen provider" required>
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <input type="checkbox" id="llm-allow-mock" style="accent-color: var(--primary);">
+              <label for="llm-allow-mock" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; text-transform: none; letter-spacing: 0;">Allow Mock LLM in case of rate limits</label>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+              <button type="submit" id="llm-config-btn" class="btn">Configure LLM Provider</button>
+              <button type="button" id="llm-test-btn" class="btn secondary">Test API Key</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Recall Query Simulator</div>
           </div>
           <div class="form-row">
             <div class="form-group" style="grid-column: span 2;">
-              <label for="recall-query">Natural Language Query</label>
-              <input type="text" id="recall-query" placeholder="What are the user's settings?">
+              <label for="recall-query">Query String</label>
+              <input type="text" id="recall-query" placeholder="What are the user's coding guidelines?">
             </div>
             <div class="form-group">
               <label for="recall-k">Results Limit (K)</label>
@@ -1019,7 +1557,7 @@
             </div>
             <div class="form-group">
               <label>&nbsp;</label>
-              <button id="recall-query-btn" class="btn">Query Recall</button>
+              <button id="recall-query-btn" class="btn">Query Context</button>
             </div>
           </div>
 
@@ -1027,94 +1565,361 @@
             <table id="recall-results-table">
               <thead>
                 <tr>
-                  <th>Content</th>
+                  <th>Matched Content</th>
                   <th>Relevance</th>
                   <th>Freshness</th>
-                  <th>Audit Proof</th>
+                  <th>Verifiable Proof</th>
                 </tr>
               </thead>
-              <tbody>
-              </tbody>
+              <tbody></tbody>
             </table>
           </div>
         </div>
 
-        <!-- Cryptographic Audit -->
         <div class="panel">
           <div class="panel-header">
-            <div class="panel-title">Cryptographic Mind Audit</div>
+            <div class="panel-title">Embedding Space Model Migration</div>
           </div>
-          <p style="color: var(--text-muted); font-size: 0.95rem;">
-            Run a mathematically verifiable audit of all stored agent memory nodes. This validates that the local database hashes match the agent's current Merkle tree root hash, indicating no tampering or database corruption has occurred.
+          <p class="panel-desc">
+            Migrate all agent memory embeddings to a new vector space layout. This is useful when upgrading embedding models.
           </p>
-          <div>
-            <button id="audit-integrity-btn" class="btn">Run Integrity Audit</button>
+          <form id="migrate-embeddings-form" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="migration-from-model">Source Model Space</label>
+                <input type="text" id="migration-from-model" placeholder="e.g. text-embedding-ada-002" value="nomic-embed-text" required>
+              </div>
+              <div class="form-group">
+                <label for="migration-to-model">Target Model Space</label>
+                <select id="migration-to-model">
+                  <option value="nomic-embed-text">nomic-embed-text (Ollama Default)</option>
+                  <option value="text-embedding-3-small">text-embedding-3-small (OpenAI)</option>
+                  <option value="text-embedding-3-large">text-embedding-3-large (OpenAI)</option>
+                  <option value="text-embedding-ada-002">text-embedding-ada-002 (OpenAI Legacy)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="migration-strategy">Mapping Strategy</label>
+                <select id="migration-strategy">
+                  <option value="translate" selected>Fast Projection (translate)</option>
+                  <option value="re-embed">Full API Re-embedding (re-embed)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <button type="submit" id="migration-btn" class="btn">Execute Embedding Migration</button>
+            </div>
+            <div id="migration-status" style="display: none; font-family: var(--font-mono); font-size: 0.72rem; color: var(--emerald-400); border: 1px solid var(--border-color-muted); padding: 0.75rem; border-radius: 4px; background: #070708;">
+              Migration initiated...
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 8. TRUST PORTAL -->
+      <div id="pane-trust" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Trust Portal & Platform Certifications</div>
           </div>
-          <div id="audit-logs-container" style="display: none;">
-            <div id="audit-console" class="console-log">Running audit...</div>
+          <p class="panel-desc">
+            Verify real-time system audit benchmarks, GDPR erasure logs, and compliance attributes.
+          </p>
+          <div class="stats-grid" id="compliance-checklist">
+            <div class="stat-card">
+              <span class="stat-label">GDPR Right to Erasure</span>
+              <span class="stat-value text-emerald-400" style="font-size: 1.15rem;">Operational</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">ISO 27001 Status</span>
+              <span id="iso-badge" class="stat-value text-tertiary" style="font-size: 1.15rem;">Self-Assessed</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">SOC2 Certification</span>
+              <span id="soc2-badge" class="stat-value text-tertiary" style="font-size: 1.15rem;">Not Certified</span>
+            </div>
           </div>
         </div>
 
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">GDPR Erasure Request (Right to be Forgotten)</div>
+          </div>
+          <p class="panel-desc">
+            Hard-delete all memories related to an agent. This executes database purging operations and returns a compliance deletion certificate.
+          </p>
+          <div class="form-row">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="gdpr-agent-id">Purge Agent ID</label>
+              <input type="text" id="gdpr-agent-id" placeholder="e.g. temporary-agent-09">
+            </div>
+            <div class="form-group">
+              <label>&nbsp;</label>
+              <button id="gdpr-purge-btn" class="btn danger">Purge Agent History</button>
+            </div>
+          </div>
+
+          <div id="gdpr-cert-result" style="display: none; margin-top: 1rem;" class="stat-card">
+            <span class="stat-label">GDPR PURGE CERTIFICATE</span>
+            <div id="gdpr-cert-id" style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--rose-400); margin: 0.5rem 0;" class="stat-value select-all">—</div>
+            <p class="panel-desc">Article 17 Erasure. Hash Signature: <code id="gdpr-cert-hash">—</code></p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Cryptographic Compliance Audit Trail</div>
+            <button id="export-compliance-btn" class="btn secondary">Export Audit Trail</button>
+          </div>
+          <p class="panel-desc">
+            Export the immutable audit logs for compliance audits, containing bitemporal Merkle Tree Roots generated for this agent.
+          </p>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="compliance-days">Scope Period (Days)</label>
+              <select id="compliance-days">
+                <option value="30">30 Days</option>
+                <option value="90" selected>90 Days</option>
+                <option value="365">1 Year</option>
+              </select>
+            </div>
+          </div>
+          <div id="compliance-export-result" style="display: none; margin-top: 1rem;" class="table-container">
+            <table id="compliance-export-table">
+              <thead>
+                <tr>
+                  <th>Audit Event ID</th>
+                  <th>Merkle Root Hash</th>
+                  <th>Tree Size</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Compliance export rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
     </div>
+  </main>
 
-  </div>
-
-  <!-- Create Agent Modal -->
+  <!-- Create Agent Modal overlay -->
   <div id="create-agent-modal" class="modal-overlay">
     <div class="modal">
-      <div class="modal-header">Create New AI Agent</div>
+      <div class="modal-header">Register New Project</div>
       <div class="form-group">
-        <label for="new-agent-id">External Agent ID</label>
-        <input type="text" id="new-agent-id" placeholder="e.g. support-agent-01">
+        <label for="new-agent-id">Project ID / UUID</label>
+        <input type="text" id="new-agent-id" placeholder="e.g. dev-project-v1">
       </div>
       <div class="form-group">
         <label for="new-agent-name">Display Name</label>
-        <input type="text" id="new-agent-name" placeholder="e.g. Customer Support Agent">
+        <input type="text" id="new-agent-name" placeholder="e.g. Production E-Commerce App">
       </div>
       <div class="modal-actions">
         <button id="cancel-create-agent" class="btn secondary">Cancel</button>
-        <button id="confirm-create-agent" class="btn">Create Agent</button>
+        <button id="confirm-create-agent" class="btn">Register Project</button>
       </div>
     </div>
   </div>
 
-  <!-- JS Controller -->
+  <!-- Merkle Proof Modal overlay -->
+  <div id="merkle-proof-modal" class="modal-overlay">
+    <div class="modal" style="width: 580px; max-width: 95%;">
+      <div class="modal-header">Cryptographic Merkle Proof Audit</div>
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        <p class="panel-desc">
+          Below is the step-by-step cryptographic proof route matching the local record to the verified Merkle Tree root.
+        </p>
+        <div style="background: #000000; border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 4px; display: flex; flex-direction: column; gap: 0.85rem;">
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span class="stat-label">Leaf Hash</span>
+            <span id="proof-leaf-hash" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--primary); word-break: break-all;">—</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <span class="stat-label">Path verification flow</span>
+            <div id="proof-path-visual" style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.25rem; font-family: var(--font-mono); font-size: 0.68rem; max-height: 150px; overflow-y: auto; padding-right: 0.25rem;">
+              <!-- Connected siblings list -->
+            </div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.25rem; border-top: 1px solid var(--border-color-muted); padding-top: 0.75rem;">
+            <span class="stat-label">Calculated Merkle Root</span>
+            <span id="proof-root-hash" style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--emerald-400); word-break: break-all;">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="close-proof-modal" class="btn secondary">Close Audit</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // State Variables
-    let apiKey = localStorage.getItem('kyros_api_key') || '';
+    let lastDetailedErrorTime = 0;
+
+    // Toast Notification System
+    function showToast(message, type = 'success') {
+      if (type === 'error' && !message.toLowerCase().includes('failed') && !message.toLowerCase().includes('unreachable')) {
+        lastDetailedErrorTime = Date.now();
+      }
+
+      let container = document.querySelector('.toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <span>${message}</span>
+        <span style="cursor: pointer; font-size: 0.95rem; color: var(--text-secondary); margin-left: 0.5rem;" onclick="this.parentElement.remove()">×</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+      }, 5000); // 5 seconds display for premium readability
+    }
+
+    // Override native browser alerts with premium toasts
+    window.alert = function(message) {
+      const lower = message.toLowerCase();
+      const isGenericError = lower.includes('failed') || lower.includes('failed.') || lower.includes('error.') || lower.includes('failed to');
+      if (isGenericError && (Date.now() - lastDetailedErrorTime < 800)) {
+        // Suppress generic error warning because a detailed backend error toast was just shown
+        return;
+      }
+
+      const isError = lower.includes('fail') || 
+                      lower.includes('error') || 
+                      lower.includes('invalid') || 
+                      lower.includes('not') || 
+                      lower.includes('select') || 
+                      lower.includes('enter') || 
+                      lower.includes('empty');
+      showToast(message, isError ? 'error' : 'success');
+    };
+
+    // Global Fetch Error Interceptor to catch and parse all API and network errors automatically
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      try {
+        const res = await originalFetch(...args);
+        if (!res.ok) {
+          try {
+            const clone = res.clone();
+            const data = await clone.json();
+            if (data && data.detail) {
+              let errMsg = data.detail;
+              if (Array.isArray(data.detail)) {
+                errMsg = data.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join(', ');
+              } else if (typeof data.detail === 'object') {
+                errMsg = JSON.stringify(data.detail);
+              }
+              res.errorDetail = errMsg;
+              showToast(`Error: ${errMsg}`, 'error');
+            } else if (data && data.message) {
+              res.errorDetail = data.message;
+              showToast(`Error: ${data.message}`, 'error');
+            } else if (data && data.error) {
+              res.errorDetail = data.error;
+              showToast(`Error: ${data.error}`, 'error');
+            } else {
+              showToast(`API error: Status ${res.status}`, 'error');
+            }
+          } catch (e) {
+            // Non-JSON response or parse error
+            showToast(`API error: Status ${res.status}`, 'error');
+          }
+        }
+        return res;
+      } catch (err) {
+        console.error(err);
+        if (err.name === 'TypeError' || err.message.toLowerCase().includes('fetch') || err.message.toLowerCase().includes('failed to fetch')) {
+          showToast(`Network error: Kyros server is unreachable at ${baseUrl || 'localhost'}. Is the backend running?`, 'error');
+        } else {
+          showToast(`Connection error: ${err.message || err}`, 'error');
+        }
+        throw err;
+      }
+    };
+
+    async function handleResponseError(res, defaultMessage = 'Request failed') {
+      try {
+        const data = await res.json();
+        if (data && data.detail) {
+          if (typeof data.detail === 'string') {
+            showToast(data.detail, 'error');
+          } else if (Array.isArray(data.detail)) {
+            const msgs = data.detail.map(e => `${e.loc.join('.')}: ${e.msg}`).join(', ');
+            showToast(msgs, 'error');
+          } else {
+            showToast(JSON.stringify(data.detail), 'error');
+          }
+        } else if (data && data.message) {
+          showToast(data.message, 'error');
+        } else if (data && data.error) {
+          showToast(data.error, 'error');
+        } else {
+          showToast(`${defaultMessage} (Status: ${res.status})`, 'error');
+        }
+      } catch (e) {
+        showToast(`${defaultMessage} (Status: ${res.status})`, 'error');
+      }
+    }
+
+    function handleFetchError(err, defaultMessage = 'Network connection failed') {
+      console.error(err);
+      if (err.name === 'TypeError' || err.message.toLowerCase().includes('fetch')) {
+        showToast(`${defaultMessage}: Kyros server at ${baseUrl || 'localhost'} is unreachable. Is the server running?`, 'error');
+      } else {
+        showToast(`${defaultMessage}: ${err.message || err}`, 'error');
+      }
+    }
+
+    // Console State Controller
+    let apiKey = localStorage.getItem('kyros_api_key') || 'mk_live_default_dev_key_123456';
     let activeAgentId = '';
     let activePane = 'overview';
-    const baseUrl = ''; // Relative path because they share same domain/port
+    let activeProject = 'default';
+    const baseUrl = ''; 
 
-    // DOM Elements
+    // DOM Selectors
     const apiKeyInput = document.getElementById('api-key-input');
     const saveKeyBtn = document.getElementById('save-key-btn');
     const platformStatus = document.getElementById('platform-status');
     const agentListUl = document.getElementById('agent-list-ul');
     const navItems = document.querySelectorAll('.nav-item');
     const consolePanes = document.querySelectorAll('.console-pane');
+    const projectSelect = document.getElementById('project-namespace-select');
 
-    // Init
+    // Pre-fill key
     if (apiKey) {
       apiKeyInput.value = apiKey;
       saveKeyBtn.textContent = 'Disconnect';
     }
 
-    // Platform Health check
+    // Health diagnostics
     async function checkHealth() {
       try {
         const res = await fetch(`${baseUrl}/health/ready`);
         if (res.status === 200) {
           const data = await res.json();
-          platformStatus.className = 'status-badge';
-          platformStatus.querySelector('span').textContent = 'Platform Online';
+          if (platformStatus) {
+            platformStatus.className = 'status-badge';
+            platformStatus.querySelector('span').textContent = 'Platform Online';
+          }
           
           document.getElementById('health-postgres').textContent = data.checks?.postgres || 'ok';
           document.getElementById('health-redis').textContent = data.checks?.redis || 'ok';
           document.getElementById('health-embedder').textContent = data.checks?.embedder || 'ok';
-          
+          document.getElementById('overview-embedder').textContent = data.checks?.model_name || 'all-MiniLM-L12-v2';
           document.getElementById('overview-env').textContent = data.environment || 'development';
           return true;
         } else {
@@ -1128,15 +1933,18 @@
     }
 
     function setOfflineStatus() {
-      platformStatus.className = 'status-badge error';
-      platformStatus.querySelector('span').textContent = 'Platform Offline';
+      if (platformStatus) {
+        platformStatus.className = 'status-badge error';
+        platformStatus.querySelector('span').textContent = 'Platform Offline';
+      }
       document.getElementById('health-postgres').textContent = 'error';
       document.getElementById('health-redis').textContent = 'error';
       document.getElementById('health-embedder').textContent = 'error';
+      document.getElementById('overview-embedder').textContent = '—';
       document.getElementById('overview-env').textContent = 'unknown';
     }
 
-    // Fetch Agents list
+    // Fetch workspace agent resources
     async function fetchAgents() {
       if (!apiKey) return;
       try {
@@ -1146,18 +1954,16 @@
         if (res.status === 200) {
           const data = await res.json();
           renderAgentList(data.agents);
-        } else if (res.status === 401) {
-          alert('Unauthorized. Please enter a valid API Key.');
         }
       } catch (err) {
-        console.error('Failed to fetch agents:', err);
+        console.error('Failed to query agents list:', err);
       }
     }
 
     function renderAgentList(agents) {
       agentListUl.innerHTML = '';
       if (!agents || agents.length === 0) {
-        agentListUl.innerHTML = '<li class="agent-item">No agents found</li>';
+        agentListUl.innerHTML = '<li class="agent-item text-tertiary">No active projects</li>';
         return;
       }
       
@@ -1167,20 +1973,55 @@
         if (agent.agent_id === activeAgentId) {
           li.classList.add('active');
         }
+        
         li.innerHTML = `
-          <span>${agent.display_name}</span>
-          <span class="agent-item-id">${agent.agent_id}</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div style="display: flex; flex-direction: column; gap: 0.15rem; flex-grow: 1;">
+              <span>${agent.display_name}</span>
+              <span class="agent-item-id">${agent.agent_id}</span>
+            </div>
+            <button class="delete-agent-btn" title="Purge/Delete Project" style="background: transparent; border: none; color: var(--rose-400); cursor: pointer; padding: 0.25rem; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: opacity 0.2s;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+          </div>
         `;
+        
         li.addEventListener('click', () => {
           selectAgent(agent.agent_id);
-          // Highlight
           document.querySelectorAll('.agent-item').forEach(el => el.classList.remove('active'));
           li.classList.add('active');
         });
+        
+        const delBtn = li.querySelector('.delete-agent-btn');
+        delBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm(`Are you sure you want to hard delete all records and purge project "${agent.display_name}"?`)) return;
+          try {
+            const res = await fetch(`${baseUrl}/v1/admin/agents/${agent.agent_id}`, {
+              method: 'DELETE',
+              headers: { 'X-API-Key': apiKey }
+            });
+            if (res.ok) {
+              alert(`Project "${agent.display_name}" purged successfully.`);
+              if (activeAgentId === agent.agent_id) {
+                activeAgentId = '';
+                document.getElementById('overview-agent-id').textContent = '—';
+              }
+              await fetchAgents();
+            } else {
+              alert('Failed to purge project. Ensure you have admin token connected.');
+            }
+          } catch (err) {
+            alert('Purge request failed.');
+          }
+        });
+        
+        li.addEventListener('mouseenter', () => { delBtn.style.opacity = '1'; });
+        li.addEventListener('mouseleave', () => { delBtn.style.opacity = '0.5'; });
+        
         agentListUl.appendChild(li);
       });
 
-      // Default select first agent if none is selected
       if (!activeAgentId && agents.length > 0) {
         selectAgent(agents[0].agent_id);
         agentListUl.querySelector('.agent-item').classList.add('active');
@@ -1193,7 +2034,7 @@
       refreshPaneData();
     }
 
-    // Navigation Panes toggling
+    // Tab pane switching
     navItems.forEach(item => {
       item.addEventListener('click', () => {
         const paneId = item.getAttribute('data-pane');
@@ -1202,63 +2043,200 @@
         
         item.classList.add('active');
         document.getElementById(`pane-${paneId}`).classList.add('active');
+        
+        // Dynamic title mapping to match Mistral Console behavior
+        const titleMap = {
+          'overview': 'Overview & Status',
+          'credentials': 'Tenants & Keys',
+          'episodic': 'Episodic Logs',
+          'semantic': 'Semantic Graph',
+          'causal': 'Causal Reasoning',
+          'procedural': 'Procedural Workflows',
+          'config': 'Proxy & LLM Config',
+          'trust': 'Trust & Compliance'
+        };
+        document.getElementById('page-title').textContent = titleMap[paneId] || 'Kyros Console';
+        
         activePane = paneId;
         refreshPaneData();
       });
     });
 
-    // Refresh data in active pane
     function refreshPaneData() {
+      if (activePane === 'overview') {
+        loadBackgroundTasks();
+      } else if (activePane === 'config') {
+        loadLLMConfig();
+      }
       if (!activeAgentId) return;
       if (activePane === 'episodic') {
         loadEpisodicMemories();
+        loadDecayConfig();
+        loadStalenessReport();
       } else if (activePane === 'semantic') {
         loadSemanticFacts();
         loadSemanticGraph();
+      } else if (activePane === 'causal') {
+        loadCausalGraph();
       } else if (activePane === 'procedural') {
         loadProceduralSkills();
+      } else if (activePane === 'trust') {
+        loadTrustPortalStatus();
       }
     }
 
-    // ─── Content Loading ─────────────────────────
-
-    async function loadEpisodicMemories() {
-      const tableBody = document.querySelector('#episodic-table tbody');
-      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+    async function loadLLMConfig() {
+      const statusDiv = document.getElementById('llm-current-status');
+      const providerBadge = document.getElementById('active-llm-provider-badge');
+      const modelName = document.getElementById('active-llm-model-name');
+      const mockStatus = document.getElementById('active-llm-mock-status');
+      const keysList = document.getElementById('configured-keys-list');
       
       try {
-        // Query empty string to get recent memories
+        const res = await fetch(`${baseUrl}/v1/admin/configure-llm`, {
+          method: 'GET',
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          statusDiv.style.display = 'block';
+          
+          if (data.active_provider && data.active_provider !== 'none') {
+            providerBadge.textContent = data.active_provider;
+            providerBadge.className = 'badge badge-success';
+            providerBadge.style.background = 'var(--primary)';
+            providerBadge.style.color = '#000';
+            
+            const providerDetails = data.providers[data.active_provider];
+            modelName.textContent = providerDetails ? providerDetails.model : '—';
+          } else {
+            providerBadge.textContent = 'None (Offline/Mock)';
+            providerBadge.className = 'badge';
+            providerBadge.style.background = 'rgba(255, 255, 255, 0.1)';
+            providerBadge.style.color = 'var(--text-secondary)';
+            modelName.textContent = '—';
+          }
+          
+          if (data.allow_mock) {
+            mockStatus.textContent = 'Enabled';
+            mockStatus.className = 'badge badge-success';
+            mockStatus.style.background = 'var(--primary)';
+            mockStatus.style.color = '#000';
+          } else {
+            mockStatus.textContent = 'Disabled';
+            mockStatus.className = 'badge';
+            mockStatus.style.background = 'rgba(255, 255, 255, 0.1)';
+            mockStatus.style.color = 'var(--text-secondary)';
+          }
+          
+          // Render list of configured keys
+          keysList.innerHTML = '';
+          let hasKeys = false;
+          for (const [provider, details] of Object.entries(data.providers)) {
+            if (details.has_key) {
+              hasKeys = true;
+              const badge = document.createElement('span');
+              badge.className = 'badge';
+              badge.style.fontSize = '0.75rem';
+              badge.style.background = 'rgba(255, 255, 255, 0.05)';
+              badge.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+              badge.style.color = 'var(--text-primary)';
+              badge.style.padding = '0.25rem 0.5rem';
+              badge.style.borderRadius = '4px';
+              badge.textContent = `${provider.toUpperCase()}: ${details.masked_key} (${details.model})`;
+              keysList.appendChild(badge);
+            }
+          }
+          if (!hasKeys) {
+            keysList.innerHTML = '<span style="color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No active LLM API credentials configured in memory.</span>';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load LLM config:', err);
+      }
+    }
+
+    async function loadBackgroundTasks() {
+      const tableBody = document.querySelector('#bg-tasks-table tbody');
+      if (!tableBody) return;
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/background-tasks`, {
+          method: 'GET',
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const tasks = await res.json();
+          tableBody.innerHTML = '';
+          if (!tasks || tasks.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); font-style: italic; font-size: 0.8rem;">No background tasks logged in this session.</td></tr>';
+            return;
+          }
+          // Sort reverse chronologically by started_at
+          tasks.sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
+          
+          tasks.forEach(t => {
+            const row = document.createElement('tr');
+            const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString() : '—';
+            
+            let statusBadge = '';
+            if (t.status === 'running') {
+              statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--amber-400);">running</span>';
+            } else if (t.status === 'completed') {
+              statusBadge = '<span class="badge" style="background: var(--primary-light); color: var(--primary); padding: 0.15rem 0.45rem; border-radius: 2px;">completed</span>';
+            } else if (t.status === 'failed') {
+              statusBadge = '<span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--rose-400); padding: 0.15rem 0.45rem; border-radius: 2px;">failed</span>';
+            } else {
+              statusBadge = `<span class="badge">${t.status}</span>`;
+            }
+            
+            const errCell = t.error ? `<span style="color: var(--rose-400); font-family: var(--font-mono); font-size: 0.75rem;">${t.error}</span>` : '—';
+            
+            row.innerHTML = `
+              <td style="font-weight: 500;">${t.name}</td>
+              <td style="font-size: 0.8rem; color: var(--text-secondary);">${t.details || '—'}</td>
+              <td>${statusBadge}</td>
+              <td style="font-size: 0.75rem; color: var(--text-secondary);">${formatTime(t.started_at)}</td>
+              <td style="font-size: 0.75rem; color: var(--text-secondary);">${formatTime(t.completed_at)}</td>
+              <td>${errCell}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load background tasks:', err);
+      }
+    }
+
+    // Ingest data loaders
+    async function loadEpisodicMemories() {
+      const tableBody = document.querySelector('#episodic-table tbody');
+      tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+      try {
         const res = await fetch(`${baseUrl}/v1/memory/episodic/recall`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent_id: activeAgentId, query: '', k: 100 })
         });
-        
-        if (res.status === 200) {
+        if (res.ok) {
           const data = await res.json();
           renderEpisodicTable(data.results);
-        } else {
-          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--error);">Error loading memories (${res.status})</td></tr>`;
         }
       } catch (err) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">Failed to fetch memories from server.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--rose-400);">Failed to fetch episodic stream.</td></tr>';
       }
     }
 
     function renderEpisodicTable(results) {
       const tableBody = document.querySelector('#episodic-table tbody');
       tableBody.innerHTML = '';
-      
       if (!results || results.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No episodic memories stored for this agent.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">No episodic memories recorded.</td></tr>';
         return;
       }
-
       results.forEach(m => {
         const row = document.createElement('tr');
         const formattedDate = new Date(m.created_at).toLocaleString();
         
-        // Clean metadata / text extracts
         let displayContent = m.content;
         let roleBadge = `<span class="badge role-system">system</span>`;
         if (m.content.startsWith('User: ')) {
@@ -1267,404 +2245,421 @@
         } else if (m.content.startsWith('Assistant: ')) {
           displayContent = m.content.replace('Assistant: ', '');
           roleBadge = `<span class="badge role-assistant">assistant</span>`;
-        } else if (m.content.startsWith('Support: ')) {
-          displayContent = m.content.replace('Support: ', '');
-          roleBadge = `<span class="badge role-assistant">support</span>`;
         }
-
-        const freshness = m.freshness ?? 1.0;
-        const freshnessPercent = Math.round(freshness * 100);
-
+        
+        const freshnessPercent = Math.round((m.freshness ?? 1.0) * 100);
         row.innerHTML = `
-          <td style="max-width: 400px; word-break: break-word;">${displayContent}</td>
+          <td>${displayContent}</td>
           <td>${roleBadge}</td>
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${freshnessPercent}%;"></div>
             </div>
-            <span>${freshness.toFixed(2)}</span>
+            <span>${(m.freshness ?? 1.0).toFixed(2)}</span>
           </td>
-          <td><span style="font-family: monospace; font-size: 0.85rem;">${m.session_id || 'default'}</span></td>
-          <td style="font-size: 0.85rem; color: var(--text-muted);">${formattedDate}</td>
+          <td><span style="font-family: var(--font-mono); font-size: 0.75rem;">${m.session_id || 'default'}</span></td>
+          <td style="font-size: 0.75rem; color: var(--text-secondary);">${formattedDate}</td>
+          <td>
+            <button class="btn danger" style="padding: 0.2rem 0.45rem; font-size: 0.7rem; border-radius: 2px;" onclick="deleteMemory('${m.id}')">Delete</button>
+          </td>
         `;
         tableBody.appendChild(row);
       });
     }
 
+    window.deleteMemory = async function(memoryId) {
+      if (!confirm('Are you sure you want to delete this episodic memory?')) return;
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/episodic/${memoryId}`, {
+          method: 'DELETE',
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.status === 204 || res.ok) {
+          alert('Memory deleted successfully.');
+          loadEpisodicMemories();
+        } else {
+          alert('Failed to delete memory.');
+        }
+      } catch (err) {
+        alert('Delete request failed.');
+      }
+    };
+
     async function loadSemanticFacts() {
       const tableBody = document.querySelector('#semantic-table tbody');
       tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
-      
       try {
         const res = await fetch(`${baseUrl}/v1/memory/semantic/query`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent_id: activeAgentId, query: '', k: 100 })
         });
-        
-        if (res.status === 200) {
+        if (res.ok) {
           const data = await res.json();
           renderSemanticTable(data.results);
-        } else {
-          tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Error loading facts (${res.status})</td></tr>`;
         }
       } catch (err) {
-        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--error);">Failed to fetch facts from server.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--rose-400);">Failed to fetch semantic triples.</td></tr>';
       }
     }
 
     function renderSemanticTable(results) {
       const tableBody = document.querySelector('#semantic-table tbody');
       tableBody.innerHTML = '';
-      
       if (!results || results.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No semantic facts recorded for this agent.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No semantic facts recorded.</td></tr>';
         return;
       }
-
       results.forEach(m => {
         const row = document.createElement('tr');
-        
-        // The API returns MemoryResult with content = "subject predicate object".
-        // If explicit triple fields exist, use them; otherwise parse from content.
         let subject = m.subject || '';
         let predicate = m.predicate || '';
         let object = m.object || '';
         
         if (!subject && m.content) {
-          // Parse "subject predicate object" — first word = subject, second = predicate, rest = object
           const parts = m.content.split(' ');
           if (parts.length >= 3) {
             subject = parts[0];
             predicate = parts[1];
             object = parts.slice(2).join(' ');
-          } else if (parts.length === 2) {
-            subject = parts[0];
-            predicate = parts[1];
           } else {
             subject = m.content;
           }
         }
         
-        const confidence = m.confidence ?? m.relevance_score ?? 1.0;
-        const confidencePercent = Math.round(confidence * 100);
-
+        const confidencePercent = Math.round((m.confidence ?? 1.0) * 100);
         row.innerHTML = `
-          <td style="font-weight: 600; color: var(--accent-blue);">${subject}</td>
-          <td style="font-family: monospace; color: var(--accent-purple);">${predicate}</td>
+          <td style="font-weight: 600; color: var(--cyan-400);">${subject}</td>
+          <td style="font-family: var(--font-mono); color: var(--indigo-400);">${predicate}</td>
           <td>${object}</td>
           <td>
             <div class="score-bar-container">
-              <div class="score-bar" style="width: ${confidencePercent}%; background: linear-gradient(90deg, #10b981 0%, #059669 100%);"></div>
+              <div class="score-bar" style="width: ${confidencePercent}%; background: linear-gradient(90deg, var(--emerald-500) 0%, #059669 100%);"></div>
             </div>
-            <span>${confidence.toFixed(2)}</span>
+            <span>${(m.confidence ?? 1.0).toFixed(2)}</span>
           </td>
         `;
         tableBody.appendChild(row);
       });
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    //  Semantic Knowledge Graph — D3.js Force-Directed Visualization
-    // ═══════════════════════════════════════════════════════════════
-
+    // D3 Force layouts graphs renderer
     let graphSimulation = null;
-
     async function loadSemanticGraph() {
-      const container = document.getElementById('graph-canvas-container');
-      const svgEl     = document.getElementById('visual-graph-svg');
+      const svgEl = document.getElementById('visual-graph-svg');
       const emptyState = document.getElementById('graph-empty-state');
-      const infoBadge  = document.getElementById('graph-info-badge');
-      const legend     = document.getElementById('graph-legend');
-      const tooltip    = document.getElementById('graph-tooltip');
+      const infoBadge = document.getElementById('graph-info-badge');
+      const legend = document.getElementById('graph-legend');
+      const tooltip = document.getElementById('graph-tooltip');
 
-      // Clear previous graph
       if (graphSimulation) { graphSimulation.stop(); graphSimulation = null; }
       d3.select(svgEl).selectAll('*').remove();
 
-      if (!activeAgentId) {
-        emptyState.style.display = 'flex';
-        legend.style.display = 'none';
-        infoBadge.textContent = '0 nodes · 0 edges';
-        return;
+      // Check for background task failures
+      try {
+        const taskRes = await fetch(`${baseUrl}/v1/admin/background-tasks`, {
+          method: 'GET',
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (taskRes.ok) {
+          const tasks = await taskRes.json();
+          const failedResolverTask = tasks.find(t => t.status === 'failed' && (t.name === 'resolve_entities' || t.name === 'extract_causal'));
+          const warningBlock = document.getElementById('graph-llm-warning-block');
+          const warningText = document.getElementById('graph-llm-warning-text');
+          if (failedResolverTask) {
+            warningBlock.style.display = 'flex';
+            warningText.textContent = `The background intelligence task '${failedResolverTask.name}' failed: "${failedResolverTask.error}". Newly added memories could not be parsed into semantic facts.`;
+          } else {
+            warningBlock.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load background tasks status for graph:', err);
       }
 
       try {
-        // First try the dedicated graph endpoint
-        let nodes = [], edges = [];
-
-        const graphRes = await fetch(`${baseUrl}/v1/memory/semantic/graph/${encodeURIComponent(activeAgentId)}?limit=200`, {
+        const res = await fetch(`${baseUrl}/v1/memory/semantic/graph/${encodeURIComponent(activeAgentId)}?limit=100`, {
           headers: { 'X-API-Key': apiKey }
         });
+        if (res.ok) {
+          const data = await res.json();
+          const nodes = data.nodes || [];
+          const edges = data.edges || [];
 
-        if (graphRes.ok) {
-          const graphData = await graphRes.json();
-          nodes = graphData.nodes || [];
-          edges = graphData.edges || [];
-        }
-
-        // If graph endpoint returned no nodes, build from query results
-        if (nodes.length === 0) {
-          const qRes = await fetch(`${baseUrl}/v1/memory/semantic/query`, {
-            method: 'POST',
-            headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agent_id: activeAgentId, query: '', k: 100 })
-          });
-
-          if (qRes.ok) {
-            const qData = await qRes.json();
-            const facts = qData.results || [];
-
-            // Build a graph from fact triples
-            const nodeMap = new Map();
-            facts.forEach((f, i) => {
-              let subj = f.subject || '';
-              let pred = f.predicate || '';
-              let obj  = f.object || '';
-
-              if (!subj && f.content) {
-                const parts = f.content.split(' ');
-                if (parts.length >= 3) {
-                  subj = parts[0];
-                  pred = parts[1];
-                  obj  = parts.slice(2).join(' ');
-                } else {
-                  subj = f.content;
-                }
-              }
-
-              if (!subj) return;
-
-              const subjKey = subj.toLowerCase();
-              const objKey  = obj.toLowerCase();
-
-              if (!nodeMap.has(subjKey)) {
-                nodeMap.set(subjKey, { id: 'subj_' + i, label: subj, type: 'subject', confidence: f.confidence ?? f.relevance_score ?? 1 });
-              }
-              if (obj && !nodeMap.has(objKey)) {
-                nodeMap.set(objKey, { id: 'obj_' + i, label: obj, type: 'object', confidence: f.confidence ?? f.relevance_score ?? 1 });
-              }
-              if (obj) {
-                edges.push({
-                  source: nodeMap.get(subjKey).id,
-                  target: nodeMap.get(objKey).id,
-                  predicate: pred,
-                  relatedness: f.confidence ?? f.relevance_score ?? 0.8
-                });
-              }
-            });
-
-            nodes = Array.from(nodeMap.values());
+          if (nodes.length === 0) {
+            emptyState.style.display = 'flex';
+            legend.style.display = 'none';
+            infoBadge.textContent = '0 nodes · 0 edges';
+            return;
           }
+
+          emptyState.style.display = 'none';
+          legend.style.display = 'flex';
+          infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
+
+          const container = document.getElementById('graph-canvas-container');
+          const width = container.clientWidth > 100 ? container.clientWidth : 800;
+          const height = container.clientHeight > 100 ? container.clientHeight : 480;
+
+          const svg = d3.select(svgEl).attr('viewBox', [0, 0, width, height]);
+          const g = svg.append('g');
+          const zoom = d3.zoom().scaleExtent([0.3, 3]).on('zoom', (e) => g.attr('transform', e.transform));
+          svg.call(zoom);
+
+          document.getElementById('graph-zoom-in').onclick = () => svg.transition().duration(200).call(zoom.scaleBy, 1.3);
+          document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(200).call(zoom.scaleBy, 0.7);
+          document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+
+          const link = g.append('g')
+            .selectAll('line')
+            .data(edges)
+            .join('line')
+            .attr('class', 'link');
+
+          const node = g.append('g')
+            .selectAll('circle')
+            .data(nodes)
+            .join('circle')
+            .attr('class', 'node-circle')
+            .attr('r', 10)
+            .attr('fill', d => d.type === 'object' ? '#a1a1aa' : '#ff4a00')
+            .on('mouseover', (evt, d) => {
+              tooltip.style.opacity = '1';
+              tooltip.style.display = 'block';
+              tooltip.innerHTML = `<strong>Node:</strong> ${d.label}<br/><strong>Type:</strong> ${d.type || 'unknown'}`;
+            })
+            .on('mousemove', (evt) => {
+              const bounds = container.getBoundingClientRect();
+              tooltip.style.left = `${evt.clientX - bounds.left + 15}px`;
+              tooltip.style.top = `${evt.clientY - bounds.top + 15}px`;
+            })
+            .on('mouseout', () => {
+              tooltip.style.opacity = '0';
+              tooltip.style.display = 'none';
+            })
+            .call(d3.drag()
+              .on('start', (evt, d) => { if (!evt.active) simulation.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+              .on('drag', (evt, d) => { d.fx = evt.x; d.fy = evt.y; })
+              .on('end', (evt, d) => { if (!evt.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+            );
+
+          const labels = g.append('g')
+            .selectAll('text')
+            .data(nodes)
+            .join('text')
+            .attr('class', 'node-label')
+            .attr('dx', 12)
+            .attr('dy', 4)
+            .text(d => d.label.length > 25 ? d.label.slice(0, 22) + '...' : d.label);
+
+          const simulation = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(edges).id(d => d.id).distance(120))
+            .force('charge', d3.forceManyBody().strength(-200))
+            .force('center', d3.forceCenter(width / 2, height / 2));
+
+          graphSimulation = simulation;
+
+          simulation.on('tick', () => {
+            link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+            node.attr('cx', d => d.x).attr('cy', d => d.y);
+            labels.attr('x', d => d.x).attr('y', d => d.y);
+          });
         }
-
-        // Show / hide empty state
-        if (nodes.length === 0) {
-          emptyState.style.display = 'flex';
-          legend.style.display = 'none';
-          infoBadge.textContent = '0 nodes · 0 edges';
-          return;
-        }
-
-        emptyState.style.display = 'none';
-        legend.style.display = 'flex';
-        infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
-
-        // ── D3 Force Simulation ──────────────────────────────
-        const width  = container.clientWidth;
-        const height = container.clientHeight;
-
-        const svg = d3.select(svgEl)
-          .attr('viewBox', [0, 0, width, height])
-          .attr('width', width)
-          .attr('height', height);
-
-        // Zoom behavior
-        const g = svg.append('g');
-        const zoom = d3.zoom()
-          .scaleExtent([0.3, 4])
-          .on('zoom', (event) => g.attr('transform', event.transform));
-        svg.call(zoom);
-
-        // Zoom controls
-        document.getElementById('graph-zoom-in').onclick  = () => svg.transition().duration(300).call(zoom.scaleBy, 1.4);
-        document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-        document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
-
-        // Arrow marker for edges
-        svg.append('defs').append('marker')
-          .attr('id', 'arrowhead')
-          .attr('viewBox', '0 -5 10 10')
-          .attr('refX', 25)
-          .attr('refY', 0)
-          .attr('markerWidth', 6)
-          .attr('markerHeight', 6)
-          .attr('orient', 'auto')
-          .append('path')
-          .attr('d', 'M0,-5L10,0L0,5')
-          .attr('fill', 'rgba(79,172,254,0.4)');
-
-        // Color scale
-        const colorSubject = '#4facfe';
-        const colorObject  = '#10b981';
-        const nodeColor = d => d.type === 'subject' ? colorSubject : colorObject;
-
-        // Simulation
-        const simulation = d3.forceSimulation(nodes)
-          .force('link', d3.forceLink(edges).id(d => d.id).distance(140))
-          .force('charge', d3.forceManyBody().strength(-350))
-          .force('center', d3.forceCenter(width / 2, height / 2))
-          .force('collision', d3.forceCollide().radius(40));
-
-        graphSimulation = simulation;
-
-        // Draw edges
-        const link = g.append('g')
-          .selectAll('line')
-          .data(edges)
-          .join('line')
-          .attr('class', 'link')
-          .attr('marker-end', 'url(#arrowhead)')
-          .attr('stroke-opacity', d => 0.2 + (d.relatedness || 0.5) * 0.6);
-
-        // Edge labels (predicates)
-        const edgeLabels = g.append('g')
-          .selectAll('text')
-          .data(edges)
-          .join('text')
-          .attr('class', 'edge-label')
-          .attr('text-anchor', 'middle')
-          .text(d => d.predicate || '');
-
-        // Draw nodes
-        const node = g.append('g')
-          .selectAll('circle')
-          .data(nodes)
-          .join('circle')
-          .attr('class', 'node-circle')
-          .attr('r', d => 8 + (d.confidence || 0.5) * 10)
-          .attr('fill', nodeColor)
-          .attr('stroke', d => d3.color(nodeColor(d)).darker(0.5))
-          .attr('stroke-width', 2)
-          .attr('opacity', 0.9)
-          .call(d3.drag()
-            .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-            .on('drag',  (event, d) => { d.fx = event.x; d.fy = event.y; })
-            .on('end',   (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
-          );
-
-        // Node labels
-        const labels = g.append('g')
-          .selectAll('text')
-          .data(nodes)
-          .join('text')
-          .attr('class', 'node-label')
-          .attr('dx', 14)
-          .attr('dy', 4)
-          .text(d => d.label.length > 20 ? d.label.slice(0, 18) + '…' : d.label);
-
-        // Tooltip on hover
-        node.on('mouseover', (event, d) => {
-          tooltip.style.opacity = '1';
-          tooltip.innerHTML = `<strong>${d.label}</strong><br>Type: ${d.type}<br>Confidence: ${(d.confidence || 0).toFixed(2)}`;
-          tooltip.style.left = (event.offsetX + 15) + 'px';
-          tooltip.style.top  = (event.offsetY - 10) + 'px';
-        })
-        .on('mouseout', () => { tooltip.style.opacity = '0'; });
-
-        // Pulse animation on nodes
-        node.append('animate')
-          .attr('attributeName', 'opacity')
-          .attr('values', '0.9;0.6;0.9')
-          .attr('dur', '3s')
-          .attr('repeatCount', 'indefinite');
-
-        // Tick
-        simulation.on('tick', () => {
-          link
-            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-          edgeLabels
-            .attr('x', d => (d.source.x + d.target.x) / 2)
-            .attr('y', d => (d.source.y + d.target.y) / 2);
-          node
-            .attr('cx', d => d.x).attr('cy', d => d.y);
-          labels
-            .attr('x', d => d.x).attr('y', d => d.y);
-        });
-
       } catch (err) {
-        console.error('Graph load error:', err);
-        emptyState.querySelector('span').textContent = 'Failed to load graph data.';
-        emptyState.style.display = 'flex';
+        console.error('Failed to load semantic graph', err);
       }
     }
 
-    // Wire up refresh button
-    document.getElementById('refresh-graph-btn').addEventListener('click', () => {
-      if (activeAgentId) loadSemanticGraph();
-    });
+    // Causal reasoning implementation
+    let causalSimulation = null;
+    async function loadCausalGraph() {
+      const svgEl = document.getElementById('causal-graph-svg');
+      const emptyState = document.getElementById('causal-graph-empty');
+      const infoBadge = document.getElementById('causal-graph-info-badge');
 
+      if (causalSimulation) { causalSimulation.stop(); causalSimulation = null; }
+      d3.select(svgEl).selectAll('*').remove();
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/causal/graph/${encodeURIComponent(activeAgentId)}?limit=100`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const nodes = data.nodes || [];
+          const edges = data.edges || [];
+
+          if (nodes.length === 0) {
+            emptyState.style.display = 'flex';
+            infoBadge.textContent = '0 nodes · 0 edges';
+            return;
+          }
+
+          emptyState.style.display = 'none';
+          infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
+
+          const container = document.getElementById('causal-graph-container');
+          const width = container.clientWidth > 100 ? container.clientWidth : 800;
+          const height = container.clientHeight > 100 ? container.clientHeight : 480;
+
+          const svg = d3.select(svgEl).attr('viewBox', [0, 0, width, height]);
+          const g = svg.append('g');
+          const zoom = d3.zoom().scaleExtent([0.3, 3]).on('zoom', (e) => g.attr('transform', e.transform));
+          svg.call(zoom);
+
+          document.getElementById('causal-zoom-in').onclick = () => svg.transition().duration(200).call(zoom.scaleBy, 1.3);
+          document.getElementById('causal-zoom-out').onclick = () => svg.transition().duration(200).call(zoom.scaleBy, 0.7);
+          document.getElementById('causal-zoom-reset').onclick = () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+
+          const tooltip = document.getElementById('causal-graph-tooltip');
+
+          const link = g.append('g')
+            .selectAll('line')
+            .data(edges)
+            .join('line')
+            .attr('class', 'link')
+            .style('stroke', 'var(--border-color)')
+            .on('mouseover', (evt, d) => {
+              if (!tooltip) return;
+              tooltip.style.opacity = '1';
+              tooltip.style.display = 'block';
+              tooltip.innerHTML = `<strong>Causal Relation:</strong> ${d.relation}<br/><strong>Confidence:</strong> ${(d.confidence * 100).toFixed(1)}%<br/><strong>Description:</strong> ${d.description || 'None'}`;
+            })
+            .on('mousemove', (evt) => {
+              if (!tooltip) return;
+              const bounds = container.getBoundingClientRect();
+              tooltip.style.left = `${evt.clientX - bounds.left + 15}px`;
+              tooltip.style.top = `${evt.clientY - bounds.top + 15}px`;
+            })
+            .on('mouseout', () => {
+              if (!tooltip) return;
+              tooltip.style.opacity = '0';
+              tooltip.style.display = 'none';
+            });
+
+          const node = g.append('g')
+            .selectAll('circle')
+            .data(nodes)
+            .join('circle')
+            .attr('class', 'node-circle')
+            .attr('r', 10)
+            .attr('fill', '#f59e0b')
+            .on('mouseover', (evt, d) => {
+              if (!tooltip) return;
+              tooltip.style.opacity = '1';
+              tooltip.style.display = 'block';
+              tooltip.innerHTML = `<strong>Concept:</strong> ${d.label}<br/><strong>ID:</strong> ${d.id.slice(0,8)}...`;
+            })
+            .on('mousemove', (evt) => {
+              if (!tooltip) return;
+              const bounds = container.getBoundingClientRect();
+              tooltip.style.left = `${evt.clientX - bounds.left + 15}px`;
+              tooltip.style.top = `${evt.clientY - bounds.top + 15}px`;
+            })
+            .on('mouseout', () => {
+              if (!tooltip) return;
+              tooltip.style.opacity = '0';
+              tooltip.style.display = 'none';
+            })
+            .call(d3.drag()
+              .on('start', (evt, d) => { if (!evt.active) simulation.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
+              .on('drag', (evt, d) => { d.fx = evt.x; d.fy = evt.y; })
+              .on('end', (evt, d) => { if (!evt.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+            );
+
+          const labels = g.append('g')
+            .selectAll('text')
+            .data(nodes)
+            .join('text')
+            .attr('class', 'node-label')
+            .attr('dx', 12)
+            .attr('dy', 4)
+            .text(d => d.label.length > 30 ? d.label.slice(0, 27) + '...' : d.label);
+
+          const simulation = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(edges).id(d => d.id).distance(120))
+            .force('charge', d3.forceManyBody().strength(-200))
+            .force('center', d3.forceCenter(width / 2, height / 2));
+
+          causalSimulation = simulation;
+
+          simulation.on('tick', () => {
+            link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+            node.attr('cx', d => d.x).attr('cy', d => d.y);
+            labels.attr('x', d => d.x).attr('y', d => d.y);
+          });
+        }
+      } catch (err) {
+        console.error('Failed to load causal graph', err);
+      }
+    }
+
+    // Procedural match loaders
     async function loadProceduralSkills() {
       const tableBody = document.querySelector('#procedural-table tbody');
       tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
-      
       try {
         const res = await fetch(`${baseUrl}/v1/memory/procedural/match`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({ agent_id: activeAgentId, task_description: '', k: 20 })
         });
-        
-        if (res.status === 200) {
+        if (res.ok) {
           const data = await res.json();
           renderProceduralTable(data.results);
-        } else {
-          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--error);">Error loading skills (${res.status})</td></tr>`;
         }
       } catch (err) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--error);">Failed to fetch procedures from server.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--rose-400);">Failed to fetch procedural workflows.</td></tr>';
       }
     }
 
     function renderProceduralTable(results) {
       const tableBody = document.querySelector('#procedural-table tbody');
       tableBody.innerHTML = '';
-      
       if (!results || results.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No procedural skills matched for this agent.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No procedural skills matched.</td></tr>';
         return;
       }
-
       results.forEach(p => {
         const row = document.createElement('tr');
-        
         let stepsHtml = '';
         if (p.steps && Array.isArray(p.steps)) {
-          stepsHtml = p.steps.map((s, idx) => `<div>${idx+1}. ${s.action || JSON.stringify(s)}</div>`).join('');
+          stepsHtml = p.steps.map((s, idx) => `<div>${idx + 1}. ${s.action || JSON.stringify(s)}</div>`).join('');
         }
-        
-        const successRate = p.success_rate ?? 1.0;
-        const ratePercent = Math.round(successRate * 100);
-
+        const successRatePercent = Math.round((p.success_rate ?? 1.0) * 100);
         row.innerHTML = `
           <td style="font-weight: 600;">${p.name}</td>
-          <td style="color: var(--text-muted); font-size: 0.85rem;">${p.description}</td>
+          <td style="color: var(--text-secondary); font-size: 0.8rem;">${p.description}</td>
           <td><span class="badge" style="background: rgba(255, 255, 255, 0.05);">${p.task_type || 'custom'}</span></td>
-          <td style="font-size: 0.8rem; font-family: monospace;">${stepsHtml}</td>
+          <td style="font-size: 0.75rem; font-family: var(--font-mono);">${stepsHtml}</td>
           <td>
             <div class="score-bar-container">
-              <div class="score-bar" style="width: ${ratePercent}%; background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);"></div>
+              <div class="score-bar" style="width: ${successRatePercent}%; background: linear-gradient(90deg, var(--cyan-500) 0%, var(--indigo-400) 100%);"></div>
             </div>
-            <span>${(successRate * 100).toFixed(0)}%</span>
+            <span>${successRatePercent}%</span>
           </td>
         `;
         tableBody.appendChild(row);
       });
     }
 
-    // ─── Playground Ingestion Operations ──────────
+    // Trust portal loader
+    async function loadTrustPortalStatus() {
+      try {
+        const res = await fetch(`${baseUrl}/v1/trust/status`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('iso-badge').textContent = data.compliance?.iso_27001 === "certified" ? "Certified" : "Self-Assessed";
+          document.getElementById('soc2-badge').textContent = data.compliance?.soc2_type_2 === "certified" ? "Certified" : "Not Certified";
+        }
+      } catch (err) {
+        console.error('Failed to load trust compliance checklists:', err);
+      }
+    }
 
+    // Ingest events
     const memInputType = document.getElementById('mem-input-type');
     const grpRole = document.getElementById('grp-role');
     const grpContent = document.getElementById('grp-content');
@@ -1682,144 +2677,248 @@
       }
     });
 
-    document.getElementById('store-memory-btn').addEventListener('click', async () => {
-      if (!activeAgentId) {
-        alert('Please select or create an agent first.');
-        return;
-      }
+    document.getElementById('refresh-bg-tasks-btn').addEventListener('click', () => {
+      loadBackgroundTasks();
+    });
 
+    document.getElementById('store-memory-btn').addEventListener('click', async () => {
+      if (!activeAgentId) return alert('Select an agent first.');
       const type = memInputType.value;
-      let url = `${baseUrl}/v1/remember`;
+      let url = `${baseUrl}/v1/memory/episodic/remember`;
       let body = {};
 
       if (type === 'episodic') {
         const content = document.getElementById('mem-input-content').value.trim();
         const role = document.getElementById('mem-input-role').value;
         if (!content) return alert('Memory text cannot be empty');
-        
-        body = {
-          agent_id: activeAgentId,
-          content: content,
-          role: role,
-          importance: 0.6
-        };
+        body = { agent_id: activeAgentId, content: content, role: role, importance: 0.8 };
       } else {
         url = `${baseUrl}/v1/memory/semantic/facts`;
         const subject = document.getElementById('fact-subject').value.trim();
         const predicate = document.getElementById('fact-predicate').value.trim();
         const object = document.getElementById('fact-value').value.trim();
-        
-        if (!subject || !predicate || !object) {
-          return alert('Subject, Predicate, and Value fields must all be filled.');
-        }
-
-        body = {
-          agent_id: activeAgentId,
-          subject: subject,
-          predicate: predicate,
-          object: object,
-          confidence: 1.0
-        };
+        if (!subject || !predicate || !object) return alert('Fill subject, predicate, and target fields.');
+        body = { agent_id: activeAgentId, subject: subject, predicate: predicate, object: object, confidence: 1.0 };
       }
 
       try {
-        const btn = document.getElementById('store-memory-btn');
-        btn.textContent = 'Storing...';
-        btn.disabled = true;
-
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
-
-        if (res.status === 200 || res.status === 201) {
+        if (res.ok) {
           alert('Memory stored successfully!');
           document.getElementById('mem-input-content').value = '';
           document.getElementById('fact-subject').value = '';
           document.getElementById('fact-predicate').value = '';
           document.getElementById('fact-value').value = '';
           refreshPaneData();
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          alert(`Failed to store memory: ${errData.message || res.statusText}`);
         }
       } catch (err) {
-        alert(`Request failed: ${err}`);
-      } finally {
-        const btn = document.getElementById('store-memory-btn');
-        btn.textContent = 'Store Memory';
-        btn.disabled = false;
+        alert('Ingest request failed.');
       }
     });
 
-    // ─── Playground Recall Operations ────────────
+    // In-memory LLM Config form submit
+    document.getElementById('configure-llm-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const provider = document.getElementById('llm-provider').value;
+      const key = document.getElementById('llm-api-key').value.trim();
+      const model = document.getElementById('llm-model').value.trim();
+      const mock = document.getElementById('llm-allow-mock').checked;
 
-    document.getElementById('recall-query-btn').addEventListener('click', async () => {
-      if (!activeAgentId) {
-        alert('Please select an agent first.');
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/configure-llm`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider, api_key: key, model, allow_mock: mock })
+        });
+        if (res.ok) {
+          showToast('LLM key, model, and mock settings saved and written to .env!', 'success');
+          document.getElementById('llm-api-key').value = '';
+          document.getElementById('llm-model').value = '';
+          loadLLMConfig();
+        } else {
+          showToast('Failed to configure provider keys and models.', 'error');
+        }
+      } catch (err) {
+        showToast('LLM configuration request failed.', 'error');
+      }
+    });
+
+    // Test API Key button handler
+    document.getElementById('llm-test-btn').addEventListener('click', async () => {
+      const provider = document.getElementById('llm-provider').value;
+      const key = document.getElementById('llm-api-key').value.trim();
+      const model = document.getElementById('llm-model').value.trim();
+
+      if (!key) {
+        showToast('Please enter an API Key to test.', 'error');
         return;
       }
-      
+
+      showToast(`Testing ${provider} connection...`, 'info');
+      const testBtn = document.getElementById('llm-test-btn');
+      const oldText = testBtn.textContent;
+      testBtn.disabled = true;
+      testBtn.textContent = 'Testing...';
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/test-llm`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider, api_key: key, model })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'success') {
+            showToast(data.message || 'API Key is VALID and working!', 'success');
+          } else {
+            showToast(`API Key test failed: ${data.message}`, 'error');
+          }
+        } else {
+          showToast('Failed to check API status via backend.', 'error');
+        }
+      } catch (err) {
+        showToast(`Request failed: ${err.message}`, 'error');
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = oldText;
+      }
+    });
+
+    // Tenant generation form submit
+    document.getElementById('create-tenant-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('tenant-name').value.trim();
+      const email = document.getElementById('tenant-email').value.trim();
+      const plan = document.getElementById('tenant-plan').value;
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/tenants`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Admin-Token': apiKey
+          },
+          body: JSON.stringify({ name, email, plan })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('tenant-key-result-card').style.display = 'block';
+          document.getElementById('tenant-key-value').textContent = data.api_key;
+          alert('Tenant workspace created successfully!');
+        } else {
+          alert('Failed to generate tenant. Ensure you entered the Master Admin Key in the console header.');
+        }
+      } catch (err) {
+        alert('Tenant creation request failed.');
+      }
+    });
+
+    // Key rotation button trigger
+    document.getElementById('rotate-key-btn').addEventListener('click', async () => {
+      const targetTenantId = document.getElementById('rotate-tenant-id').value.trim();
+      if (!targetTenantId) return alert('Enter target Tenant UUID');
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/tenants/${targetTenantId}/rotate-key`, {
+          method: 'POST',
+          headers: { 'X-Admin-Token': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          alert(`Key rotated successfully! New Key: ${data.api_key}`);
+        } else {
+          alert('Key rotation failed. Verify target UUID and master permissions.');
+        }
+      } catch (err) {
+        alert('Rotation request failed.');
+      }
+    });
+
+    // GDPR purge execution
+    document.getElementById('gdpr-purge-btn').addEventListener('click', async () => {
+      const targetAgentId = document.getElementById('gdpr-agent-id').value.trim();
+      if (!targetAgentId) return alert('Enter target Agent ID');
+
+      if (!confirm('Are you sure you want to hard delete all records for this agent? This compliance action is irreversible.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/agent/${targetAgentId}/memories`, {
+          method: 'DELETE',
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('gdpr-cert-result').style.display = 'block';
+          document.getElementById('gdpr-cert-id').textContent = data.certificate_id;
+          document.getElementById('gdpr-cert-hash').textContent = data.cryptographic_signature;
+          alert('Agent records successfully purged.');
+        }
+      } catch (err) {
+        alert('Purge execution failed.');
+      }
+    });
+
+    // Recall queries
+    document.getElementById('recall-query-btn').addEventListener('click', async () => {
+      if (!activeAgentId) return alert('Select agent first.');
       const query = document.getElementById('recall-query').value.trim();
       const k = parseInt(document.getElementById('recall-k').value);
-      if (!query) return alert('Recall query cannot be empty');
+      if (!query) return alert('Query cannot be empty');
 
       const container = document.getElementById('recall-results-container');
       const tableBody = document.querySelector('#recall-results-table tbody');
-      
       container.style.display = 'block';
       tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
 
       try {
-        const res = await fetch(`${baseUrl}/v1/recall`, {
+        const res = await fetch(`${baseUrl}/v1/memory/episodic/recall`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ agent_id: activeAgentId, query: query, k: k })
+          body: JSON.stringify({ agent_id: activeAgentId, query, k })
         });
-
-        if (res.status === 200) {
+        if (res.ok) {
           const data = await res.json();
           renderRecallResults(data.results);
-        } else {
-          tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Recall failed: ${res.statusText}</td></tr>`;
         }
       } catch (err) {
-        tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Request failed: ${err}</td></tr>`;
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--rose-400);">Failed to execute recall query.</td></tr>';
       }
     });
 
     function renderRecallResults(results) {
       const tableBody = document.querySelector('#recall-results-table tbody');
       tableBody.innerHTML = '';
-
       if (!results || results.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No relevant memories matched.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No memories matched.</td></tr>';
         return;
       }
-
       results.forEach(r => {
         const row = document.createElement('tr');
-        const score = r.relevance_score ?? r.similarity ?? 0.0;
-        const relevancePercent = Math.round(score * 100);
+        const relevancePercent = Math.round((r.relevance_score ?? 1.0) * 100);
         const freshnessPercent = Math.round((r.freshness ?? 1.0) * 100);
-
         row.innerHTML = `
           <td>${r.content}</td>
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${relevancePercent}%;"></div>
             </div>
-            <span>${score.toFixed(2)}</span>
+            <span>${(r.relevance_score ?? 1.0).toFixed(2)}</span>
           </td>
           <td>
             <div class="score-bar-container">
-              <div class="score-bar" style="width: ${freshnessPercent}%; background: linear-gradient(90deg, #10b981 0%, #059669 100%);"></div>
+              <div class="score-bar" style="width: ${freshnessPercent}%; background: linear-gradient(90deg, var(--emerald-500) 0%, #059669 100%);"></div>
             </div>
             <span>${(r.freshness ?? 1.0).toFixed(2)}</span>
           </td>
           <td>
-            <button class="btn secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="viewMerkleProof('${r.id}')">Verify Proof</button>
+            <button class="btn secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="viewMerkleProof('${r.id}')">Verify</button>
           </td>
         `;
         tableBody.appendChild(row);
@@ -1831,145 +2930,522 @@
         const res = await fetch(`${baseUrl}/v1/admin/memory/${memoryId}/proof`, {
           headers: { 'X-API-Key': apiKey }
         });
-        if (res.status === 200) {
+        if (res.ok) {
           const data = await res.json();
-          alert(`Cryptographic Merkle Proof found!\n\nRoot Hash: ${data.proof.root_hash}\nLeaf Index: ${data.proof.leaf_index}\nProof Path Length: ${data.proof.proof_path.length}\nVerified State: INTACT`);
+          const proof = data.proof || {};
+          
+          document.getElementById('proof-leaf-hash').textContent = proof.leaf_hash || '—';
+          document.getElementById('proof-root-hash').textContent = proof.root_hash || '—';
+          
+          const pathVisual = document.getElementById('proof-path-visual');
+          pathVisual.innerHTML = '';
+          
+          const path = proof.proof_path || [];
+          if (path.length === 0) {
+            pathVisual.innerHTML = '<div style="color: var(--text-tertiary); font-size: 0.72rem;">Direct leaf verification (single node tree).</div>';
+          } else {
+            path.forEach((step, idx) => {
+              const node = document.createElement('div');
+              node.style.display = 'flex';
+              node.style.alignItems = 'center';
+              node.style.gap = '0.75rem';
+              node.style.padding = '0.5rem';
+              node.style.background = '#0a0a0c';
+              node.style.border = '1px solid var(--border-color-muted)';
+              node.style.borderRadius = '4px';
+              node.innerHTML = `
+                <div style="background: var(--primary-light); color: var(--primary); font-family: var(--font-mono); font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 3px; font-weight: 600;">Lvl ${idx + 1}</div>
+                <div style="display: flex; flex-direction: column; gap: 0.15rem; flex-grow: 1; min-width: 0;">
+                  <span style="font-size: 0.6rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.5px;">Sibling Hash</span>
+                  <span style="color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.68rem; word-break: break-all;">${step}</span>
+                </div>
+              `;
+              pathVisual.appendChild(node);
+              
+              if (idx < path.length - 1) {
+                const arrow = document.createElement('div');
+                arrow.style.display = 'flex';
+                arrow.style.justifyContent = 'center';
+                arrow.style.margin = '0.2rem 0';
+                arrow.style.color = 'var(--text-tertiary)';
+                arrow.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>`;
+                pathVisual.appendChild(arrow);
+              }
+            });
+          }
+          
+          document.getElementById('merkle-proof-modal').classList.add('active');
         } else {
-          alert('Merkle proof could not be verified. Memory may be compressed or offline.');
+          alert('Failed to retrieve Merkle proof path.');
         }
       } catch (err) {
-        alert('Network verification failure.');
+        alert('Verification request failed.');
       }
-    }
+    };
 
-    // ─── Cryptographic Integrity Audit ────────────
+    document.getElementById('close-proof-modal').onclick = () => {
+      document.getElementById('merkle-proof-modal').classList.remove('active');
+    };
 
+    // Cryptographic scans
     document.getElementById('audit-integrity-btn').addEventListener('click', async () => {
-      if (!activeAgentId) {
-        return alert('Please select an agent first.');
-      }
-
+      if (!activeAgentId) return alert('Select agent first.');
       const container = document.getElementById('audit-logs-container');
       const consoleLog = document.getElementById('audit-console');
       
       container.style.display = 'block';
-      consoleLog.textContent = `[SYSTEM] Initiating full cryptographic scan for agent [${activeAgentId}]...\n`;
+      consoleLog.textContent = `[SYSTEM] Starting full Merkle tree verification scans for agent [${activeAgentId}]...\n`;
 
       try {
         const res = await fetch(`${baseUrl}/v1/admin/agent/${activeAgentId}/audit`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey }
         });
-
-        if (res.status === 200) {
+        if (res.ok) {
           const data = await res.json();
           if (data.is_intact) {
-            consoleLog.textContent += `[SUCCESS] Verification complete!\n`;
-            consoleLog.textContent += `[STATUS] Mind state: INTACT\n`;
-            consoleLog.textContent += `[AUDIT] Cryptographic Merkle leaves scanned: matches root hash.\n`;
-            consoleLog.style.color = '#10b981'; // Green
+            consoleLog.textContent += `[SUCCESS] Scan complete! Verified tree states match PostgreSQL hashes.\n[STATUS] Intact.`;
+            consoleLog.style.color = 'var(--emerald-400)';
           } else {
-            consoleLog.textContent += `[ALERT] Verification mismatch detected!\n`;
-            consoleLog.textContent += `[STATUS] Mind state: CORRUPTED / TAMPERED\n`;
-            consoleLog.textContent += `[TAMPERED COUNT] ${data.tampered_count} records\n`;
-            consoleLog.textContent += `[RECORDS] ${JSON.stringify(data.tampered_memories, null, 2)}\n`;
-            consoleLog.style.color = '#ef4444'; // Red
+            consoleLog.textContent += `[ALERT] Tampering or database corruption detected!\n[TAMPERED COUNT] ${data.tampered_count} records\n`;
+            consoleLog.style.color = 'var(--rose-400)';
           }
-        } else {
-          consoleLog.textContent += `[ERROR] Verification engine failure: HTTP ${res.status}\n`;
         }
       } catch (err) {
-        consoleLog.textContent += `[ERROR] Failed to run cryptographic scan: ${err}\n`;
+        consoleLog.textContent += `[ERROR] Verification engine error: ${err}`;
       }
     });
 
-    // ─── Modal Dialog Management ─────────────────
+    // Causal frequencies
+    document.getElementById('query-causes-btn').addEventListener('click', async () => {
+      if (!activeAgentId) return alert('Select agent first.');
+      const theme = document.getElementById('causal-theme-input').value.trim();
+      if (!theme) return alert('Please enter causal theme/event');
 
+      const container = document.getElementById('causal-frequency-results');
+      const tableBody = document.querySelector('#causal-frequency-table tbody');
+      container.style.display = 'block';
+      tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/causal/frequent-causes`, {
+          method: 'POST',
+          headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agent_id: activeAgentId, theme })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const items = data.causes || data.frequent_causes || [];
+          tableBody.innerHTML = '';
+          if (items.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-secondary);">No matching causes found.</td></tr>';
+            return;
+          }
+          items.forEach(c => {
+            const row = document.createElement('tr');
+            const conceptName = c.cause_summary || c.concept || 'Unknown';
+            const relevance = c.percentage !== undefined ? c.percentage / 100 : (c.score || 1.0);
+            row.innerHTML = `
+              <td style="font-weight: 600;">${conceptName}</td>
+              <td style="font-family: var(--font-mono);">${c.frequency}</td>
+              <td>${relevance.toFixed(2)}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--rose-400);">Request failed.</td></tr>';
+      }
+    });
+
+    // Wire up refresh triggers
+    document.getElementById('refresh-episodic-btn').onclick = loadEpisodicMemories;
+    document.getElementById('refresh-semantic-btn').onclick = loadSemanticFacts;
+    document.getElementById('refresh-graph-btn').onclick = loadSemanticGraph;
+    document.getElementById('refresh-causal-graph-btn').onclick = loadCausalGraph;
+    document.getElementById('refresh-procedural-btn').onclick = loadProceduralSkills;
+
+    // Create Agent Modals
     const createAgentModal = document.getElementById('create-agent-modal');
     const showModalBtn = document.getElementById('show-create-agent-modal');
     const cancelModalBtn = document.getElementById('cancel-create-agent');
     const confirmModalBtn = document.getElementById('confirm-create-agent');
 
-    showModalBtn.addEventListener('click', () => {
-      createAgentModal.classList.add('active');
-    });
+    showModalBtn.onclick = () => createAgentModal.classList.add('active');
+    cancelModalBtn.onclick = () => createAgentModal.classList.remove('active');
 
-    cancelModalBtn.addEventListener('click', () => {
-      createAgentModal.classList.remove('active');
-    });
-
-    confirmModalBtn.addEventListener('click', async () => {
+    confirmModalBtn.onclick = async () => {
       const agentId = document.getElementById('new-agent-id').value.trim();
       const agentName = document.getElementById('new-agent-name').value.trim();
-
-      if (!agentId || !agentName) {
-        return alert('Please fill in both Agent ID and Display Name fields.');
-      }
+      if (!agentId || !agentName) return alert('Enter Agent ID and display name');
 
       try {
-        // Create an agent by storing a dummy fact/preference, which triggers agent record creation in server
-        const res = await fetch(`${baseUrl}/v1/memory/semantic/facts`, {
+        const res = await fetch(`${baseUrl}/v1/admin/agents`, {
           method: 'POST',
           headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            agent_id: agentId,
-            subject: 'agent',
-            predicate: 'name',
-            object: agentName,
-            confidence: 1.0
-          })
+          body: JSON.stringify({ agent_id: agentId, display_name: agentName, metadata: {} })
         });
-
-        if (res.status === 200 || res.status === 201) {
-          alert('Agent initialized successfully!');
+        if (res.ok) {
+          alert('Agent registered successfully!');
           createAgentModal.classList.remove('active');
           document.getElementById('new-agent-id').value = '';
           document.getElementById('new-agent-name').value = '';
-          
           activeAgentId = agentId;
           await fetchAgents();
-        } else {
-          alert(`Failed to create agent: HTTP ${res.status}`);
         }
       } catch (err) {
-        alert(`Failed to request agent registration: ${err}`);
+        alert('Registration request failed.');
       }
-    });
+    };
 
-    // ─── Auth Handler ───────────────────────────
-
-    saveKeyBtn.addEventListener('click', async () => {
-      if (apiKey) {
-        // Disconnect
+    // Auth actions
+    saveKeyBtn.onclick = async () => {
+      const val = apiKeyInput.value.trim();
+      if (apiKey && val === apiKey) {
         apiKey = '';
         localStorage.removeItem('kyros_api_key');
         apiKeyInput.value = '';
         saveKeyBtn.textContent = 'Connect';
-        agentListUl.innerHTML = '<li class="agent-item">Select Agent...</li>';
+        agentListUl.innerHTML = '<li class="agent-item text-tertiary">Select project...</li>';
         document.getElementById('overview-agent-id').textContent = '—';
         setOfflineStatus();
-        alert('Disconnected API Key.');
+        alert('Disconnected.');
       } else {
-        // Connect
-        const inputKey = apiKeyInput.value.trim();
-        if (!inputKey) return alert('Enter a valid API key');
-        
-        apiKey = inputKey;
-        localStorage.setItem('kyros_api_key', inputKey);
+        if (!val) return alert('Enter a valid key');
+        apiKey = val;
+        localStorage.setItem('kyros_api_key', val);
         saveKeyBtn.textContent = 'Disconnect';
+        const healthy = await checkHealth();
+        if (healthy) await fetchAgents();
+      }
+    };
+
+    // Project selections
+    projectSelect.addEventListener('change', () => {
+      activeProject = projectSelect.value;
+      fetchAgents();
+    });
+
+    // Ebbinghaus Forgetting Curve Simulator & Settings
+    const halflifeSlider = document.getElementById('decay-halflife-slider');
+    const halflifeVal = document.getElementById('decay-halflife-val');
+
+    function drawForgettingCurve(halfLifeDays) {
+      const svg = document.getElementById('forgetting-curve-svg');
+      if (!svg) return;
+      svg.innerHTML = '';
+      
+      const width = svg.clientWidth || 500;
+      const height = 180;
+      const padding = 25;
+      
+      // Draw Grid Axes
+      const lineX = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      lineX.setAttribute("x1", padding);
+      lineX.setAttribute("y1", height - padding);
+      lineX.setAttribute("x2", width - padding);
+      lineX.setAttribute("y2", height - padding);
+      lineX.setAttribute("stroke", "#27272a");
+      lineX.setAttribute("stroke-width", "1");
+      svg.appendChild(lineX);
+
+      const lineY = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      lineY.setAttribute("x1", padding);
+      lineY.setAttribute("y1", padding);
+      lineY.setAttribute("x2", padding);
+      lineY.setAttribute("y2", height - padding);
+      lineY.setAttribute("stroke", "#27272a");
+      lineY.setAttribute("stroke-width", "1");
+      svg.appendChild(lineY);
+
+      // Plot curve: R(t) = e^(-t * ln(2) / halfLife)
+      // Plot X from 0 to 30 days
+      const points = [];
+      const steps = 100;
+      const lambda = Math.log(2) / halfLifeDays;
+      for (let i = 0; i <= steps; i++) {
+        const t = (i / steps) * 30; // 0 to 30 days
+        const R = Math.exp(-t * lambda);
         
-        const isHealthy = await checkHealth();
-        if (isHealthy) {
-          await fetchAgents();
+        const x = padding + (i / steps) * (width - 2 * padding);
+        const y = height - padding - R * (height - 2 * padding);
+        points.push(`${x},${y}`);
+      }
+
+      // Draw Path
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", `M ${points.join(' L ')}`);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "var(--primary)");
+      path.setAttribute("stroke-width", "2.5");
+      svg.appendChild(path);
+
+      // Add labels
+      const labelY = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      labelY.setAttribute("x", padding + 5);
+      labelY.setAttribute("y", padding + 12);
+      labelY.setAttribute("fill", "var(--text-secondary)");
+      labelY.setAttribute("font-size", "9");
+      labelY.textContent = "100% Retention";
+      svg.appendChild(labelY);
+
+      const labelX = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      labelX.setAttribute("x", width - padding - 40);
+      labelX.setAttribute("y", height - padding - 5);
+      labelX.setAttribute("fill", "var(--text-secondary)");
+      labelX.setAttribute("font-size", "9");
+      labelX.textContent = "30 Days";
+      svg.appendChild(labelX);
+    }
+
+    if (halflifeSlider) {
+      halflifeSlider.addEventListener('input', () => {
+        const val = parseFloat(halflifeSlider.value);
+        halflifeVal.textContent = `${val.toFixed(1)} days`;
+        drawForgettingCurve(val);
+      });
+    }
+
+    async function loadDecayConfig() {
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/decay-rates`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const obsConfig = data.default_rates?.observation || {};
+          const hl = obsConfig.half_life_days || 7.0;
+          halflifeSlider.value = hl;
+          halflifeVal.textContent = `${hl.toFixed(1)} days`;
+          drawForgettingCurve(hl);
         }
+      } catch (err) {
+        console.error('Failed to load decay configuration', err);
+      }
+    }
+
+    document.getElementById('save-decay-btn').addEventListener('click', async () => {
+      const val = parseFloat(halflifeSlider.value);
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/decay-rates`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Admin-Token': apiKey
+          },
+          body: JSON.stringify({
+            rates: {
+              observation: val,
+              default: val
+            }
+          })
+        });
+        if (res.ok) {
+          alert('Decay rates successfully updated!');
+          loadEpisodicMemories();
+        } else {
+          alert('Failed to update decay rates. Master Admin Key required in connect bar.');
+        }
+      } catch (err) {
+        alert('Decay settings request failed.');
       }
     });
 
-    // Initial check
+    // Memory Summarise / Consolidation
+    document.getElementById('summarize-memories-btn').onclick = async () => {
+      if (!activeAgentId) return alert('Select agent first.');
+      const container = document.getElementById('consolidation-container');
+      const countEl = document.getElementById('consolidation-count');
+      const ratioEl = document.getElementById('consolidation-ratio');
+      const levelsEl = document.getElementById('consolidation-levels');
+      const summaryEl = document.getElementById('consolidation-summary');
+      const dateEl = document.getElementById('consolidation-date');
+
+      container.style.display = 'block';
+      summaryEl.textContent = 'Generating hierarchical memory consolidation...';
+      countEl.textContent = '—';
+      ratioEl.textContent = '—';
+      levelsEl.textContent = '—';
+      dateEl.textContent = '—';
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/summarise/${activeAgentId}`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          countEl.textContent = data.memory_count ?? 0;
+          ratioEl.textContent = typeof data.compression_ratio === 'number' ? (data.compression_ratio * 100).toFixed(1) + '%' : '—';
+          levelsEl.textContent = data.levels ?? 1;
+          summaryEl.textContent = data.summary || 'No summary available.';
+          dateEl.textContent = data.generated_at ? new Date(data.generated_at).toLocaleString() : '—';
+        } else {
+          summaryEl.textContent = 'Failed to generate summary card.';
+        }
+      } catch (err) {
+        summaryEl.textContent = `Error compiling summary: ${err}`;
+      }
+    };
+
+    // Staleness Report Scanner
+    async function loadStalenessReport() {
+      if (!activeAgentId) return;
+      const container = document.getElementById('staleness-container');
+      const warnEl = document.getElementById('stale-warn-count');
+      const critEl = document.getElementById('stale-crit-count');
+      const deadEl = document.getElementById('stale-dead-count');
+      const totalEl = document.getElementById('stale-total-count');
+      const recsEl = document.getElementById('staleness-recommendations');
+      const tableBody = document.querySelector('#staleness-memories-table tbody');
+
+      container.style.display = 'block';
+      recsEl.innerHTML = '<li>Analyzing Ebbinghaus decay attributes...</li>';
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/staleness-report/${activeAgentId}`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const summary = data.summary || {};
+          warnEl.textContent = summary.warning_count ?? 0;
+          critEl.textContent = summary.critical_count ?? 0;
+          deadEl.textContent = summary.stale_count ?? 0;
+          totalEl.textContent = summary.total_flagged ?? 0;
+
+          recsEl.innerHTML = '';
+          const recs = data.recommendations || [];
+          if (recs.length === 0) {
+            recsEl.innerHTML = '<li>All memories are fresh. Ebbinghaus curve stable.</li>';
+          } else {
+            recs.forEach(rec => {
+              const li = document.createElement('li');
+              li.textContent = rec;
+              recsEl.appendChild(li);
+            });
+          }
+
+          tableBody.innerHTML = '';
+          const staleMemories = data.stale_memories || [];
+          if (staleMemories.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No stale or decayed memories found.</td></tr>';
+          } else {
+            staleMemories.forEach(m => {
+              const row = document.createElement('tr');
+              let statusClass = 'text-amber-400';
+              if (m.status === 'stale') statusClass = 'text-rose-400';
+              row.innerHTML = `
+                <td style="font-weight: 500; font-family: var(--font-mono); font-size: 0.7rem;">${m.memory_type}</td>
+                <td style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${m.content_preview}">${m.content_preview}</td>
+                <td style="font-family: var(--font-mono); font-size: 0.72rem;">${(m.freshness_score * 100).toFixed(1)}%</td>
+                <td style="font-family: var(--font-mono); font-size: 0.72rem;">${m.half_life_days ? m.half_life_days + ' days' : 'N/A'}</td>
+                <td class="${statusClass}" style="font-weight: 600; font-size: 0.7rem; text-transform: uppercase;">${m.status}</td>
+              `;
+              tableBody.appendChild(row);
+            });
+          }
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--rose-400);">Failed to fetch staleness report.</td></tr>';
+      }
+    }
+    document.getElementById('refresh-staleness-btn').onclick = loadStalenessReport;
+    window.loadStalenessReport = loadStalenessReport;
+
+    // Embedding model migration
+    document.getElementById('migrate-embeddings-form').onsubmit = async (e) => {
+      e.preventDefault();
+      if (!activeAgentId) return alert('Select agent first.');
+      const fromModel = document.getElementById('migration-from-model').value.trim();
+      const toModel = document.getElementById('migration-to-model').value;
+      const strategy = document.getElementById('migration-strategy').value;
+      const statusEl = document.getElementById('migration-status');
+      const btn = document.getElementById('migration-btn');
+
+      statusEl.style.display = 'block';
+      statusEl.textContent = `[MIGRATION] Translating vector structures from [${fromModel}] to [${toModel}] using strategy [${strategy}]...`;
+      statusEl.style.color = 'var(--amber-400)';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/agent/${activeAgentId}/migrate-embeddings`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': apiKey
+          },
+          body: JSON.stringify({
+            from_model: fromModel,
+            to_model: toModel,
+            strategy: strategy
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          statusEl.textContent = `[SUCCESS] ${data.detail || 'Embedding migration completed successfully.'}`;
+          statusEl.style.color = 'var(--emerald-400)';
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          statusEl.textContent = `[FAILED] ${errData.detail || 'Ensure you have Master Admin Key connected.'}`;
+          statusEl.style.color = 'var(--rose-400)';
+        }
+      } catch (err) {
+        statusEl.textContent = `[ERROR] Request failed: ${err}`;
+        statusEl.style.color = 'var(--rose-400)';
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    // GDPR Compliance Audit Trail Export
+    document.getElementById('export-compliance-btn').onclick = async () => {
+      if (!activeAgentId) return alert('Select agent first.');
+      const days = document.getElementById('compliance-days').value;
+      const resultContainer = document.getElementById('compliance-export-result');
+      const tableBody = document.querySelector('#compliance-export-table tbody');
+
+      resultContainer.style.display = 'block';
+      tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/admin/agent/${activeAgentId}/compliance-export?days=${days}`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          tableBody.innerHTML = '';
+          const trail = data.audit_trail || [];
+          if (trail.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No immutable audit logs found for the selected period.</td></tr>';
+            return;
+          }
+          trail.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary);">${t.audit_id}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.68rem; color: var(--primary); word-break: break-all;">${t.merkle_root}</td>
+              <td style="font-family: var(--font-mono); font-size: 0.72rem;">${t.tree_size}</td>
+              <td style="font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;">${new Date(t.timestamp).toLocaleString()}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+        } else {
+          tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--rose-400);">Failed to fetch compliance export.</td></tr>';
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--rose-400);">Export query failed.</td></tr>';
+      }
+    };
+
+    // Boot initialize
     (async () => {
       const healthy = await checkHealth();
-      if (healthy && apiKey) {
-        await fetchAgents();
+      if (healthy) {
+        loadBackgroundTasks();
+        if (apiKey) {
+          await fetchAgents();
+        }
       }
     })();
   </script>

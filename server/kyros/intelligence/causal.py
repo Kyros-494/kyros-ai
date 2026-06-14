@@ -138,7 +138,7 @@ async def extract_and_store_causal_edges(
             print(f"      [CAUSAL] No causal links found")
     except Exception as e:
         logger.error("Failed to extract causal edges", error=str(e))
-        return []
+        raise e
 
     if not edges:
         return []
@@ -442,12 +442,21 @@ async def analyze_causal_frequencies(
             cleaned = cleaned.split("```", 2)[-1] if cleaned.count("```") >= 2 else cleaned
             cleaned = cleaned.removeprefix("json").strip().strip("`").strip()
         frequencies = json.loads(cleaned)
-    except json.JSONDecodeError as e:
-        logger.warning("Frequency analysis returned non-JSON response", error=str(e))
-        return {"theme": effect_theme, "causes": [], "error": "LLM returned non-JSON response"}
     except Exception as e:
-        logger.error("Failed to analyze causal frequencies", error=str(e))
-        return {"theme": effect_theme, "causes": [], "error": str(e)}
+        logger.error("Failed to analyze causal frequencies via LLM, falling back to local Python grouping", error=str(e))
+        counts = {}
+        for c in all_causes:
+            summary = c[:60] + "..." if len(c) > 60 else c
+            counts[summary] = counts.get(summary, 0) + 1
+        
+        frequencies = []
+        total = len(all_causes)
+        for summary, freq in sorted(counts.items(), key=lambda x: x[1], reverse=True):
+            frequencies.append({
+                "cause_summary": summary,
+                "frequency": freq,
+                "percentage": round((freq / total) * 100, 1)
+            })
 
     return {
         "theme": effect_theme,

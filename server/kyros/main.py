@@ -27,29 +27,7 @@ setup_logging(log_level=settings.log_level, environment=settings.environment)
 logger = get_logger("kyros.main")
 
 # Global set of background tasks — tracked so we can cancel them on shutdown
-_background_tasks: set[asyncio.Task] = set()
-
-
-def create_background_task(coro, name: str | None = None) -> asyncio.Task:
-    """Create a tracked background task with exception logging.
-
-    All fire-and-forget tasks should use this instead of asyncio.create_task()
-    directly so they are properly cancelled on shutdown and exceptions are logged.
-    """
-    task = asyncio.create_task(coro, name=name)
-    _background_tasks.add(task)
-
-    def _on_done(t: asyncio.Task) -> None:
-        _background_tasks.discard(t)
-        if not t.cancelled() and t.exception() is not None:
-            logger.error(
-                "Background task failed",
-                task=t.get_name(),
-                error=str(t.exception()),
-            )
-
-    task.add_done_callback(_on_done)
-    return task
+from kyros.services.background_tasks import create_background_task, _background_tasks
 
 
 async def wait_for_background_tasks(timeout: float = 300.0) -> None:
@@ -319,10 +297,16 @@ async def readiness_check(request: Request) -> JSONResponse:
 
     embedder = getattr(request.app.state, "embedder", None)
     checks["embedder"] = "ok" if embedder else "not_initialized"
-    if not embedder:
+    if embedder:
+        checks["model_name"] = embedder.model_name
+    else:
         healthy = False
 
     return JSONResponse(
         status_code=200 if healthy else 503,
-        content={"status": "ready" if healthy else "not_ready", "checks": checks},
+        content={
+            "status": "ready" if healthy else "not_ready",
+            "checks": checks,
+            "environment": settings.environment
+        },
     )
