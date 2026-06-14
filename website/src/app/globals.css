@@ -1,22 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1e293b;
+  --background: #000000; /* Kyros Dashboard base */
+  --foreground: #fafafa; /* Kyros Dashboard primary text */
 }
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a; /* Slate 900 - Never pure black */
-    --foreground: #f8fafc; /* Slate 50 */
-  }
+  /* Overwrite blue with Kyros Brand Orange/Red (#ff4a00) */
+  --color-blue-50: #fff1eb;
+  --color-blue-100: #ffdcd0;
+  --color-blue-200: #ffbba1;
+  --color-blue-300: #ff916a;
+  --color-blue-400: #ff5e28;
+  --color-blue-500: #ff4a00; /* Kyros Orange */
+  --color-blue-600: #e04100;
+  --color-blue-700: #b83200;
+  --color-blue-800: #912700;
+  --color-blue-900: #732000;
+  --color-blue-950: #401000;
+
+  /* Overwrite slate with Kyros Dashboard Charcoal palette */
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f4f4f5;
+  --color-slate-200: #e4e4e7;
+  --color-slate-300: #d4d4d8;
+  --color-slate-400: #a1a1aa;
+  --color-slate-500: #71717a;
+  --color-slate-600: #52525b;
+  --color-slate-700: #3f3f46;
+  --color-slate-800: #27272a; /* Dashboard border */
+  --color-slate-900: #09090b; /* Dashboard surface */
+  --color-slate-950: #000000; /* Dashboard base */
 }
 
 body {
@@ -35,14 +54,15 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1e293b; /* Slate 800 */
+  background: #09090b; /* Slate 900 / Dashboard surface */
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155; /* Slate 700 */
+  background: #27272a; /* Slate 800 / Dashboard border */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569; /* Slate 600 */
+  background: #ff4a00; /* Kyros Orange */
 }
+

@@ -13,10 +13,10 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/kyros-sdk/"><img src="https://img.shields.io/pypi/v/kyros-sdk?color=blue&label=PyPI" alt="PyPI version" /></a>
-  <a href="https://www.npmjs.com/package/@kyros/sdk"><img src="https://img.shields.io/npm/v/@kyros/sdk?color=blue&label=npm" alt="npm version" /></a>
-  <a href="https://github.com/Kyros-494/kyros-ai/actions"><img src="https://img.shields.io/github/actions/workflow/status/Kyros-494/kyros-ai/ci.yml?branch=main&label=CI" alt="CI Status" /></a>
-  <a href="https://github.com/Kyros-494/kyros-ai/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License" /></a>
+  <a href="https://pypi.org/project/kyros-sdk/"><img src="https://img.shields.io/pypi/v/kyros-sdk?color=ff4a00&label=PyPI" alt="PyPI version" /></a>
+  <a href="https://www.npmjs.com/package/@kyros.494/sdk"><img src="https://img.shields.io/npm/v/@kyros.494/sdk?color=ff4a00&label=npm" alt="npm version" /></a>
+  <a href="https://github.com/Kyros-494/kyros-ai/actions"><img src="https://img.shields.io/github/actions/workflow/status/Kyros-494/kyros-ai/ci.yml?branch=master&label=CI&color=ff4a00" alt="CI Status" /></a>
+  <a href="https://github.com/Kyros-494/kyros-ai/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-ff4a00.svg" alt="License" /></a>
   <a href="https://github.com/Kyros-494/kyros-ai/stargazers"><img src="https://img.shields.io/github/stars/Kyros-494/kyros-ai?style=social" alt="GitHub Stars" /></a>
 </p>
 
@@ -50,9 +50,9 @@ This approach is **fragile, insecure, and doesn't scale**.
 Kyros provides a **complete memory system** in a single SDK:
 
 ```python
-import kyros
+from kyros import KyrosClient
 
-client = kyros.Client(api_key="mk_live_default_dev_key_123456")
+client = KyrosClient(api_key="mk_live_default_dev_key_123456")
 
 # Store a memory
 client.remember("agent-1", "User prefers Python for backend development")
@@ -125,6 +125,19 @@ Compatible with any LLM provider:
 - Open source models (Llama, Mistral)
 - Custom models
 
+### Built-in Model Context Protocol (MCP)
+
+Kyros exposes a native Model Context Protocol (MCP) server:
+- Connects directly to Agentic IDEs (Cursor, Windsurf, Cline) with a single command
+- Exposes semantic memory recall, episode storage, and fact recording as local tools
+
+### Tenant, Project & Key Management
+
+Designed for production environments, multi-tenant SaaS platforms, and enterprise control:
+- **Dynamic API Key Provisioning**: Programmatically rotate, activate, and deactivate credentials
+- **Logical Namespaces**: Isolate memories at the project, tenant, or agent levels dynamically
+- **Flexible Embedding Routing**: Overwrite embedding models per request using the `X-Embedding-Model` header (with auto-padding for alignment with underlying database dimensions)
+
 ---
 
 ## Quick Start
@@ -149,9 +162,21 @@ docker compose up -d
 # Server runs at http://localhost:8000
 ```
 
-#### Option 2: Cloud Hosted
+#### Option 2: Cloud Hosted (Sandbox)
 
-Coming soon!!!
+Connect instantly to the managed sandbox by configuring the client with the sandbox flag:
+```python
+from kyros import KyrosClient
+
+client = KyrosClient(use_sandbox=True)
+```
+
+#### Option 3: Model Context Protocol (MCP) Server
+
+For local Agentic IDEs (Cursor, Cline, Windsurf), run the built-in MCP server:
+```bash
+kyros mcp start
+```
 
 ### SDK Installation
 
@@ -162,18 +187,18 @@ pip install kyros-sdk
 
 **TypeScript:**
 ```bash
-npm install @kyros/sdk
+npm install @kyros.494/sdk
 ```
 
 ### Basic Usage
 
 **Python:**
 ```python
-import kyros
+from kyros import KyrosClient
 
 # Initialize client
-client = kyros.Client(
-    base_url="http://localhost:8000",  # or https://api.kyros.ai
+client = KyrosClient(
+    base_url="http://localhost:8000",
     api_key="mk_live_default_dev_key_123456"
 )
 
@@ -212,11 +237,11 @@ for memory in results.results:
 
 **TypeScript:**
 ```typescript
-import { KyrosClient } from '@kyros/sdk';
+import { KyrosClient } from '@kyros.494/sdk';
 
 // Initialize client
 const client = new KyrosClient({
-  baseUrl: 'http://localhost:8000',  // or https://api.kyros.ai
+  baseUrl: 'http://localhost:8000',
   apiKey: 'mk_live_default_dev_key_123456'
 });
 
@@ -245,14 +270,13 @@ results.results.forEach(memory => {
 ### LangChain Integration
 
 ```python
-from langchain.memory import KyrosMemory
+from kyros.integrations.langchain import KyrosChatMemory
 from langchain.chains import ConversationChain
 from langchain.llms import OpenAI
 
-# Initialize Kyros memory
-memory = KyrosMemory(
-    agent_id="chatbot-1",
-    api_key="mk_live_default_dev_key_123456"
+# Initialize Kyros memory (api_key and base_url are resolved from environment variables if omitted)
+memory = KyrosChatMemory(
+    agent_id="chatbot-1"
 )
 
 # Create conversation chain
@@ -265,16 +289,16 @@ conversation = ConversationChain(
 response = conversation.predict(input="My name is Alice")
 # Memory automatically stored
 
-response = conversation.predict(input="What's my name?")
+# response = conversation.predict(input="What's my name?")
 # → "Your name is Alice"
 ```
 
 ### Multi-Agent System
 
 ```python
-import kyros
+from kyros import KyrosClient
 
-client = kyros.Client(api_key="mk_live_default_dev_key_123456")
+client = KyrosClient(api_key="mk_live_default_dev_key_123456")
 
 # Agent 1: Research agent
 client.remember("researcher", "Found 3 relevant papers on neural networks")
@@ -408,11 +432,11 @@ Kyros uses an **Open Core** licensing model:
 - **Enterprise Modules**: Commercial License - [Contact us](mailto:kyros.494@gmail.com)
 
 This means you can:
-- ✅ Use Kyros for free in commercial projects
-- ✅ Self-host on your own infrastructure
-- ✅ Modify the source code
-- ✅ Distribute your modifications
-- ❌ Use the "Kyros" trademark without permission
+- [Allowed] Use Kyros for free in commercial projects
+- [Allowed] Self-host on your own infrastructure
+- [Allowed] Modify the source code
+- [Allowed] Distribute your modifications
+- [Prohibited] Use the "Kyros" trademark without permission
 
 See [LICENSE](./LICENSE) and [LICENSE-MIT](./LICENSE-MIT) for full terms.
 
@@ -447,7 +471,7 @@ Special thanks to all our [contributors](https://github.com/Kyros-494/kyros-ai/g
 
 <div align="center">
   <p>
-    <strong>Built with ❤️ by the Kyros team</strong>
+    <strong>Built by the Kyros team</strong>
   </p>
   <p>
     <a href="https://kyros.ai">Website</a> •
