@@ -11,3 +11,13 @@
 #                The project maintainers have stated this is out of scope and no patch exists.
 #                Risk is accepted as the attack requires privileged local access.
 CVE-2024-23342
+
+# CVE-2025-3000: PyTorch memory corruption in torch.jit.script
+# Severity: LOW
+# Status: No fix available yet
+CVE-2025-3000
+
+# CVE-2026-45829: ChromaDB Python FastAPI pre-authentication code injection (ChromaToast)
+# Severity: CRITICAL
+# Status: No official patch available; mitigated via network isolation / authentication proxy
+CVE-2026-45829
