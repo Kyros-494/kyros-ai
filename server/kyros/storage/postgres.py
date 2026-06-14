@@ -145,13 +145,14 @@ async def bootstrap_default_tenant(api_key: str) -> None:
     Uses a stable tenant ID to make local development and SDK integrations reproducible.
     """
     import hashlib
+    import hmac
     import uuid
 
     if not api_key:
         logger.info("No default API key set. Skipping default tenant auto-bootstrap.")
         return
 
-    key_hash = hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    key_hash = hmac.new(b"kyros-api-key-pepper", api_key.encode("utf-8"), hashlib.sha256).hexdigest()
     safe_prefix = api_key[:16] + "..." if len(api_key) > 16 else api_key[:8] + "..."
     logger.info("Checking for default tenant bootstrap...", key_prefix=safe_prefix)
 

@@ -41,7 +41,7 @@ async def wait_for_background_tasks(timeout: float = 300.0) -> None:
 
     logger.info("Waiting for all background tasks to complete...", count=len(_background_tasks))
     print(f"      [SYSTEM] Waiting for {len(_background_tasks)} intelligence tasks to complete...")
-    
+
     # We use a loop because tasks might spawn more tasks
     start_time = asyncio.get_event_loop().time()
     while _background_tasks:
@@ -49,7 +49,7 @@ async def wait_for_background_tasks(timeout: float = 300.0) -> None:
             logger.warning("Timeout waiting for background tasks", count=len(_background_tasks))
             print(f"      [SYSTEM] WARNING: Timeout waiting for {len(_background_tasks)} tasks")
             break
-            
+
         pending = list(_background_tasks)
         await asyncio.gather(*pending, return_exceptions=True)
         # Small sleep to allow any new tasks spawned by done_callbacks to register
@@ -154,6 +154,9 @@ app = FastAPI(
     redoc_url="/redoc" if settings.environment != "production" else None,
     lifespan=lifespan,
 )
+app.state.create_background_task = create_background_task
+
+
 
 
 # ─── Global exception handlers ─────────────────
@@ -233,6 +236,7 @@ app.include_router(trust.router, prefix="/v1/trust", tags=["Trust"])
 
 # ─── Dashboard Static Files ────────────────────
 import os
+
 from fastapi.responses import HTMLResponse
 
 dashboard_dir = os.path.join(os.path.dirname(__file__), "dashboard")
@@ -245,7 +249,7 @@ os.makedirs(dashboard_dir, exist_ok=True)
 async def serve_dashboard():
     """Serve dashboard with no-cache headers so edits are always visible."""
     html_path = os.path.join(dashboard_dir, "index.html")
-    with open(html_path, "r", encoding="utf-8") as f:
+    with open(html_path, encoding="utf-8") as f:
         content = f.read()
     return HTMLResponse(
         content=content,
