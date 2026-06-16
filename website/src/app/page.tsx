@@ -51,15 +51,10 @@ export default function Home() {
     { name: "Propagate beliefs", desc: "Resolve graph contradictions" },
   ];
 
-<<<<<<< Updated upstream
-=======
-  // Code Tab state
-  const [activeCodeTab, setActiveCodeTab] = useState<"python" | "typescript" | "docker">("python");
+
 
   // Architecture hover state
   const [hoveredArchNode, setHoveredArchNode] = useState<string | null>(null);
-
->>>>>>> Stashed changes
   // Handle Episodic Add
   const handleAddEpisodic = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +128,6 @@ export default function Home() {
   };
 
   return (
-<<<<<<< Updated upstream
     <div className="relative w-full min-h-full bg-zinc-950 text-zinc-100 bg-grid-pattern pb-24">
       {/* Background glow effects */}
       <div className="absolute top-0 left-1/4 w-[50%] h-[35%] rounded-full bg-cyan-500/10 blur-3xl opacity-35 pointer-events-none animate-pulse-glow" />
@@ -153,41 +147,6 @@ export default function Home() {
 
         <p className="mt-8 max-w-2xl text-base sm:text-lg text-zinc-400 leading-relaxed font-normal">
           Provide your agents with biological-inspired memory structures: Episodic log streams, semantic graphs, and procedural workflows. Audited with cryptographic integrity and structured with natural temporal decay.
-=======
-    <div className="flex flex-col min-h-full bg-black text-slate-100 font-sans selection:bg-blue-500/30">
-      
-      {/* Decorative Grid Overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0c0c0e_1px,transparent_1px),linear-gradient(to_bottom,#0c0c0e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
-
-      {/* Hero Section */}
-      <header className="relative max-w-4xl mx-auto px-6 pt-32 pb-20 text-center flex flex-col items-center z-10">
-        {/* Logo Container */}
-        <div className="mb-8 flex justify-center">
-          <Image
-            src="/kyros-logo.png"
-            alt="Kyros Logo"
-            width={72}
-            height={72}
-            className="object-contain"
-          />
-        </div>
-
-        {/* Brand Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-950/20 text-xs font-semibold text-blue-400 font-mono mb-8 backdrop-blur-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-          Kyros Persistent Memory Engine
-        </div>
-
-        <h1 className="text-4xl sm:text-7xl font-bold tracking-tight text-white leading-tight font-sans">
-          Give AI Agents
-          <span className="block mt-2 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 bg-clip-text text-transparent">
-            Persistent Memory
-          </span>
-        </h1>
-
-        <p className="mt-8 max-w-2xl text-lg text-slate-400 leading-relaxed font-sans">
-          An open-source, biologically-inspired memory operating system. Partition agent state across episodic logs, semantic facts, and procedural workflows with cryptographic integrity audits and natural decay parameters.
->>>>>>> Stashed changes
         </p>
 
         <div className="mt-12 flex flex-col sm:flex-row gap-4 items-center w-full sm:w-auto">
@@ -201,42 +160,26 @@ export default function Home() {
             href="https://github.com/Kyros-494/kyros-ai"
             target="_blank"
             rel="noopener noreferrer"
-<<<<<<< Updated upstream
             className="px-6 py-3 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-medium text-sm tracking-wide transition-all shadow-[0_4px_20px_rgba(6,182,212,0.25)] hover:scale-[1.02]"
-=======
-            className="w-full sm:w-auto px-8 py-4 rounded border border-slate-800 text-slate-300 font-medium bg-slate-900/60 hover:bg-slate-900 transition-colors text-center"
->>>>>>> Stashed changes
           >
             GitHub Repository
           </a>
-<<<<<<< Updated upstream
           <Link
             href="/docs"
             className="px-6 py-3 rounded-full border border-zinc-800 text-zinc-300 font-medium text-sm bg-zinc-900/50 hover:bg-zinc-900 transition-colors backdrop-blur-sm"
           >
             View Documentation
           </Link>
-=======
->>>>>>> Stashed changes
         </div>
       </header>
 
       {/* Capabilities Stats Grid */}
-<<<<<<< Updated upstream
       <section className="relative max-w-6xl mx-auto px-6 py-8 mb-20">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { value: "3 Modules", label: "Episodic, Semantic, Procedural" },
             { value: "0-Config", label: "Auto-Migration Startup" },
             { value: "Apache 2.0", label: "Permissive Open Source Core" },
-=======
-      <section className="relative border-y border-slate-850 bg-slate-900/20 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {[
-            { value: "3 Modules", label: "Episodic, Semantic, Procedural" },
-            { value: "0-Config", label: "Auto-Migration Startup" },
-            { value: "Apache 2.0", label: "Permissive Open Source" },
->>>>>>> Stashed changes
             { value: "Python & TS", label: "Native Client SDKs" },
           ].map((stat) => (
             <div key={stat.label} className="p-6 rounded-2xl border border-zinc-900 bg-zinc-900/20 backdrop-blur-sm flex flex-col justify-center">
@@ -396,7 +339,6 @@ export default function Home() {
       </section>
 
       {/* Interactive Simulator Section */}
-<<<<<<< Updated upstream
       <section className="max-w-6xl mx-auto px-6 py-16 w-full relative">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
@@ -410,21 +352,6 @@ export default function Home() {
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           {/* Playground Left Panel - Tabs & Settings */}
           <div className="lg:col-span-4 space-y-4">
-=======
-      <section className="relative max-w-5xl mx-auto px-6 py-12 w-full z-10 border-t border-slate-850">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-white tracking-tight">
-            Interactive Memory Playground
-          </h2>
-          <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-            Interact with the client-side simulator to see how Kyros parses, secures, decays, and propagates state in real time. Or view the full sandbox on the <Link href="/simulation" className="text-blue-400 hover:underline">Simulation Page</Link>.
-          </p>
-        </div>
-
-        <div className="border border-slate-850 rounded-xl bg-slate-900/30 overflow-hidden shadow-xl">
-          {/* Playground Tabs */}
-          <div className="flex border-b border-slate-850 bg-slate-900/60 text-sm">
->>>>>>> Stashed changes
             {[
               { id: "episodic", label: "Episodic Logger", desc: "Sequential log stream of conversations, actions, and observations with cryptographic hashes." },
               { id: "semantic", label: "Semantic Graph", desc: "Triples database representing facts and relationships. Features graph-based belief updates." },
@@ -435,13 +362,8 @@ export default function Home() {
                 onClick={() => setActivePlaygroundTab(tab.id as any)}
                 className={`w-full p-5 rounded-2xl text-left transition-all border ${
                   activePlaygroundTab === tab.id
-<<<<<<< Updated upstream
                     ? "bg-zinc-900/60 border-cyan-500/30 shadow-lg shadow-cyan-950/20"
                     : "bg-zinc-900/10 border-zinc-900 hover:border-zinc-850 hover:bg-zinc-900/20"
-=======
-                    ? "text-blue-400 bg-black border-b-2 border-blue-500"
-                    : "text-slate-400 hover:text-slate-200"
->>>>>>> Stashed changes
                 }`}
               >
                 <h3 className={`text-sm font-semibold mb-1 transition-colors ${activePlaygroundTab === tab.id ? "text-cyan-400" : "text-white"}`}>
@@ -452,14 +374,9 @@ export default function Home() {
             ))}
           </div>
 
-<<<<<<< Updated upstream
           {/* Playground Right Panel - Interactive UI */}
           <div className="lg:col-span-8 p-6 rounded-2xl border border-zinc-900 bg-zinc-900/20 backdrop-blur-sm min-h-[420px] flex flex-col justify-between">
             {/* Episodic Logger UI */}
-=======
-          <div className="p-6 bg-black min-h-[350px]">
-            {/* Episodic Simulator */}
->>>>>>> Stashed changes
             {activePlaygroundTab === "episodic" && (
               <div className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-4">
@@ -501,60 +418,21 @@ export default function Home() {
                     type="text"
                     value={episodicInput}
                     onChange={(e) => setEpisodicInput(e.target.value)}
-<<<<<<< Updated upstream
                     placeholder="Type raw agent experiences (e.g. 'User wants Python deployment')"
                     className="flex-1 px-4 py-2.5 rounded-lg bg-zinc-950 border border-zinc-900 text-zinc-200 placeholder-zinc-650 focus:outline-none focus:border-cyan-500 text-xs transition-colors"
                   />
                   <button
                     type="submit"
                     className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold text-xs transition-colors shrink-0"
-=======
-                    placeholder="Enter raw event (e.g. 'User prefers strict typing.')"
-                    className="flex-1 px-4 py-3 rounded bg-slate-900 border border-slate-800 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 text-sm"
-                  />
-                  <button
-                    type="submit"
-                    className="px-5 py-3 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium text-sm transition-colors"
->>>>>>> Stashed changes
                   >
                     Commit Experience
                   </button>
                 </form>
-<<<<<<< Updated upstream
-=======
-
-                <div className="space-y-3">
-                  <span className="text-xs font-mono uppercase tracking-wider text-slate-500 block">
-                    Episodic Logs (Tamper-evident, hashed sequence)
-                  </span>
-                  {episodicMemories.map((mem) => (
-                    <div
-                      key={mem.id}
-                      className="p-4 rounded border border-slate-850 bg-slate-900/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm hover:border-slate-800 transition-colors"
-                    >
-                      <div className="space-y-1.5 flex-1">
-                        <p className="text-slate-200">{mem.content}</p>
-                        <div className="flex flex-wrap gap-4 text-xs font-mono text-slate-500">
-                          <span>Stored: {mem.timestamp}</span>
-                          <span className="text-blue-400/80 font-mono">Hash: {mem.hash.substring(0, 16)}...</span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="text-xs font-mono text-slate-400">Decay Weight</span>
-                        <span className="text-lg font-bold text-emerald-400 font-mono">
-                          {mem.decay}%
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
->>>>>>> Stashed changes
               </div>
             )}
 
             {/* Semantic Graph UI */}
             {activePlaygroundTab === "semantic" && (
-<<<<<<< Updated upstream
               <div className="space-y-6 flex-1 flex flex-col justify-between">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
@@ -566,25 +444,6 @@ export default function Home() {
                         onClick={handleTriggerConflict}
                         disabled={conflictTriggered}
                         className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 disabled:opacity-50 text-zinc-300 font-semibold text-[10px] transition-colors"
-=======
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-mono uppercase tracking-wider text-slate-500">
-                    Semantic Facts Database
-                  </span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleTriggerConflict}
-                      disabled={conflictTriggered}
-                      className="px-4 py-2 rounded bg-slate-900 hover:bg-slate-850 disabled:opacity-50 text-slate-300 font-medium text-xs transition-colors border border-slate-800"
-                    >
-                      Simulate Identity Conflict
-                    </button>
-                    {conflictTriggered && (
-                      <button
-                        onClick={handleResetSemantic}
-                        className="px-4 py-2 rounded bg-slate-900 border border-slate-800 hover:bg-slate-850 text-slate-400 font-medium text-xs transition-colors"
->>>>>>> Stashed changes
                       >
                         Trigger Identity Conflict
                       </button>
@@ -649,63 +508,9 @@ export default function Home() {
                   </div>
                 </div>
 
-<<<<<<< Updated upstream
                 {conflictTriggered && (
                   <div className="p-4 rounded-xl border border-rose-950/40 bg-rose-950/5 text-[10px] text-rose-300 font-mono leading-relaxed animate-fade-in">
                     [Belief Propagation Node]: Conflict resolved. Updated &quot;name&quot; to &quot;Bob&quot; and &quot;prefers_backend&quot; to &quot;Go&quot;. Conflicting Alice statements decayed.
-=======
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-850 text-slate-500 font-mono text-xs">
-                        <th className="py-3 px-4">Subject</th>
-                        <th className="py-3 px-4">Predicate</th>
-                        <th className="py-3 px-4">Object</th>
-                        <th className="py-3 px-4 text-right">Confidence</th>
-                        <th className="py-3 px-4 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {semanticFacts.map((fact) => (
-                        <tr
-                          key={fact.id}
-                          className={`border-b border-slate-850 transition-colors ${
-                            fact.status === "updated"
-                              ? "bg-emerald-950/20 text-emerald-300"
-                              : fact.status === "decayed"
-                              ? "bg-rose-950/10 text-slate-500"
-                              : "text-slate-300"
-                          }`}
-                        >
-                          <td className="py-3.5 px-4 font-mono text-xs">{fact.subject}</td>
-                          <td className="py-3.5 px-4 font-mono text-xs text-blue-400">{fact.predicate}</td>
-                          <td className="py-3.5 px-4 font-medium">{fact.object}</td>
-                          <td className="py-3.5 px-4 text-right font-mono text-xs">
-                            {(fact.confidence * 100).toFixed(0)}%
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <span
-                              className={`inline-block px-2 py-0.5 rounded text-xs font-mono uppercase tracking-wider ${
-                                fact.status === "updated"
-                                  ? "bg-emerald-500/20 text-emerald-400"
-                                  : fact.status === "decayed"
-                                  ? "bg-rose-500/10 text-rose-400"
-                                  : "bg-slate-900 text-slate-500 border border-slate-800"
-                              }`}
-                            >
-                              {fact.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {conflictTriggered && (
-                  <div className="p-4 rounded border border-slate-800 bg-slate-900/40 text-xs text-slate-400 font-mono leading-relaxed">
-                    [Belief Propagation Engine]: Detected name update to &quot;Bob&quot; and backend language change to &quot;Go&quot;. Conflicting context scores updated. Old facts marked for decay pruning.
->>>>>>> Stashed changes
                   </div>
                 )}
               </div>
@@ -760,58 +565,18 @@ export default function Home() {
                   <button
                     onClick={handleRunProcedure}
                     disabled={runningProcedure}
-<<<<<<< Updated upstream
                     className="px-4 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:opacity-50 text-black font-semibold text-xs transition-all"
-=======
-                    className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-xs transition-colors"
->>>>>>> Stashed changes
                   >
                     {runningProcedure ? "Running workflow..." : "Execute workflow"}
                   </button>
                 </div>
-<<<<<<< Updated upstream
-=======
-
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {procedureSteps.map((step, idx) => {
-                    const isCompleted = idx < currentProcedureStep;
-                    const isActive = idx === currentProcedureStep;
-                    return (
-                      <div
-                        key={step.name}
-                        className={`p-4 rounded border transition-all ${
-                          isActive
-                            ? "border-blue-500 bg-blue-950/20"
-                            : isCompleted
-                            ? "border-emerald-800 bg-emerald-950/5"
-                            : "border-slate-850 bg-slate-900/20"
-                        }`}
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-xs font-mono font-bold text-slate-500">STEP 0{idx + 1}</span>
-                          {isCompleted && (
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          )}
-                          {isActive && (
-                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-                          )}
-                        </div>
-                        <h4 className={`text-sm font-semibold mb-1 ${isActive ? "text-blue-400" : isCompleted ? "text-emerald-400" : "text-slate-300"}`}>
-                          {step.name}
-                        </h4>
-                        <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
-                      </div>
-                    );
-                  })}
-                </div>
->>>>>>> Stashed changes
               </div>
             )}
           </div>
         </div>
       </section>
 
-<<<<<<< Updated upstream
+
       {/* Built-in Model Context Protocol (MCP) Showcase */}
       <section className="max-w-6xl mx-auto px-6 py-16 w-full">
         <div className="grid lg:grid-cols-12 gap-8 items-center">
@@ -1048,10 +813,6 @@ response = engine.chat("Summarize Q3 financial results.")`}</code>
 
       {/* Feature Grid */}
       <section className="max-w-6xl mx-auto px-6 py-24 border-t border-zinc-900/60">
-=======
-      {/* Feature Specification Cards Grid */}
-      <section className="relative max-w-6xl mx-auto px-6 py-24 border-t border-slate-850 z-10">
->>>>>>> Stashed changes
         <h2 className="text-3xl font-bold text-white text-center mb-16 tracking-tight">
           System Specifications & Features
         </h2>
@@ -1114,11 +875,7 @@ response = engine.chat("Summarize Q3 financial results.")`}</code>
           ].map((f) => (
             <div
               key={f.title}
-<<<<<<< Updated upstream
               className="p-6 rounded-2xl border border-zinc-900 bg-zinc-900/10 hover:border-cyan-500/20 hover:bg-zinc-900/20 transition-all duration-300 glow-card"
-=======
-              className="p-6 rounded border border-slate-850 bg-slate-900/10 hover:border-slate-800 hover:bg-slate-900/30 transition-all duration-300"
->>>>>>> Stashed changes
             >
               <div className="mb-4 bg-zinc-900 w-10 h-10 rounded-lg flex items-center justify-center border border-zinc-800">{f.icon}</div>
               <h3 className="font-semibold text-white mb-2 text-base">
@@ -1132,7 +889,6 @@ response = engine.chat("Summarize Q3 financial results.")`}</code>
         </div>
       </section>
 
-<<<<<<< Updated upstream
       {/* Up in 60 seconds / Installation tabs */}
       <section className="max-w-4xl mx-auto px-6 py-16 w-full border-t border-zinc-900/60">
         <h3 className="text-2xl font-bold text-white text-center mb-10 tracking-tight">
@@ -1164,45 +920,6 @@ response = engine.chat("Summarize Q3 financial results.")`}</code>
             {activeCodeTab === "docker" && (
               <pre>
                 <code>{`# Clone the repository
-=======
-      {/* Integration Code Blocks / Tabs */}
-      <section id="quickstart" className="relative border-t border-slate-850 bg-slate-900/10 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-24">
-          <h2 className="text-3xl font-bold text-white text-center mb-4 tracking-tight">
-            Up in 60 Seconds
-          </h2>
-          <p className="text-center text-slate-400 mb-12 max-w-lg mx-auto">
-            Self-host the memory server using Docker or deploy the Python and TypeScript SDK wrapper.
-          </p>
-
-          <div className="border border-slate-850 rounded-lg overflow-hidden bg-slate-900/30 shadow-xl">
-            {/* Code Tabs */}
-            <div className="flex border-b border-slate-850 bg-slate-900/60 px-4">
-              {[
-                { id: "docker", label: "Self-Host (Docker)" },
-                { id: "python", label: "Python SDK" },
-                { id: "typescript", label: "TypeScript SDK" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveCodeTab(tab.id as any)}
-                  className={`py-3.5 px-4 font-mono text-xs font-semibold border-b-2 transition-all ${
-                    activeCodeTab === tab.id
-                      ? "text-blue-400 border-blue-500"
-                      : "text-slate-500 hover:text-slate-300 border-transparent"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Code Content */}
-            <div className="p-6 bg-black/80 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto">
-              {activeCodeTab === "docker" && (
-                <pre>
-                  <code>{`# Clone the repository
->>>>>>> Stashed changes
 git clone https://github.com/Kyros-494/kyros-ai
 cd kyros-ai
 
@@ -1238,15 +955,9 @@ print(results.results[0].content)
               </pre>
             )}
 
-<<<<<<< Updated upstream
             {activeCodeTab === "typescript" && (
               <pre>
                 <code>{`// Install dependencies
-=======
-              {activeCodeTab === "typescript" && (
-                <pre>
-                  <code>{`// Install dependencies
->>>>>>> Stashed changes
 npm install @kyros.494/sdk
 
 // Initialize client
@@ -1259,7 +970,6 @@ const client = new KyrosClient({
 // Store and recall memories
 await client.remember('agent-123', 'User prefers TypeScript and dark mode');
 
-<<<<<<< Updated upstream
 const results = await client.query({
   agentId: 'agent-1',
   query: 'What type guidelines does user follow?',
@@ -1267,12 +977,6 @@ const results = await client.query({
 });`}</code>
               </pre>
             )}
-=======
-const results = await client.recall('agent-123', 'What language does the user prefer?');`}</code>
-                </pre>
-              )}
-            </div>
->>>>>>> Stashed changes
           </div>
         </div>
       </section>

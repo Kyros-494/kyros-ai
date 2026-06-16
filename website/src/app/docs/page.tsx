@@ -442,24 +442,6 @@ docker compose up -d`}
                 <pre className="p-4 bg-black border border-slate-800 rounded font-mono text-xs text-slate-300">
 {`from kyros import KyrosClient
 
-client = KyrosClient(
-    api_key="mk_live_default_dev_key_123456",
-    base_url="http://localhost:8000"
-)
-
-<<<<<<< Updated upstream
-        {activeSection === "typescript" && (
-          <article className="space-y-6">
-            <h1 className="text-3xl font-bold text-white border-b border-slate-800 pb-3">TypeScript SDK Reference</h1>
-            <p className="text-slate-300 text-sm">
-              Add the SDK dependency reference in your <code className="text-blue-400 font-mono">package.json</code>:
-            </p>
-            <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-300">
-{`"@kyros.494/sdk": "file:../kyros-ai/sdks/typescript"`}
-            </pre>
-            <h2 className="text-lg font-bold text-white">Initialization</h2>
-            <pre className="p-4 bg-slate-900 border border-slate-800 rounded font-mono text-xs text-slate-300">
-=======
 # Store memory block
 client.remember("agent-123", "User resides in Amsterdam.")
 
@@ -486,7 +468,6 @@ print(results.results[0].content)`}
 
                 <h2 className="text-lg font-bold text-white mt-6">Basic Client Setup</h2>
                 <pre className="p-4 bg-black border border-slate-800 rounded font-mono text-xs text-slate-300">
->>>>>>> Stashed changes
 {`import { KyrosClient } from '@kyros.494/sdk';
 
 const client = new KyrosClient({
