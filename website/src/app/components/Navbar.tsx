@@ -104,7 +104,6 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 border-b border-zinc-900 bg-zinc-950/70 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
-<<<<<<< Updated upstream
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center group-hover:border-cyan-500/50 transition-all duration-350">
               <Image
@@ -115,17 +114,6 @@ export default function Navbar() {
               />
             </div>
             <span className="text-base font-bold tracking-tight text-white font-sans group-hover:text-cyan-400 transition-colors">
-=======
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image
-              src="/kyros-logo.png"
-              alt="Kyros Logo"
-              width={28}
-              height={28}
-              className="object-contain"
-            />
-            <span className="text-lg font-bold tracking-tight text-white font-sans">
->>>>>>> Stashed changes
               Kyros
             </span>
           </Link>
