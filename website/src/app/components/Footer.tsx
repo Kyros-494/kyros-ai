@@ -105,6 +105,16 @@ export default function Footer() {
           >
             Terms
           </a>
+<<<<<<< Updated upstream
+=======
+          <Link href="/docs" className="hover:text-white transition-colors">
+            Documentation
+          </Link>
+          <Link href="/simulation" className="hover:text-white transition-colors">
+            System Simulator
+          </Link>
+          <span className="text-slate-600">Apache 2.0 License</span>
+>>>>>>> Stashed changes
         </div>
       </div>
     </footer>

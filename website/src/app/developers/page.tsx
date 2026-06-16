@@ -6,7 +6,7 @@ export default function DevelopersPage() {
   const [activeTab, setActiveTab] = useState<"onboarding" | "cli" | "proxy">("onboarding");
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 bg-slate-900 text-slate-100 flex-1 w-full">
+    <div className="max-w-5xl mx-auto px-6 py-12 bg-black text-slate-100 flex-1 w-full">
       <header className="mb-12">
         <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">Developer Center</h1>
         <p className="mt-3 text-slate-400 max-w-xl">

@@ -37,7 +37,7 @@ export default function ArchitecturePage() {
   ];
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 bg-slate-900 text-slate-100 flex-1 w-full space-y-16">
+    <div className="max-w-6xl mx-auto px-6 py-12 bg-black text-slate-100 flex-1 w-full space-y-16">
       
       {/* Header */}
       <header className="space-y-4 max-w-2xl">
@@ -97,7 +97,7 @@ export default function ArchitecturePage() {
             {/* Ingestion Animation Flow */}
             {activeFlow === "store" && (
               <>
-                <circle r="5" fill="#3b82f6">
+                <circle r="5" fill="#ff4a00">
                   <animateMotion dur="2s" repeatCount="indefinite" path="M 120 90 L 220 90 L 340 90 L 440 90 L 560 90 L 660 90" />
                 </circle>
               </>
@@ -107,11 +107,11 @@ export default function ArchitecturePage() {
             {activeFlow === "recall" && (
               <>
                 {/* Data query path */}
-                <circle r="5" fill="#10b981">
+                <circle r="5" fill="#ff916a">
                   <animateMotion dur="1.8s" repeatCount="indefinite" path="M 120 90 L 220 90 L 340 90 L 440 90 L 560 90 L 660 90" />
                 </circle>
                 {/* Returned context path */}
-                <circle r="5" fill="#fbbf24">
+                <circle r="5" fill="#ffdcd0">
                   <animateMotion dur="1.8s" repeatCount="indefinite" path="M 660 90 L 560 90 L 440 90 L 340 90 L 220 90 L 120 90" />
                 </circle>
               </>
