@@ -19,6 +19,72 @@ interface UsecaseDoc {
   category: string;
 }
 
+interface OpenApiEndpoint {
+  tags?: string[];
+  summary?: string;
+  description?: string;
+  parameters?: Array<{
+    name: string;
+    schema?: { type?: string; default?: unknown };
+    required?: boolean;
+    description?: string;
+  }>;
+  requestBody?: {
+    content?: Record<string, {
+      schema?: {
+        $ref?: string;
+      };
+    }>;
+  };
+  responses?: Record<string, {
+    description?: string;
+  }>;
+}
+
+interface OpenApiSchema {
+  properties?: Record<string, {
+    type?: string;
+    default?: unknown;
+    description?: string;
+    $ref?: string;
+  }>;
+  required?: string[];
+}
+
+interface OpenApiSpec {
+  paths?: Record<string, Record<string, OpenApiEndpoint>>;
+  components?: {
+    schemas?: Record<string, OpenApiSchema>;
+  };
+}
+
+const openapi = openapiData as unknown as OpenApiSpec;
+
+// Static Guides
+const guides: Guide[] = [
+  { id: "intro", title: "Introduction", category: "Getting Started" },
+  { id: "quickstart", title: "Quickstart Guide", category: "Getting Started" },
+  { id: "python-sdk", title: "Python SDK Guide", category: "SDKs" },
+  { id: "typescript-sdk", title: "TypeScript SDK Guide", category: "SDKs" },
+  { id: "self-hosting", title: "Self-Hosting", category: "Server" },
+  { id: "llm-integrations", title: "LLM Integrations", category: "Server" },
+];
+
+// Static Usecase Docs
+const usecaseDocs: UsecaseDoc[] = [
+  { id: "coding-companion", title: "Personal Coding Companion", category: "Developer Tools" },
+  { id: "personalized-crm", title: "Personalized CRM Assistant", category: "Enterprise CRM" },
+  { id: "customer-support", title: "Customer Support Agent", category: "Customer Success" },
+  { id: "travel-planner", title: "Travel Planner Agent", category: "Consumer Apps" },
+];
+
+// Helper to dereference schemas
+const getSchemaDetails = (ref: string): OpenApiSchema | null => {
+  if (!ref || !ref.startsWith("#/components/schemas/")) return null;
+  const schemaName = ref.replace("#/components/schemas/", "");
+  return openapi.components?.schemas?.[schemaName] || null;
+};
+
 export default function DocsPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("guides");
   const [selectedGuide, setSelectedGuide] = useState<GuideId>("intro");
@@ -27,30 +93,9 @@ export default function DocsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSnippetTab, setActiveSnippetTab] = useState<"curl" | "python" | "typescript">("curl");
 
-  // Typecast openapiData
-  const openapi = openapiData as any;
-
-  // Static Guides
-  const guides: Guide[] = [
-    { id: "intro", title: "Introduction", category: "Getting Started" },
-    { id: "quickstart", title: "Quickstart Guide", category: "Getting Started" },
-    { id: "python-sdk", title: "Python SDK Guide", category: "SDKs" },
-    { id: "typescript-sdk", title: "TypeScript SDK Guide", category: "SDKs" },
-    { id: "self-hosting", title: "Self-Hosting", category: "Server" },
-    { id: "llm-integrations", title: "LLM Integrations", category: "Server" },
-  ];
-
-  // Static Usecase Docs
-  const usecaseDocs: UsecaseDoc[] = [
-    { id: "coding-companion", title: "Personal Coding Companion", category: "Developer Tools" },
-    { id: "personalized-crm", title: "Personalized CRM Assistant", category: "Enterprise CRM" },
-    { id: "customer-support", title: "Customer Support Agent", category: "Customer Success" },
-    { id: "travel-planner", title: "Travel Planner Agent", category: "Consumer Apps" },
-  ];
-
   // Group endpoints by tags
   const endpoints = useMemo(() => {
-    const list: { path: string; method: string; tag: string; summary: string; spec: any }[] = [];
+    const list: { path: string; method: string; tag: string; summary: string; spec: OpenApiEndpoint }[] = [];
     if (!openapi.paths) return list;
 
     Object.keys(openapi.paths).forEach((path) => {
@@ -74,13 +119,13 @@ export default function DocsPage() {
     return guides.filter((g) =>
       g.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [guides, searchQuery]);
+  }, [searchQuery]);
 
   const filteredUsecases = useMemo(() => {
     return usecaseDocs.filter((u) =>
       u.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [usecaseDocs, searchQuery]);
+  }, [searchQuery]);
 
   const filteredEndpoints = useMemo(() => {
     return endpoints.filter(
@@ -95,13 +140,6 @@ export default function DocsPage() {
   const activeEndpoint = useMemo(() => {
     return endpoints.find((e) => e.path === selectedEndpoint);
   }, [endpoints, selectedEndpoint]);
-
-  // Helper to dereference schemas
-  const getSchemaDetails = (ref: string) => {
-    if (!ref || !ref.startsWith("#/components/schemas/")) return null;
-    const schemaName = ref.replace("#/components/schemas/", "");
-    return openapi.components?.schemas?.[schemaName] || null;
-  };
 
   // Generate Snippets
   const snippets = useMemo(() => {

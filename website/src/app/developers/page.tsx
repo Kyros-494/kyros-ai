@@ -16,14 +16,14 @@ export default function DevelopersPage() {
 
       {/* Tabs */}
       <div className="flex border-b border-slate-800 bg-slate-800/40 rounded-t-lg overflow-hidden text-sm">
-        {[
+        {([
           { id: "onboarding", label: "Local Onboarding & Packaging" },
           { id: "cli", label: "Admin CLI Reference" },
           { id: "proxy", label: "Zero-Code Proxy Mode" },
-        ].map((tab) => (
+        ] as const).map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id)}
             className={`flex-1 py-4 text-center font-medium transition-all ${
               activeTab === tab.id
                 ? "text-blue-400 bg-slate-900 border-b-2 border-blue-500"
