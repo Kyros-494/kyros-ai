@@ -779,7 +779,8 @@ async def get_llm_config(request: Request) -> dict[str, Any]:
     elif settings.anthropic_api_key:
         active_provider = "anthropic"
 
-    allow_mock = os.getenv("KYROS_ALLOW_MOCK_LLM", "false").lower() == "true"
+    # Mock LLM removed as requested
+    allow_mock = False
 
     return {
         "active_provider": active_provider,
@@ -858,14 +859,8 @@ async def configure_llm(request: Request) -> dict[str, str]:
 
     provider = body.get("provider")
     api_key = body.get("api_key")
-    allow_mock = body.get("allow_mock", False)
-
-    if allow_mock:
-        os.environ["KYROS_ALLOW_MOCK_LLM"] = "true"
-        _update_env_file("KYROS_ALLOW_MOCK_LLM", "true")
-    else:
-        os.environ["KYROS_ALLOW_MOCK_LLM"] = "false"
-        _update_env_file("KYROS_ALLOW_MOCK_LLM", "false")
+    # Mock LLM removed as requested
+    allow_mock = False
 
     if not provider or not api_key:
         raise HTTPException(status_code=400, detail="Missing 'provider' or 'api_key'")
@@ -919,7 +914,7 @@ async def configure_llm(request: Request) -> dict[str, str]:
         elif provider == "anthropic":
             settings.anthropic_model = model
 
-    logger.info(f"Dynamically updated LLM key and model in-memory and in .env for {provider} (allow_mock={allow_mock})")
+    logger.info(f"Dynamically updated LLM key and model in-memory and in .env for {provider}")
     return {"status": "success", "message": f"LLM provider {provider} configured dynamically and written to .env."}
 
 
@@ -999,9 +994,7 @@ async def test_llm(request: Request) -> dict[str, Any]:
             old_settings_model = settings.anthropic_model
             settings.anthropic_model = model
 
-    # Disable mock LLM check for validation/testing
-    old_allow_mock = os.environ.get("KYROS_ALLOW_MOCK_LLM")
-    os.environ["KYROS_ALLOW_MOCK_LLM"] = "false"
+    # Mock LLM check removed as requested
 
     try:
         response = await call_llm(
@@ -1034,10 +1027,7 @@ async def test_llm(request: Request) -> dict[str, Any]:
         else:
             os.environ.pop(target_model_env, None)
             
-        if old_allow_mock is not None:
-            os.environ["KYROS_ALLOW_MOCK_LLM"] = old_allow_mock
-        else:
-            os.environ.pop("KYROS_ALLOW_MOCK_LLM", None)
+        pass
             
         # Restore settings
         if provider == "openai":

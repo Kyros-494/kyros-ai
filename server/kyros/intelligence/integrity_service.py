@@ -86,10 +86,9 @@ async def stop_merkle_worker() -> None:
     global _merkle_worker_task
     if _merkle_worker_task and not _merkle_worker_task.done():
         _merkle_worker_task.cancel()
-        try:
+        import contextlib
+        with contextlib.suppress(asyncio.CancelledError):
             await _merkle_worker_task
-        except asyncio.CancelledError:
-            logger.debug("Merkle worker task cancelled successfully")
         _merkle_worker_task = None
 
 

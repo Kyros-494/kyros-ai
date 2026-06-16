@@ -27,4 +27,4 @@ def downgrade() -> None:
     op.drop_column('semantic_memories', 'valid_from')
 
 
-_ = (revision, down_revision, branch_labels, depends_on)
+__all__ = ["revision", "down_revision", "branch_labels", "depends_on", "upgrade", "downgrade"]

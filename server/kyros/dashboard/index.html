@@ -929,6 +929,10 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 5.64a9 9 0 11-12.73 0M12 2v10"/></svg>
           Semantic Graph
         </li>
+        <li class="nav-item" data-pane="entities">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Resolved Entities
+        </li>
         <li class="nav-item" data-pane="causal">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           Causal Reasoning
@@ -1334,6 +1338,36 @@
         </div>
       </div>
 
+      <!-- RESOLVED CANONICAL ENTITIES PANE -->
+      <div id="pane-entities" class="console-pane">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Canonical Profile Entities</div>
+            <button id="refresh-entities-btn" class="btn secondary">Refresh Entities</button>
+          </div>
+          <p class="panel-desc">
+            Unified, resolved identity profile records extracted asynchronously from your conversational streams (e.g. Persons, Concepts, Places, and their merged properties).
+          </p>
+          <div class="table-container">
+            <table id="entities-table">
+              <thead>
+                <tr>
+                  <th>Entity Name</th>
+                  <th>Canonical Name</th>
+                  <th>Extracted Properties & Attributes</th>
+                  <th>Last Resolved At</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="4" style="text-align: center; color: var(--text-secondary);">Select an agent/project to display canonical entities.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- 5. CAUSAL REASONING PANE -->
       <div id="pane-causal" class="console-pane">
         <div class="panel">
@@ -1493,10 +1527,7 @@
                 <span style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Active Model:</span>
                 <span id="active-llm-model-name" style="font-family: monospace; color: var(--text-primary); font-weight: 500;">—</span>
               </div>
-              <div>
-                <span style="color: var(--text-secondary); display: block; margin-bottom: 0.25rem;">Mock LLM Fallback:</span>
-                <span id="active-llm-mock-status" class="badge" style="font-weight: 600;">Disabled</span>
-              </div>
+
             </div>
             
             <div style="margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 0.75rem;">
@@ -1527,7 +1558,7 @@
                 <input type="password" id="llm-api-key" placeholder="Enter API key for the chosen provider" required>
               </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="display: none; align-items: center; gap: 0.5rem;">
               <input type="checkbox" id="llm-allow-mock" style="accent-color: var(--primary);">
               <label for="llm-allow-mock" style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; text-transform: none; letter-spacing: 0;">Allow Mock LLM in case of rate limits</label>
             </div>
@@ -1756,7 +1787,6 @@
   </div>
 
   <script>
-<<<<<<< Updated upstream
     let lastDetailedErrorTime = 0;
 
     // Toast Notification System
@@ -1806,6 +1836,17 @@
                       lower.includes('empty');
       showToast(message, isError ? 'error' : 'success');
     };
+
+    // Helper to escape HTML characters and prevent DOM injection / reinterpretation
+    function escapeHtml(unsafe) {
+      if (unsafe === undefined || unsafe === null) return '';
+      return String(unsafe)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
 
     // Global Fetch Error Interceptor to catch and parse all API and network errors automatically
     const originalFetch = window.fetch;
@@ -1886,21 +1927,6 @@
 
     // Console State Controller
     let apiKey = localStorage.getItem('kyros_api_key') || 'mk_live_default_dev_key_123456';
-=======
-    // Helper to escape HTML characters and prevent DOM injection / reinterpretation
-    function escapeHtml(unsafe) {
-      if (unsafe === undefined || unsafe === null) return '';
-      return String(unsafe)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    // State Variables
-    let apiKey = '';
->>>>>>> Stashed changes
     let activeAgentId = '';
     let activePane = 'overview';
     let activeProject = 'default';
@@ -1915,17 +1941,13 @@
     const consolePanes = document.querySelectorAll('.console-pane');
     const projectSelect = document.getElementById('project-namespace-select');
 
-<<<<<<< Updated upstream
     // Pre-fill key
     if (apiKey) {
       apiKeyInput.value = apiKey;
       saveKeyBtn.textContent = 'Disconnect';
     }
 
-    // Health diagnostics
-=======
     // Platform Health check
->>>>>>> Stashed changes
     async function checkHealth() {
       try {
         const res = await fetch(`${baseUrl}/health/ready`);
@@ -1995,20 +2017,15 @@
         }
         
         li.innerHTML = `
-<<<<<<< Updated upstream
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="display: flex; flex-direction: column; gap: 0.15rem; flex-grow: 1;">
-              <span>${agent.display_name}</span>
-              <span class="agent-item-id">${agent.agent_id}</span>
+              <span>${escapeHtml(agent.display_name)}</span>
+              <span class="agent-item-id">${escapeHtml(agent.agent_id)}</span>
             </div>
             <button class="delete-agent-btn" title="Purge/Delete Project" style="background: transparent; border: none; color: var(--rose-400); cursor: pointer; padding: 0.25rem; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; opacity: 0.5; transition: opacity 0.2s;">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
           </div>
-=======
-          <span>${escapeHtml(agent.display_name)}</span>
-          <span class="agent-item-id">${escapeHtml(agent.agent_id)}</span>
->>>>>>> Stashed changes
         `;
         
         li.addEventListener('click', () => {
@@ -2075,6 +2092,7 @@
           'credentials': 'Tenants & Keys',
           'episodic': 'Episodic Logs',
           'semantic': 'Semantic Graph',
+          'entities': 'Resolved Profile Entities',
           'causal': 'Causal Reasoning',
           'procedural': 'Procedural Workflows',
           'config': 'Proxy & LLM Config',
@@ -2101,6 +2119,8 @@
       } else if (activePane === 'semantic') {
         loadSemanticFacts();
         loadSemanticGraph();
+      } else if (activePane === 'entities') {
+        loadEntities();
       } else if (activePane === 'causal') {
         loadCausalGraph();
       } else if (activePane === 'procedural') {
@@ -2274,11 +2294,7 @@
         
         const freshnessPercent = Math.round((m.freshness ?? 1.0) * 100);
         row.innerHTML = `
-<<<<<<< Updated upstream
-          <td>${displayContent}</td>
-=======
           <td style="max-width: 400px; word-break: break-word;">${escapeHtml(displayContent)}</td>
->>>>>>> Stashed changes
           <td>${roleBadge}</td>
           <td>
             <div class="score-bar-container">
@@ -2286,16 +2302,11 @@
             </div>
             <span>${(m.freshness ?? 1.0).toFixed(2)}</span>
           </td>
-          <td><span style="font-family: var(--font-mono); font-size: 0.75rem;">${m.session_id || 'default'}</span></td>
-          <td style="font-size: 0.75rem; color: var(--text-secondary);">${formattedDate}</td>
+          <td><span style="font-family: var(--font-mono); font-size: 0.75rem;">${escapeHtml(m.session_id || 'default')}</span></td>
+          <td style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(formattedDate)}</td>
           <td>
             <button class="btn danger" style="padding: 0.2rem 0.45rem; font-size: 0.7rem; border-radius: 2px;" onclick="deleteMemory('${m.id}')">Delete</button>
           </td>
-<<<<<<< Updated upstream
-=======
-          <td><span style="font-family: monospace; font-size: 0.85rem;">${escapeHtml(m.session_id || 'default')}</span></td>
-          <td style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(formattedDate)}</td>
->>>>>>> Stashed changes
         `;
         tableBody.appendChild(row);
       });
@@ -2363,15 +2374,9 @@
         
         const confidencePercent = Math.round((m.confidence ?? 1.0) * 100);
         row.innerHTML = `
-<<<<<<< Updated upstream
-          <td style="font-weight: 600; color: var(--cyan-400);">${subject}</td>
-          <td style="font-family: var(--font-mono); color: var(--indigo-400);">${predicate}</td>
-          <td>${object}</td>
-=======
           <td style="font-weight: 600; color: var(--accent-blue);">${escapeHtml(subject)}</td>
           <td style="font-family: monospace; color: var(--accent-purple);">${escapeHtml(predicate)}</td>
           <td>${escapeHtml(object)}</td>
->>>>>>> Stashed changes
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${confidencePercent}%; background: linear-gradient(90deg, var(--emerald-500) 0%, #059669 100%);"></div>
@@ -2426,6 +2431,7 @@
           const nodes = data.nodes || [];
           const edges = data.edges || [];
 
+          // Show / hide empty state
           if (nodes.length === 0) {
             emptyState.style.display = 'flex';
             legend.style.display = 'none';
@@ -2437,214 +2443,130 @@
           legend.style.display = 'flex';
           infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
 
+          // ── D3 Force Simulation ──────────────────────────────
           const container = document.getElementById('graph-canvas-container');
-          const width = container.clientWidth > 100 ? container.clientWidth : 800;
-          const height = container.clientHeight > 100 ? container.clientHeight : 480;
+          const width  = container.clientWidth || 800;
+          const height = container.clientHeight || 480;
 
-          const svg = d3.select(svgEl).attr('viewBox', [0, 0, width, height]);
+          const svg = d3.select(svgEl)
+            .attr('viewBox', [0, 0, width, height])
+            .attr('width', width)
+            .attr('height', height);
+
+          // Zoom behavior
           const g = svg.append('g');
-          const zoom = d3.zoom().scaleExtent([0.3, 3]).on('zoom', (e) => g.attr('transform', e.transform));
+          const zoom = d3.zoom()
+            .scaleExtent([0.3, 4])
+            .on('zoom', (event) => g.attr('transform', event.transform));
           svg.call(zoom);
 
-          document.getElementById('graph-zoom-in').onclick = () => svg.transition().duration(200).call(zoom.scaleBy, 1.3);
-          document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(200).call(zoom.scaleBy, 0.7);
-          document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity);
+          // Zoom controls
+          document.getElementById('graph-zoom-in').onclick  = () => svg.transition().duration(300).call(zoom.scaleBy, 1.4);
+          document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 0.7);
+          document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
 
+          // Arrow marker for edges
+          svg.append('defs').append('marker')
+            .attr('id', 'arrowhead')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 25)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', 'rgba(79,172,254,0.4)');
+
+          // Color scale
+          const colorSubject = '#4facfe';
+          const colorObject  = '#10b981';
+          const nodeColor = d => d.type === 'subject' ? colorSubject : colorObject;
+
+          // Simulation
+          const simulation = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(edges).id(d => d.id).distance(140))
+            .force('charge', d3.forceManyBody().strength(-350))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(40));
+
+          graphSimulation = simulation;
+
+          // Draw edges
           const link = g.append('g')
             .selectAll('line')
             .data(edges)
             .join('line')
-            .attr('class', 'link');
+            .attr('class', 'link')
+            .attr('marker-end', 'url(#arrowhead)')
+            .attr('stroke-opacity', d => 0.2 + (d.relatedness || 0.5) * 0.6);
 
+          // Edge labels (predicates)
+          const edgeLabels = g.append('g')
+            .selectAll('text')
+            .data(edges)
+            .join('text')
+            .attr('class', 'edge-label')
+            .attr('text-anchor', 'middle')
+            .text(d => d.predicate || '');
+
+          // Draw nodes
           const node = g.append('g')
             .selectAll('circle')
             .data(nodes)
             .join('circle')
             .attr('class', 'node-circle')
-            .attr('r', 10)
-            .attr('fill', d => d.type === 'object' ? '#a1a1aa' : '#ff4a00')
-            .on('mouseover', (evt, d) => {
-              tooltip.style.opacity = '1';
-              tooltip.style.display = 'block';
-              tooltip.innerHTML = `<strong>Node:</strong> ${d.label}<br/><strong>Type:</strong> ${d.type || 'unknown'}`;
-            })
-            .on('mousemove', (evt) => {
-              const bounds = container.getBoundingClientRect();
-              tooltip.style.left = `${evt.clientX - bounds.left + 15}px`;
-              tooltip.style.top = `${evt.clientY - bounds.top + 15}px`;
-            })
-            .on('mouseout', () => {
-              tooltip.style.opacity = '0';
-              tooltip.style.display = 'none';
-            })
+            .attr('r', d => 8 + (d.confidence || 0.5) * 10)
+            .attr('fill', nodeColor)
+            .attr('stroke', d => d3.color(nodeColor(d)).darker(0.5))
+            .attr('stroke-width', 2)
+            .attr('opacity', 0.9)
             .call(d3.drag()
-              .on('start', (evt, d) => { if (!evt.active) simulation.alphaTarget(0.2).restart(); d.fx = d.x; d.fy = d.y; })
-              .on('drag', (evt, d) => { d.fx = evt.x; d.fy = evt.y; })
-              .on('end', (evt, d) => { if (!evt.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+              .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+              .on('drag',  (event, d) => { d.fx = event.x; d.fy = event.y; })
+              .on('end',   (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
             );
 
+          // Node labels
           const labels = g.append('g')
             .selectAll('text')
             .data(nodes)
             .join('text')
             .attr('class', 'node-label')
-            .attr('dx', 12)
+            .attr('dx', 14)
             .attr('dy', 4)
-            .text(d => d.label.length > 25 ? d.label.slice(0, 22) + '...' : d.label);
+            .text(d => d.label.length > 20 ? d.label.slice(0, 18) + '…' : d.label);
 
-          const simulation = d3.forceSimulation(nodes)
-            .force('link', d3.forceLink(edges).id(d => d.id).distance(120))
-            .force('charge', d3.forceManyBody().strength(-200))
-            .force('center', d3.forceCenter(width / 2, height / 2));
+          // Tooltip on hover
+          node.on('mouseover', (event, d) => {
+            tooltip.style.opacity = '1';
+            tooltip.innerHTML = `<strong>${escapeHtml(d.label)}</strong><br>Type: ${escapeHtml(d.type)}<br>Confidence: ${(d.confidence || 0).toFixed(2)}`;
+            tooltip.style.left = (event.offsetX + 15) + 'px';
+            tooltip.style.top  = (event.offsetY - 10) + 'px';
+          })
+          .on('mouseout', () => { tooltip.style.opacity = '0'; });
 
-          graphSimulation = simulation;
+          // Pulse animation on nodes
+          node.append('animate')
+            .attr('attributeName', 'opacity')
+            .attr('values', '0.9;0.6;0.9')
+            .attr('dur', '3s')
+            .attr('repeatCount', 'indefinite');
 
+          // Tick
           simulation.on('tick', () => {
-            link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-            node.attr('cx', d => d.x).attr('cy', d => d.y);
-            labels.attr('x', d => d.x).attr('y', d => d.y);
+            link
+              .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+              .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+            edgeLabels
+              .attr('x', d => (d.source.x + d.target.x) / 2)
+              .attr('y', d => (d.source.y + d.target.y) / 2);
+            node
+              .attr('cx', d => d.x).attr('cy', d => d.y);
+            labels
+              .attr('x', d => d.x).attr('y', d => d.y);
           });
         }
-<<<<<<< Updated upstream
-=======
-
-        // Show / hide empty state
-        if (nodes.length === 0) {
-          emptyState.style.display = 'flex';
-          legend.style.display = 'none';
-          infoBadge.textContent = '0 nodes · 0 edges';
-          return;
-        }
-
-        emptyState.style.display = 'none';
-        legend.style.display = 'flex';
-        infoBadge.textContent = `${nodes.length} nodes · ${edges.length} edges`;
-
-        // ── D3 Force Simulation ──────────────────────────────
-        const width  = container.clientWidth;
-        const height = container.clientHeight;
-
-        const svg = d3.select(svgEl)
-          .attr('viewBox', [0, 0, width, height])
-          .attr('width', width)
-          .attr('height', height);
-
-        // Zoom behavior
-        const g = svg.append('g');
-        const zoom = d3.zoom()
-          .scaleExtent([0.3, 4])
-          .on('zoom', (event) => g.attr('transform', event.transform));
-        svg.call(zoom);
-
-        // Zoom controls
-        document.getElementById('graph-zoom-in').onclick  = () => svg.transition().duration(300).call(zoom.scaleBy, 1.4);
-        document.getElementById('graph-zoom-out').onclick = () => svg.transition().duration(300).call(zoom.scaleBy, 0.7);
-        document.getElementById('graph-zoom-reset').onclick = () => svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
-
-        // Arrow marker for edges
-        svg.append('defs').append('marker')
-          .attr('id', 'arrowhead')
-          .attr('viewBox', '0 -5 10 10')
-          .attr('refX', 25)
-          .attr('refY', 0)
-          .attr('markerWidth', 6)
-          .attr('markerHeight', 6)
-          .attr('orient', 'auto')
-          .append('path')
-          .attr('d', 'M0,-5L10,0L0,5')
-          .attr('fill', 'rgba(79,172,254,0.4)');
-
-        // Color scale
-        const colorSubject = '#4facfe';
-        const colorObject  = '#10b981';
-        const nodeColor = d => d.type === 'subject' ? colorSubject : colorObject;
-
-        // Simulation
-        const simulation = d3.forceSimulation(nodes)
-          .force('link', d3.forceLink(edges).id(d => d.id).distance(140))
-          .force('charge', d3.forceManyBody().strength(-350))
-          .force('center', d3.forceCenter(width / 2, height / 2))
-          .force('collision', d3.forceCollide().radius(40));
-
-        graphSimulation = simulation;
-
-        // Draw edges
-        const link = g.append('g')
-          .selectAll('line')
-          .data(edges)
-          .join('line')
-          .attr('class', 'link')
-          .attr('marker-end', 'url(#arrowhead)')
-          .attr('stroke-opacity', d => 0.2 + (d.relatedness || 0.5) * 0.6);
-
-        // Edge labels (predicates)
-        const edgeLabels = g.append('g')
-          .selectAll('text')
-          .data(edges)
-          .join('text')
-          .attr('class', 'edge-label')
-          .attr('text-anchor', 'middle')
-          .text(d => d.predicate || '');
-
-        // Draw nodes
-        const node = g.append('g')
-          .selectAll('circle')
-          .data(nodes)
-          .join('circle')
-          .attr('class', 'node-circle')
-          .attr('r', d => 8 + (d.confidence || 0.5) * 10)
-          .attr('fill', nodeColor)
-          .attr('stroke', d => d3.color(nodeColor(d)).darker(0.5))
-          .attr('stroke-width', 2)
-          .attr('opacity', 0.9)
-          .call(d3.drag()
-            .on('start', (event, d) => { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-            .on('drag',  (event, d) => { d.fx = event.x; d.fy = event.y; })
-            .on('end',   (event, d) => { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
-          );
-
-        // Node labels
-        const labels = g.append('g')
-          .selectAll('text')
-          .data(nodes)
-          .join('text')
-          .attr('class', 'node-label')
-          .attr('dx', 14)
-          .attr('dy', 4)
-          .text(d => d.label.length > 20 ? d.label.slice(0, 18) + '…' : d.label);
-
-        // Tooltip on hover
-        node.on('mouseover', (event, d) => {
-          tooltip.style.opacity = '1';
-          tooltip.innerHTML = `<strong>${escapeHtml(d.label)}</strong><br>Type: ${escapeHtml(d.type)}<br>Confidence: ${(d.confidence || 0).toFixed(2)}`;
-          tooltip.style.left = (event.offsetX + 15) + 'px';
-          tooltip.style.top  = (event.offsetY - 10) + 'px';
-        })
-        .on('mouseout', () => { tooltip.style.opacity = '0'; });
-
-        // Pulse animation on nodes
-        node.append('animate')
-          .attr('attributeName', 'opacity')
-          .attr('values', '0.9;0.6;0.9')
-          .attr('dur', '3s')
-          .attr('repeatCount', 'indefinite');
-
-        // Tick
-        simulation.on('tick', () => {
-          link
-            .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-          edgeLabels
-            .attr('x', d => (d.source.x + d.target.x) / 2)
-            .attr('y', d => (d.source.y + d.target.y) / 2);
-          node
-            .attr('cx', d => d.x).attr('cy', d => d.y);
-          labels
-            .attr('x', d => d.x).attr('y', d => d.y);
-        });
-
->>>>>>> Stashed changes
       } catch (err) {
         console.error('Failed to load semantic graph', err);
       }
@@ -2805,25 +2727,14 @@
         const row = document.createElement('tr');
         let stepsHtml = '';
         if (p.steps && Array.isArray(p.steps)) {
-<<<<<<< Updated upstream
-          stepsHtml = p.steps.map((s, idx) => `<div>${idx + 1}. ${s.action || JSON.stringify(s)}</div>`).join('');
-=======
-          stepsHtml = p.steps.map((s, idx) => `<div>${idx+1}. ${escapeHtml(s.action || JSON.stringify(s))}</div>`).join('');
->>>>>>> Stashed changes
+          stepsHtml = p.steps.map((s, idx) => `<div>${idx + 1}. ${escapeHtml(s.action || JSON.stringify(s))}</div>`).join('');
         }
         const successRatePercent = Math.round((p.success_rate ?? 1.0) * 100);
         row.innerHTML = `
-<<<<<<< Updated upstream
-          <td style="font-weight: 600;">${p.name}</td>
-          <td style="color: var(--text-secondary); font-size: 0.8rem;">${p.description}</td>
-          <td><span class="badge" style="background: rgba(255, 255, 255, 0.05);">${p.task_type || 'custom'}</span></td>
-          <td style="font-size: 0.75rem; font-family: var(--font-mono);">${stepsHtml}</td>
-=======
           <td style="font-weight: 600;">${escapeHtml(p.name)}</td>
-          <td style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(p.description)}</td>
+          <td style="color: var(--text-secondary); font-size: 0.8rem;">${escapeHtml(p.description)}</td>
           <td><span class="badge" style="background: rgba(255, 255, 255, 0.05);">${escapeHtml(p.task_type || 'custom')}</span></td>
-          <td style="font-size: 0.8rem; font-family: monospace;">${stepsHtml}</td>
->>>>>>> Stashed changes
+          <td style="font-size: 0.75rem; font-family: var(--font-mono);">${stepsHtml}</td>
           <td>
             <div class="score-bar-container">
               <div class="score-bar" style="width: ${successRatePercent}%; background: linear-gradient(90deg, var(--cyan-500) 0%, var(--indigo-400) 100%);"></div>
@@ -3108,11 +3019,7 @@
             <span>${(r.freshness ?? 1.0).toFixed(2)}</span>
           </td>
           <td>
-<<<<<<< Updated upstream
-            <button class="btn secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="viewMerkleProof('${r.id}')">Verify</button>
-=======
-            <button class="btn secondary" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="viewMerkleProof('${escapeHtml(r.id)}')">Verify Proof</button>
->>>>>>> Stashed changes
+            <button class="btn secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="viewMerkleProof('${escapeHtml(r.id)}')">Verify Proof</button>
           </td>
         `;
         tableBody.appendChild(row);
@@ -3258,6 +3165,58 @@
     document.getElementById('refresh-graph-btn').onclick = loadSemanticGraph;
     document.getElementById('refresh-causal-graph-btn').onclick = loadCausalGraph;
     document.getElementById('refresh-procedural-btn').onclick = loadProceduralSkills;
+    document.getElementById('refresh-entities-btn').onclick = loadEntities;
+
+    async function loadEntities() {
+      const tableBody = document.querySelector('#entities-table tbody');
+      if (!tableBody) return;
+      tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loading-spinner" style="margin: auto;"></div></td></tr>';
+      try {
+        const res = await fetch(`${baseUrl}/v1/memory/semantic/entities/${encodeURIComponent(activeAgentId)}?limit=100`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          renderEntitiesTable(data.entities);
+        } else {
+          tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--rose-400);">Failed to fetch canonical entities.</td></tr>';
+        }
+      } catch (err) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--rose-400);">Failed to execute entities query.</td></tr>';
+      }
+    }
+
+    function renderEntitiesTable(entities) {
+      const tableBody = document.querySelector('#entities-table tbody');
+      if (!tableBody) return;
+      tableBody.innerHTML = '';
+      if (!entities || entities.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No canonical entities resolved for this agent yet. Ingest some episodic event memories to trigger entity extraction!</td></tr>';
+        return;
+      }
+      entities.forEach(ent => {
+        const row = document.createElement('tr');
+        const updatedDate = ent.updated_at ? new Date(ent.updated_at).toLocaleString() : '—';
+        
+        let propsHtml = '';
+        if (ent.state && typeof ent.state === 'object') {
+          propsHtml = Object.entries(ent.state)
+            .map(([k, v]) => `<div><span style="color: var(--primary); font-weight: 500;">${escapeHtml(k)}</span>: <span style="color: var(--text-secondary);">${escapeHtml(JSON.stringify(v))}</span></div>`)
+            .join('');
+        }
+        if (!propsHtml) {
+          propsHtml = '<span style="color: var(--text-tertiary); font-style: italic;">No properties defined</span>';
+        }
+        
+        row.innerHTML = `
+          <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(ent.name)}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(ent.canonical_name || '—')}</td>
+          <td style="font-size: 0.8rem; line-height: 1.4; max-width: 450px; word-break: break-word;">${propsHtml}</td>
+          <td style="font-size: 0.75rem; color: var(--text-secondary);">${escapeHtml(updatedDate)}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
 
     // Create Agent Modals
     const createAgentModal = document.getElementById('create-agent-modal');
@@ -3304,17 +3263,9 @@
         setOfflineStatus();
         alert('Disconnected.');
       } else {
-<<<<<<< Updated upstream
         if (!val) return alert('Enter a valid key');
         apiKey = val;
         localStorage.setItem('kyros_api_key', val);
-=======
-        // Connect
-        const inputKey = apiKeyInput.value.trim();
-        if (!inputKey) return alert('Enter a valid API key');
-        
-        apiKey = inputKey;
->>>>>>> Stashed changes
         saveKeyBtn.textContent = 'Disconnect';
         const healthy = await checkHealth();
         if (healthy) await fetchAgents();

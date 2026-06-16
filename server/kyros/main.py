@@ -12,11 +12,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
-from kyros.api.v1 import admin, causal, episodic, procedural, search, semantic, smart, trust
 from kyros.config import get_settings
 from kyros.logging import get_logger, setup_logging
 from kyros.middleware.auth import AuthMiddleware
-from kyros.middleware.usage_tracking import UsageTrackingMiddleware
 from kyros.ml.embedder import EmbeddingError, EmbeddingModel
 from kyros.storage.postgres import engine, run_migrations
 from kyros.storage.redis_cache import close_redis, get_redis
@@ -107,6 +105,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         except Exception as e:
             logger.warning("Auto-bootstrap skipped (non-fatal in dev)", error=str(e))
 
+    # Asynchronously ensure local LLM model is pulled in Ollama
+    try:
+        from kyros.ml.models import ensure_local_model_pulled
+        asyncio.create_task(ensure_local_model_pulled())
+    except Exception as e:
+        logger.warning("Failed to start ensure_local_model_pulled background task", error=str(e))
+
     logger.info("Kyros ready")
     yield
 
@@ -192,6 +197,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+from kyros.middleware.usage_tracking import UsageTrackingMiddleware
 app.add_middleware(UsageTrackingMiddleware)
 app.add_middleware(AuthMiddleware)
 
@@ -225,6 +231,8 @@ async def add_request_id(request: Request, call_next: Any) -> Response:
 
 
 # ─── Routes ────────────────────────────────────
+from kyros.api.v1 import admin, causal, episodic, procedural, search, semantic, smart, trust
+
 app.include_router(smart.router, prefix="/v1", tags=["Smart Gateway"])
 app.include_router(episodic.router, prefix="/v1/memory/episodic", tags=["Episodic Memory"])
 app.include_router(semantic.router, prefix="/v1/memory/semantic", tags=["Semantic Memory"])

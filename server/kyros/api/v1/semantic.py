@@ -134,3 +134,63 @@ async def upsert_fact(request: Request, body: StoreFactRequest) -> FactResult:
     except Exception as e:
         logger.error("Unexpected error in upsert_fact", error=str(e))
         raise HTTPException(status_code=500, detail="Internal server error") from e
+
+
+@router.get("/entities/{agent_id}")
+async def get_entities(agent_id: str, request: Request, limit: int = 100) -> dict[str, Any]:
+    """Return the agent's resolved canonical entities and their properties."""
+    import json
+    tenant_id = getattr(request.state, "tenant_id", None)
+    service = get_memory_service(request)
+
+    if limit < 1 or limit > 1000:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 1000")
+
+    try:
+        async with get_db_session_for_tenant(str(tenant_id)) as session:
+            agent_id_internal = await service._resolve_agent(session, tenant_id, agent_id)
+
+            # Retrieve entities for this agent
+            ent_result = await session.execute(
+                text("""
+                SELECT id, name, canonical_name, state, created_at, updated_at
+                FROM entities
+                WHERE agent_id = :agent_id AND deleted_at IS NULL
+                ORDER BY updated_at DESC
+                LIMIT :limit
+                """),
+                {"agent_id": agent_id_internal, "limit": limit},
+            )
+            
+            entities = []
+            for r in ent_result.fetchall():
+                ent_state = r.state
+                if isinstance(ent_state, str):
+                    try:
+                        ent_state = json.loads(ent_state)
+                    except Exception:
+                        ent_state = {}
+                elif ent_state is None:
+                    ent_state = {}
+                
+                entities.append(
+                    {
+                        "id": str(r.id),
+                        "name": r.name,
+                        "canonical_name": r.canonical_name,
+                        "state": ent_state,
+                        "created_at": r.created_at.isoformat() if r.created_at else None,
+                        "updated_at": r.updated_at.isoformat() if r.updated_at else None,
+                    }
+                )
+
+        return {"agent_id": agent_id, "entities": entities}
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except SQLAlchemyError as e:
+        logger.error("DB error in get_entities", agent_id=agent_id, error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+    except Exception as e:
+        logger.error("Unexpected error in get_entities", agent_id=agent_id, error=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
