@@ -68,8 +68,8 @@ class CrossEncoderReranker:
                 candidate.relevance_score = round(norm_score, 4)
                 try:
                     candidate.hybrid_score = candidate.relevance_score
-                except Exception:
-                    logger.debug("Candidate object does not support hybrid_score assignment")
+                except AttributeError as e:
+                    logger.debug("Candidate object does not support hybrid_score assignment", error=str(e))
                 scored_candidates.append(candidate)
 
             # Sort descending by the new relevance score

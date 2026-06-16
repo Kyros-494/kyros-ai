@@ -32,31 +32,37 @@ _LLM_MIN_DELAY = 2.0
 # Persistent counter for benchmark tracking
 _STATS_FILE = "benchmark_stats.json"
 
+
 def _load_stats() -> int:
     if os.path.exists(_STATS_FILE):
         try:
             with open(_STATS_FILE) as f:
                 data = json.load(f)
                 return data.get("total_llm_calls", 0)
-        except Exception:
+        except Exception as e:
+            logger.debug("Failed to load LLM call stats", error=str(e))
             return 0
     return 0
+
 
 def _save_stats(count: int) -> None:
     try:
         with open(_STATS_FILE, "w") as f:
             json.dump({"total_llm_calls": count, "last_updated": time.time()}, f)
-    except Exception:
-        logger.debug("Failed to save LLM call stats")
+    except Exception as e:
+        logger.debug("Failed to save LLM call stats", error=str(e))
+
 
 _global_llm_call_count = _load_stats()
 
 # Global callback for tracing (used by benchmarks)
 _llm_trace_callback = None
 
+
 def set_llm_trace_callback(callback):
     global _llm_trace_callback
     _llm_trace_callback = callback
+
 
 class LLMError(Exception):
     """Raised when an LLM call fails."""
@@ -103,180 +109,7 @@ def get_global_llm_call_count() -> int:
     return _global_llm_call_count
 
 
-def _mock_llm_response(prompt: str, system_prompt: str) -> str:
-    prompt_lower = prompt.lower()
-
-    # 1. Reranker
-    if "rerank" in prompt_lower or "re-ranker" in system_prompt.lower():
-        return "[0, 1, 2, 3, 4, 5]"
-
-    # 2. Entity Extraction
-    if "entity" in prompt_lower or "extraction" in prompt_lower:
-        text_content = ""
-        if "input text:" in prompt_lower:
-            parts = prompt.split("Input Text:")
-            if len(parts) > 1:
-                text_content = parts[1].strip()
-        else:
-            text_content = prompt
-
-        entities = []
-        import re
-        found_names = set(re.findall(r'\b[A-Z][a-zA-Z0-9]+-[A-Z][a-zA-Z0-9]+(?:-[A-Z][a-zA-Z0-9]+)?\b', text_content))
-        words = re.findall(r'\b[A-Z][a-zA-Z0-9]{2,}\b', text_content)
-        for w in words:
-            if w not in ["The", "And", "For", "With", "But", "This", "That", "From", "Based", "Quality", "Finance", "Risk", "Suez", "Dutch", "Munich", "Stuttgart"]:
-                found_names.add(w)
-
-        for name in found_names:
-            ent_type = "Other"
-            properties = {}
-            name_lower = name.lower()
-            if "port" in name_lower:
-                ent_type = "Place"
-                properties["type"] = "Seaport"
-            elif "warehouse" in name_lower or "center" in name_lower or "terminal" in name_lower or "yard" in name_lower:
-                ent_type = "Place"
-                properties["type"] = "Logistics Hub"
-            elif "plant" in name_lower or "assembly" in name_lower:
-                ent_type = "Place"
-                properties["type"] = "Manufacturing Facility"
-            elif "carrier" in name_lower or "maersk" in name_lower or "dhl" in name_lower or "fedex" in name_lower or "schenker" in name_lower:
-                ent_type = "Org"
-                properties["type"] = "Logistics Provider"
-            elif "po-" in name_lower or "po_2026" in name_lower or "purchase" in name_lower or name.startswith("PO-"):
-                ent_type = "Object"
-                properties["type"] = "Purchase Order"
-            elif "battery" in name_lower or "powercell" in name_lower or "batterytech" in name_lower or "energymax" in name_lower:
-                ent_type = "Org"
-                properties["type"] = "Battery Manufacturer"
-            elif "regulation" in name_lower or "directive" in name_lower or "protocol" in name_lower:
-                ent_type = "Concept"
-                properties["type"] = "Compliance Rule"
-            elif "cargo-" in name_lower or "container" in name_lower or "mrku-" in name_lower:
-                ent_type = "Object"
-                properties["type"] = "Cargo Shipment"
-
-            lines = text_content.split("\n")
-            for line in lines:
-                if name in line:
-                    val_match = re.search(r'(\d+(?:\.\d+)?%|\$\d[\d,.]*|\b\d+\s+units\b|\b\d+\s+days\b|\b\d+°C\b)', line)
-                    if val_match:
-                        properties["value_or_metric"] = val_match.group(1)
-                    status_match = re.search(r'\b(delay|shortage|contingency|audit|inspection|contamination|defect|halted|divert|reroute|normal|passed|completed|paid)\b', line, re.IGNORECASE)
-                    if status_match:
-                        properties["status"] = status_match.group(1).lower()
-
-            entities.append({
-                "name": name,
-                "type": ent_type,
-                "properties": properties
-            })
-
-        if not entities:
-            entities.append({
-                "name": "Supply-Chain-Network",
-                "type": "Concept",
-                "properties": {"status": "active"}
-            })
-
-        return json.dumps(entities, indent=2)
-
-    # 3. Causal Extraction
-    if "causal" in prompt_lower or "causes" in prompt_lower or "motivates" in prompt_lower:
-        import re
-        new_id_match = re.search(r'New Memory \(ID:\s*([a-f0-9\-]+)\)', prompt)
-        new_id = new_id_match.group(1) if new_id_match else "new-id"
-        context_matches = []
-        recent_idx = prompt.find("Recent Context Memories:")
-        if recent_idx != -1:
-            context_text = prompt[recent_idx + len("Recent Context Memories:"):]
-            lines = context_text.splitlines()
-            current_id = None
-            current_content_lines = []
-            for line in lines:
-                line_stripped = line.strip()
-                if line_stripped.startswith("- ID:"):
-                    if current_id and current_content_lines:
-                        context_matches.append((current_id, "\n".join(current_content_lines).strip()))
-                    current_id = line_stripped[len("- ID:"):].strip()
-                    current_content_lines = []
-                elif line_stripped.startswith("Content:"):
-                    if current_id:
-                        current_content_lines.append(line_stripped[len("Content:"):].strip())
-                elif current_id and line_stripped:
-                    if line_stripped.startswith("Extract") or line_stripped.startswith("New Memory") or line_stripped.startswith("Format:"):
-                        break
-                    current_content_lines.append(line_stripped)
-            if current_id and current_content_lines:
-                context_matches.append((current_id, "\n".join(current_content_lines).strip()))
-
-        new_content = ""
-        if "recent context memories:" in prompt_lower:
-            parts = prompt.split("Recent Context Memories:")
-            header_parts = parts[0].split("New Memory (ID:")
-            if len(header_parts) > 1:
-                lines = header_parts[1].split("\n")[1:]
-                new_content = "\n".join(lines).strip()
-
-        edges = []
-        new_content_lower = new_content.lower()
-
-        for cid, ccontent in context_matches:
-            ccontent_lower = ccontent.lower()
-            relation = None
-            desc = ""
-
-            if any(x in new_content_lower for x in ["reroute", "divert", "contingency", "claim", "halt", "cancel"]) and \
-               any(x in ccontent_lower for x in ["delay", "shortage", "storm", "contamination", "defect", "congestion", "fail"]):
-                relation = "causes"
-                desc = f"The disruption in {cid[:8]} required recovery action in {new_id[:8]}."
-            elif any(x in new_content_lower for x in ["approve", "select", "sourcing", "place", "order", "increase", "pay"]) and \
-                 any(x in ccontent_lower for x in ["audit", "score", "pass", "yield", "milestone", "conclude", "reconciliation"]):
-                relation = "motivates"
-                desc = f"The update in {cid[:8]} motivated the sourcing/financial decision in {new_id[:8]}."
-            elif any(x in new_content_lower for x in ["resume", "clear", "complete", "land", "deliver"]) and \
-                 any(x in ccontent_lower for x in ["finish", "inspect", "repair", "resolve", "confirm"]):
-                relation = "causes"
-                desc = f"The resolution of bottleneck in {cid[:8]} enabled continuation in {new_id[:8]}."
-            elif len(set(new_content_lower.split()) & set(ccontent_lower.split())) >= 3:
-                relation = "motivates"
-                desc = f"Shared context links {cid[:8]} and {new_id[:8]}."
-
-            if relation:
-                edges.append({
-                    "from_memory_id": cid,
-                    "to_memory_id": new_id,
-                    "relation": relation,
-                    "confidence": 0.85,
-                    "description": desc
-                })
-
-        if not edges and context_matches:
-            last_cid = context_matches[-1][0]
-            edges.append({
-                "from_memory_id": last_cid,
-                "to_memory_id": new_id,
-                "relation": "motivates",
-                "confidence": 0.70,
-                "description": "General sequence of logistics operations."
-            })
-
-        return json.dumps(edges, indent=2)
-
-    # 4. Summarization
-    if "summarize" in prompt_lower or "summarisation" in prompt_lower or "summary" in prompt_lower:
-        return ("The supply chain dispatch operations tracked a procurement and transit cycle of battery cells. "
-                "The team resolved manufacturing issues at BatteryTech-Shenzhen and coordinated emergency additional ordering "
-                "and shipping via air freight with PowerCell-Seoul. Shipments were tracked from Shanghai/Incheon to Rotterdam/Antwerp "
-                "with temperature controls. Munich and Stuttgart assembly plants successfully received the inventory, "
-                "resolving quality defects through structured formal claims and insurance compensation.")
-
-    if "score" in prompt_lower and "reason" in prompt_lower:
-        return '{"score": 0.95, "reason": "The memory matches the queried event history exactly."}'
-
-    return "Operational fact recorded and verified by the Kyros agent."
-
+# Mock LLM removed as requested
 
 async def call_llm(
     prompt: str,
@@ -284,106 +117,111 @@ async def call_llm(
     temperature: float = 0.0,
     provider: str | None = None,
     timeout: float = 60.0,
+    response_schema: dict | None = None,
 ) -> str:
-    """Universal LLM caller with integrated rate limiting, persistent retries, and local mock fallback."""
-    global _last_llm_call_time, _global_llm_call_count
+    """Universal LLM caller routing directly to the offline local Ollama model (cloud logic commented out as requested)."""
+    return await call_local_llm(prompt, system_prompt, temperature, timeout, response_schema)
 
-    async with _llm_execution_lock:
-        attempt = 0
-        while True:
-            attempt += 1
-
-            # 1. Pre-emptive Rate Limiting (Internal)
-            async with _llm_rate_limit_lock:
-                now = time.monotonic()
-                elapsed = now - _last_llm_call_time
-                if elapsed < _LLM_MIN_DELAY:
-                    delay = _LLM_MIN_DELAY - elapsed
-                    logger.info(f"Rate limiting LLM call, sleeping for {delay:.2f}s")
-                    print(f"      [LLM] Rate limiting LLM call, sleeping for {delay:.2f}s")
-                    if _llm_trace_callback:
-                        _llm_trace_callback("LLM_RATE_LIMIT", f"Sleeping for {delay:.2f}s", {"delay": delay})
-                    await asyncio.sleep(delay)
-
-                if attempt == 1: # Only count unique calls
-                    _global_llm_call_count += 1
-                    _save_stats(_global_llm_call_count)
-
-            settings = get_settings()
-
-            active_provider = provider
-            if not active_provider:
-                if settings.mistral_api_key:
-                    active_provider = "mistral"
-                elif settings.gemini_api_key:
-                    active_provider = "gemini"
-                elif settings.openai_api_key:
-                    active_provider = "openai"
-                elif settings.anthropic_api_key:
-                    active_provider = "anthropic"
-                else:
-                    # Fall back to mock if allowed, otherwise raise error
-                    if os.getenv("KYROS_ALLOW_MOCK_LLM", "false").lower() == "true":
-                        print("      [LLM] No API keys configured. Using local Mock LLM fallback...")
-                        res = _mock_llm_response(prompt, system_prompt)
-                        _last_llm_call_time = time.monotonic()
-                        return res
-                    else:
-                        raise LLMError(
-                            "No LLM API keys configured on the server. Please set OPENAI_API_KEY, "
-                            "GEMINI_API_KEY, or MISTRAL_API_KEY in your .env file and restart the Kyros server container."
-                        )
-
-            if attempt > 1:
-                print(f"      [LLM] Retry attempt #{attempt} for {active_provider}...")
-
-            logger.info(f"--- Calling LLM Provider: {active_provider} ---")
-            print(f"      [LLM] Calling Provider: {active_provider}")
-            if _llm_trace_callback:
-                _llm_trace_callback("LLM_CALL", f"Calling {active_provider} (Attempt {attempt})", {"provider": active_provider, "prompt_preview": prompt[:100]})
-
-            start_time = time.perf_counter()
-            try:
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    if active_provider == "mistral":
-                        res = await _call_mistral(client, prompt, system_prompt, temperature)
-                    elif active_provider == "openai":
-                        res = await _call_openai(client, prompt, system_prompt, temperature)
-                    elif active_provider == "gemini":
-                        res = await _call_gemini(client, prompt, system_prompt)
-                    elif active_provider == "anthropic":
-                        res = await _call_anthropic(client, prompt, system_prompt, temperature)
-                    else:
-                        raise LLMError(f"Unsupported provider: {active_provider!r}")
-
-                    duration = (time.perf_counter() - start_time) * 1000
-                    logger.info(f"--- LLM Response Received ({duration:.2f}ms) ---")
-                    snippet = res.replace('\n', ' ')[:100] + "..." if len(res) > 100 else res.replace('\n', ' ')
-                    print(f"      [LLM] Response Received ({duration:.2f}ms): {snippet}")
-                    if _llm_trace_callback:
-                        _llm_trace_callback("LLM_RESPONSE", f"Received response from {active_provider}", {"duration_ms": duration, "response": res})
-                    _last_llm_call_time = time.monotonic()
-                    return res
-
-            except Exception as e:
-                if os.getenv("KYROS_ALLOW_MOCK_LLM", "false").lower() == "true":
-                    print(f"      [LLM FALLBACK] Exception during call: {str(e)}. Using local Mock LLM...")
-                    res = _mock_llm_response(prompt, system_prompt)
-                    duration = (time.perf_counter() - start_time) * 1000
-                    snippet = res.replace('\n', ' ')[:100] + "..." if len(res) > 100 else res.replace('\n', ' ')
-                    print(f"      [LLM] Response Received (Fallback, {duration:.2f}ms): {snippet}")
-                    if _llm_trace_callback:
-                        _llm_trace_callback("LLM_RESPONSE", "Received mock response", {"duration_ms": duration, "response": res})
-                    _last_llm_call_time = time.monotonic()
-                    return res
-                else:
-                    wait_time = 20
-                    print(f"      [LLM] Call failed, retrying in {wait_time}s (Attempt #{attempt}): {e}")
-                    logger.warning(f"LLM call failed, retrying in {wait_time}s: {e}")
-                    if _llm_trace_callback:
-                        _llm_trace_callback("LLM_RETRY", f"Retrying in {wait_time}s", {"attempt": attempt, "error": str(e)})
-                    await asyncio.sleep(wait_time)
-                    continue
+    # global _last_llm_call_time, _global_llm_call_count
+    # 
+    # async with _llm_execution_lock:
+    #     attempt = 0
+    #     while True:
+    #         attempt += 1
+    # 
+    #         # 1. Pre-emptive Rate Limiting (Internal)
+    #         async with _llm_rate_limit_lock:
+    #             now = time.monotonic()
+    #             elapsed = now - _last_llm_call_time
+    #             if elapsed < _LLM_MIN_DELAY:
+    #                 delay = _LLM_MIN_DELAY - elapsed
+    #                 logger.info(f"Rate limiting LLM call, sleeping for {delay:.2f}s")
+    #                 print(f"      [LLM] Rate limiting LLM call, sleeping for {delay:.2f}s")
+    #                 if _llm_trace_callback:
+    #                     _llm_trace_callback(
+    #                         "LLM_RATE_LIMIT", f"Sleeping for {delay:.2f}s", {"delay": delay}
+    #                     )
+    #                 await asyncio.sleep(delay)
+    # 
+    #             if attempt == 1:  # Only count unique calls
+    #                 _global_llm_call_count += 1
+    #                 _save_stats(_global_llm_call_count)
+    # 
+    #         settings = get_settings()
+    # 
+    #         active_provider = provider
+    #         if not active_provider:
+    #             if settings.mistral_api_key:
+    #                 active_provider = "mistral"
+    #             elif settings.gemini_api_key:
+    #                 active_provider = "gemini"
+    #             elif settings.openai_api_key:
+    #                 active_provider = "openai"
+    #             elif settings.anthropic_api_key:
+    #                 active_provider = "anthropic"
+    #             else:
+    #                 raise LLMError(
+    #                     "No LLM API keys configured on the server. Please set OPENAI_API_KEY, "
+    #                     "GEMINI_API_KEY, or MISTRAL_API_KEY in your .env file and restart the Kyros server container."
+    #                 )
+    # 
+    #         if attempt > 1:
+    #             print(f"      [LLM] Retry attempt #{attempt} for {active_provider}...")
+    # 
+    #         logger.info(f"--- Calling LLM Provider: {active_provider} ---")
+    #         print(f"      [LLM] Calling Provider: {active_provider}")
+    #         if _llm_trace_callback:
+    #             _llm_trace_callback(
+    #                 "LLM_CALL",
+    #                 f"Calling {active_provider} (Attempt {attempt})",
+    #                 {"provider": active_provider, "prompt_preview": prompt[:100]},
+    #             )
+    # 
+    #         start_time = time.perf_counter()
+    #         try:
+    #             async with httpx.AsyncClient(timeout=timeout) as client:
+    #                 if active_provider == "mistral":
+    #                     res = await _call_mistral(client, prompt, system_prompt, temperature)
+    #                 elif active_provider == "openai":
+    #                     res = await _call_openai(client, prompt, system_prompt, temperature)
+    #                 elif active_provider == "gemini":
+    #                     res = await _call_gemini(client, prompt, system_prompt)
+    #                 elif active_provider == "anthropic":
+    #                     res = await _call_anthropic(client, prompt, system_prompt, temperature)
+    #                 else:
+    #                     raise LLMError(f"Unsupported provider: {active_provider!r}")
+    # 
+    #                 duration = (time.perf_counter() - start_time) * 1000
+    #                 logger.info(f"--- LLM Response Received ({duration:.2f}ms) ---")
+    #                 snippet = (
+    #                     res.replace("\n", " ")[:100] + "..."
+    #                     if len(res) > 100
+    #                     else res.replace("\n", " ")
+    #                 )
+    #                 print(f"      [LLM] Response Received ({duration:.2f}ms): {snippet}")
+    #                 if _llm_trace_callback:
+    #                     _llm_trace_callback(
+    #                         "LLM_RESPONSE",
+    #                         f"Received response from {active_provider}",
+    #                         {"duration_ms": duration, "response": res},
+    #                     )
+    #                 _last_llm_call_time = time.monotonic()
+    #                 return res
+    # 
+    #         except Exception as e:
+    #             wait_time = 20
+    #             print(
+    #                 f"      [LLM] Call failed, retrying in {wait_time}s (Attempt #{attempt}): {e}"
+    #             )
+    #             logger.warning(f"LLM call failed, retrying in {wait_time}s: {e}")
+    #             if _llm_trace_callback:
+    #                 _llm_trace_callback(
+    #                     "LLM_RETRY",
+    #                     f"Retrying in {wait_time}s",
+    #                     {"attempt": attempt, "error": str(e)},
+    #                 )
+    #             await asyncio.sleep(wait_time)
+    #             continue
 
 
 async def _call_mistral(
@@ -542,3 +380,106 @@ async def _call_anthropic(
         return data["content"][0]["text"]
     except (KeyError, IndexError) as e:
         raise LLMError(f"Unexpected Anthropic response shape: {e}") from e
+
+
+async def call_local_llm(
+    prompt: str,
+    system_prompt: str = "You are a helpful AI assistant.",
+    temperature: float = 0.1,
+    timeout: float = 90.0,
+    response_schema: dict | None = None,
+) -> str:
+    """Call the local Ollama LLM endpoint."""
+
+
+    settings = get_settings()
+    url = settings.local_llm_url.rstrip("/")
+    model = settings.local_llm_model
+
+    logger.info(f"Calling local LLM model '{model}' at {url}...")
+    print(f"      [LOCAL LLM] Calling model: {model}")
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt},
+        ],
+        "stream": False,
+        "options": {"temperature": temperature},
+    }
+
+    if response_schema:
+        payload["format"] = response_schema
+    else:
+        payload["format"] = "json"
+
+    # Ensure a generous minimum timeout for local generation (slow on consumer hardware/CPU)
+    actual_timeout = max(timeout, 1200.0)
+    start_time = time.perf_counter()
+    try:
+        async with httpx.AsyncClient(timeout=actual_timeout) as client:
+            resp = await client.post(f"{url}/api/chat", json=payload)
+
+            if resp.status_code != 200:
+                raise LLMError(f"Local Ollama returned status {resp.status_code}: {resp.text}")
+
+            data = resp.json()
+            duration = (time.perf_counter() - start_time) * 1000
+            content = data["message"]["content"]
+            snippet = (
+                content.replace("\n", " ")[:100] + "..."
+                if len(content) > 100
+                else content.replace("\n", " ")
+            )
+            print(f"      [LOCAL LLM] Response Received ({duration:.2f}ms): {snippet}")
+            return content
+    except Exception as e:
+        logger.error("Local LLM call failed", error=str(e))
+        raise LLMError(f"Local LLM call failed: {e}") from e
+
+
+async def ensure_local_model_pulled() -> None:
+    """Check if the local LLM model is pulled in Ollama, and pull it if missing."""
+
+
+    settings = get_settings()
+    url = settings.local_llm_url.rstrip("/")
+    model = settings.local_llm_model
+
+    logger.info(f"Checking if local LLM model '{model}' is pulled at {url}...")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            # Check if model is already pulled
+            resp = await client.get(f"{url}/api/tags")
+            if resp.status_code == 200:
+                data = resp.json()
+                models = [m["name"] for m in data.get("models", [])]
+                # Ollama models might have :latest or :3b suffix, so check base or exact match
+                if (
+                    model in models
+                    or f"{model}:latest" in models
+                    or any(m.startswith(model) for m in models)
+                ):
+                    logger.info(f"Local LLM model '{model}' is already available.")
+                    return
+
+                # If not available, trigger pull
+                logger.info(
+                    f"Local LLM model '{model}' not found. Pulling model..."
+                )
+                print(f"      [OLLAMA] Pulling local LLM model '{model}' from {url}...")
+                pull_resp = await client.post(
+                    f"{url}/api/pull",
+                    json={"name": model, "stream": False},
+                    timeout=600.0,  # Allow up to 10 minutes for download
+                )
+                if pull_resp.status_code == 200:
+                    logger.info(f"Successfully pulled local LLM model '{model}'.")
+                    print(f"      [OLLAMA] Successfully pulled '{model}'.")
+                else:
+                    logger.warning(f"Failed to pull local LLM model '{model}': {pull_resp.text}")
+            else:
+                logger.warning(f"Ollama server returned status {resp.status_code}")
+    except Exception as e:
+        logger.warning(f"Could not connect to Ollama server at {url} to check/pull model: {e}")

@@ -14,6 +14,7 @@ try:
     from datetime import UTC
 except ImportError:
     from datetime import timezone
+
     UTC = timezone.utc
 from typing import Any
 from uuid import UUID, uuid4
@@ -21,7 +22,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import text
 
 from kyros.logging import get_logger
-from kyros.ml.models import call_llm
+from kyros.ml.models import call_llm, call_local_llm
 from kyros.storage.postgres import get_db_session
 
 logger = get_logger("kyros.entity_resolver")
@@ -29,9 +30,11 @@ logger = get_logger("kyros.entity_resolver")
 # Global callback for tracing (used by benchmarks)
 _entity_trace_callback = None
 
+
 def set_entity_trace_callback(callback):
     global _entity_trace_callback
     _entity_trace_callback = callback
+
 
 ENTITY_EXTRACTION_PROMPT = """
 You are a domain-agnostic Entity and Knowledge Extraction Engine.
@@ -114,6 +117,37 @@ def merge_properties(existing: Any, new: Any) -> Any:
     return [existing, new]
 
 
+ENTITY_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "entities": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "type": {
+                        "type": "string",
+                        "enum": ["Person", "Org", "Place", "Concept", "Object", "Other"],
+                    },
+                    "properties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "anyOf": [
+                                {"type": "string"},
+                                {"type": "array", "items": {"type": "string"}},
+                            ]
+                        },
+                    },
+                },
+                "required": ["name", "type", "properties"],
+            },
+        }
+    },
+    "required": ["entities"],
+}
+
+
 async def extract_entities(text_content: str) -> list[dict[str, Any]]:
     """Extract named entities and their properties from content using LLM."""
     if not text_content or not text_content.strip():
@@ -121,40 +155,60 @@ async def extract_entities(text_content: str) -> list[dict[str, Any]]:
 
     prompt = ENTITY_EXTRACTION_PROMPT.format(text=text_content)
     try:
-        response_text = await call_llm(prompt, temperature=0.1)
+        # Cloud LLM Call (Commented out as requested)
+        # response_text = await call_llm(prompt, temperature=0.1)
+
+        # Offline Local LLM Call with grammar schema enforcement
+        response_text = await call_local_llm(prompt, temperature=0.1, response_schema=ENTITY_JSON_SCHEMA)
         if not response_text or not response_text.strip():
             logger.warning("Entity extraction returned an empty response")
             return []
 
         cleaned = response_text.strip()
 
-        start_idx = cleaned.find('[')
-        end_idx = cleaned.rfind(']')
+        start_idx = cleaned.find("[")
+        end_idx = cleaned.rfind("]")
         if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
-            cleaned = cleaned[start_idx:end_idx+1]
-        elif cleaned.startswith("```"):
-            # Fallback to the old cleaning method if regex fails but it looks like markdown
-            cleaned = cleaned.split("```", 2)[-1] if cleaned.count("```") >= 2 else cleaned
-            cleaned = cleaned.removeprefix("json").strip().strip("`").strip()
+            cleaned = cleaned[start_idx : end_idx + 1]
+        else:
+            # Look for a single JSON object if no array brackets exist
+            s_idx = cleaned.find("{")
+            e_idx = cleaned.rfind("}")
+            if s_idx != -1 and e_idx != -1 and e_idx > s_idx:
+                cleaned = cleaned[s_idx : e_idx + 1]
+            elif cleaned.startswith("```"):
+                # Fallback to the old cleaning method if regex fails but it looks like markdown
+                cleaned = cleaned.split("```", 2)[-1] if cleaned.count("```") >= 2 else cleaned
+                cleaned = cleaned.removeprefix("json").strip().strip("`").strip()
 
         try:
             entities = json.loads(cleaned)
-            if isinstance(entities, list):
+            if isinstance(entities, dict) and "entities" in entities:
+                return entities["entities"]
+            elif isinstance(entities, list):
                 return entities
+            elif isinstance(entities, dict):
+                return [entities]
             return []
         except json.JSONDecodeError:
             # If standard JSON parsing fails, try to fix common LLM JSON errors (like trailing commas)
             try:
                 # Remove trailing commas in arrays/objects
-                cleaned_fixed = re.sub(r',\s*([\]}])', r'\1', cleaned)
+                cleaned_fixed = re.sub(r",\s*([\]}])", r"\1", cleaned)
                 entities = json.loads(cleaned_fixed)
-                if isinstance(entities, list):
+                if isinstance(entities, dict) and "entities" in entities:
+                    return entities["entities"]
+                elif isinstance(entities, list):
                     return entities
+                elif isinstance(entities, dict):
+                    return [entities]
                 return []
-            except Exception:
-                logger.debug("Failed to parse cleaned_fixed JSON in entity resolver")
+            except Exception as e:
+                logger.debug("Failed to parse cleaned_fixed JSON in entity resolver", error=str(e))
 
-            logger.warning("Entity extraction returned non-JSON response", error_raw=response_text[:200])
+            logger.warning(
+                "Entity extraction returned non-JSON response", error_raw=response_text[:200]
+            )
             return []
 
     except Exception as e:
@@ -228,7 +282,11 @@ async def resolve_and_update_entities(
                     )
                     print(f"      [ENTITY] Resolved and updated: {name} | Properties: {properties}")
                     if _entity_trace_callback:
-                        _entity_trace_callback("ENTITY_UPDATE", f"Updated entity: {name}", {"entity_id": str(entity_id), "properties": properties})
+                        _entity_trace_callback(
+                            "ENTITY_UPDATE",
+                            f"Updated entity: {name}",
+                            {"entity_id": str(entity_id), "properties": properties},
+                        )
                     resolved_entities.append(
                         {
                             "entity_id": str(entity_id),
@@ -262,10 +320,18 @@ async def resolve_and_update_entities(
 
                     if inserted_id:
                         # Successfully inserted new entity
-                        logger.info("Created new canonical entity", entity_id=str(inserted_id), name=name)
-                        print(f"      [ENTITY] Created new entity: {name} | Properties: {properties}")
+                        logger.info(
+                            "Created new canonical entity", entity_id=str(inserted_id), name=name
+                        )
+                        print(
+                            f"      [ENTITY] Created new entity: {name} | Properties: {properties}"
+                        )
                         if _entity_trace_callback:
-                            _entity_trace_callback("ENTITY_CREATE", f"Created entity: {name}", {"entity_id": str(inserted_id), "properties": properties})
+                            _entity_trace_callback(
+                                "ENTITY_CREATE",
+                                f"Created entity: {name}",
+                                {"entity_id": str(inserted_id), "properties": properties},
+                            )
                         resolved_entities.append(
                             {
                                 "entity_id": str(inserted_id),
@@ -313,9 +379,18 @@ async def resolve_and_update_entities(
                                 entity_id=str(existing_entity_id),
                                 name=name,
                             )
-                            print(f"      [ENTITY] Resolved and updated: {name} | Properties: {properties}")
+                            print(
+                                f"      [ENTITY] Resolved and updated: {name} | Properties: {properties}"
+                            )
                             if _entity_trace_callback:
-                                _entity_trace_callback("ENTITY_UPDATE", f"Updated entity: {name}", {"entity_id": str(existing_entity_id), "properties": properties})
+                                _entity_trace_callback(
+                                    "ENTITY_UPDATE",
+                                    f"Updated entity: {name}",
+                                    {
+                                        "entity_id": str(existing_entity_id),
+                                        "properties": properties,
+                                    },
+                                )
                             resolved_entities.append(
                                 {
                                     "entity_id": str(existing_entity_id),
@@ -329,6 +404,8 @@ async def resolve_and_update_entities(
                 logger.error("Failed to resolve entity", error=str(e), name=name)
                 print(f"      [ENTITY ERROR] Failed to process {name}: {e}")
                 if _entity_trace_callback:
-                    _entity_trace_callback("ENTITY_ERROR", f"Failed to process {name}", {"error": str(e)})
+                    _entity_trace_callback(
+                        "ENTITY_ERROR", f"Failed to process {name}", {"error": str(e)}
+                    )
 
     return resolved_entities

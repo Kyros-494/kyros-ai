@@ -4,13 +4,13 @@
 
 | Version | Supported |
 |---------|-----------|
-| 0.1.x   | ✅ Yes    |
+| 0.1.x   | Yes       |
 
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Email **security@kyros.ai** with:
+Email **kyros.494@gmail.com** with:
 
 - A description of the vulnerability
 - Steps to reproduce

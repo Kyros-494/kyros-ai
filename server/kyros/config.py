@@ -66,38 +66,45 @@ class Settings(BaseSettings):
 
     # ── LLM Provider API Keys (optional) ──────────────────────────────
     openai_api_key: str = Field(
-        default="", 
-        validation_alias=AliasChoices("KYROS_OPENAI_API_KEY", "OPENAI_API_KEY")
+        default="", validation_alias=AliasChoices("KYROS_OPENAI_API_KEY", "OPENAI_API_KEY")
     )
     gemini_api_key: str = Field(
-        default="", 
-        validation_alias=AliasChoices("KYROS_GEMINI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY")
+        default="",
+        validation_alias=AliasChoices("KYROS_GEMINI_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY"),
     )
     anthropic_api_key: str = Field(
-        default="", 
-        validation_alias=AliasChoices("KYROS_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY")
+        default="", validation_alias=AliasChoices("KYROS_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY")
     )
     mistral_api_key: str = Field(
-        default="", 
-        validation_alias=AliasChoices("KYROS_MISTRAL_API_KEY", "MISTRAL_API_KEY")
+        default="", validation_alias=AliasChoices("KYROS_MISTRAL_API_KEY", "MISTRAL_API_KEY")
     )
 
     # ── LLM model names (configurable per-provider) ────────────────────────
     openai_model: str = Field(
-        default="gpt-4o-2024-08-06", 
-        validation_alias=AliasChoices("KYROS_OPENAI_MODEL", "OPENAI_MODEL")
+        default="gpt-4o-2024-08-06",
+        validation_alias=AliasChoices("KYROS_OPENAI_MODEL", "OPENAI_MODEL"),
     )
     anthropic_model: str = Field(
-        default="claude-3-5-sonnet-20241022", 
-        validation_alias=AliasChoices("KYROS_ANTHROPIC_MODEL", "ANTHROPIC_MODEL")
+        default="claude-3-5-sonnet-20241022",
+        validation_alias=AliasChoices("KYROS_ANTHROPIC_MODEL", "ANTHROPIC_MODEL"),
     )
     gemini_model: str = Field(
-        default="gemini-2.5-pro", 
-        validation_alias=AliasChoices("KYROS_GEMINI_MODEL", "GEMINI_MODEL")
+        default="gemini-2.5-pro",
+        validation_alias=AliasChoices("KYROS_GEMINI_MODEL", "GEMINI_MODEL"),
     )
     mistral_model: str = Field(
-        default="mistral-large-2512", 
-        validation_alias=AliasChoices("KYROS_MISTRAL_MODEL", "MISTRAL_MODEL")
+        default="mistral-large-2512",
+        validation_alias=AliasChoices("KYROS_MISTRAL_MODEL", "MISTRAL_MODEL"),
+    )
+
+    # ── Local LLM (for offline operations) ──────────────────────────────
+    local_llm_url: str = Field(
+        default="http://localhost:11434",
+        validation_alias=AliasChoices("KYROS_LOCAL_LLM_URL", "LOCAL_LLM_URL"),
+    )
+    local_llm_model: str = Field(
+        default="llama3.2:3b",
+        validation_alias=AliasChoices("KYROS_LOCAL_LLM_MODEL", "LOCAL_LLM_MODEL"),
     )
 
     # ── CORS (optional) ──────────────────────────────────────────────────

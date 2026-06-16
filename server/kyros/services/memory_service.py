@@ -132,7 +132,8 @@ class MemoryService:
             from kyros.services.background_tasks import create_background_task
 
             task = create_background_task(sem_wrapped_coro(), name=name, details=details)
-        except Exception:
+        except Exception as e:
+            logger.debug("Background task library not available, falling back to standard create_task", error=str(e))
             task = asyncio.create_task(sem_wrapped_coro(), name=name)
 
         def handle_result(t: asyncio.Task) -> None:
@@ -281,8 +282,8 @@ class MemoryService:
             if iso_match:
                 try:
                     resolved_date = datetime.strptime(iso_match.group(0), "%Y-%m-%d").date()
-                except ValueError:
-                    logger.debug("Failed parsing iso date pattern in temporal extractor")
+                except ValueError as e:
+                    logger.debug("Failed parsing iso date pattern in temporal extractor", error=str(e))
 
         months_map = {
             "jan": 1, "january": 1, "feb": 2, "february": 2, "mar": 3, "march": 3,
@@ -302,8 +303,8 @@ class MemoryService:
                 month = months_map[month_str]
                 try:
                     resolved_date = datetime(year, month, day).date()
-                except ValueError:
-                    logger.debug("Failed parsing date pattern (month day, year) in temporal extractor")
+                except ValueError as e:
+                    logger.debug("Failed parsing date pattern (month day, year) in temporal extractor", error=str(e))
 
         if not resolved_date:
             month_pattern = r'\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\b'
@@ -316,8 +317,8 @@ class MemoryService:
                 month = months_map[month_str]
                 try:
                     resolved_date = datetime(year, month, day).date()
-                except ValueError:
-                    logger.debug("Failed parsing date pattern (day of month, year) in temporal extractor")
+                except ValueError as e:
+                    logger.debug("Failed parsing date pattern (day of month, year) in temporal extractor", error=str(e))
 
         if not resolved_date:
             year_match = re.search(r'\b(20\d{2}|19\d{2})\b', content)
@@ -580,8 +581,8 @@ class MemoryService:
         if reference_time_str:
             try:
                 reference_time = self._parse_timestamp(reference_time_str)
-            except Exception:
-                logger.debug("Failed parsing reference_time in recall context")
+            except Exception as e:
+                logger.debug("Failed parsing reference_time in recall context", error=str(e))
 
         # Fallback dummy QueryContext for builds where classifier is absent
         class QueryContext:
@@ -727,7 +728,8 @@ class MemoryService:
                     else:
                         try:
                             q_vec = self._get_embedding(q_text)
-                        except Exception:
+                        except Exception as e:
+                            logger.debug("Failed to get query variation embedding, falling back to primary query embedding", error=str(e))
                             q_vec = query_embedding
 
                     q_tsquery = self._build_tsquery(q_text)
@@ -909,15 +911,15 @@ class MemoryService:
                                     if isinstance(event_time, str):
                                         try:
                                             event_time = json.loads(event_time)
-                                        except Exception:
-                                            logger.debug("Failed loading event_time json in recall scoring")
+                                        except Exception as e:
+                                            logger.debug("Failed loading event_time json in recall scoring", error=str(e))
 
                                     if isinstance(event_time, dict) and event_time.get("timestamp") == str(resolved_date):
                                         temporal_boost += temporal_boost_val
                                     elif row.created_at and row.created_at.strftime("%Y-%m-%d") == str(resolved_date):
                                         temporal_boost += temporal_boost_val / 4.0
-                                except Exception:
-                                    logger.debug("Failed parsing created_at date comparison in recall scoring")
+                                except Exception as e:
+                                    logger.debug("Failed parsing created_at date comparison in recall scoring", error=str(e))
 
                             if qc.temporal_info.get("year") and qc.temporal_info["year"] in row.content:
                                 temporal_boost += temporal_boost_val / 2.0
@@ -957,8 +959,8 @@ class MemoryService:
                                             et = json.loads(et)
                                         if isinstance(et, dict) and et.get("timestamp"):
                                             event_str = f", Event Date: {et['timestamp']}"
-                                    except Exception:
-                                        logger.debug("Failed loading event_time json in scoring row formatting")
+                                    except Exception as e:
+                                        logger.debug("Failed loading event_time json in scoring row formatting", error=str(e))
                                 time_tag = f" (Recorded: {created_str}{event_str})" if created_str else ""
                                 self.content = f"[{speaker_label}]{time_tag} {original_row.content}"
                                 self.importance = original_row.importance
@@ -2025,7 +2027,18 @@ class MemoryService:
         # Fast path: Redis cache
         cached = await self.cache.get_agent_id(tenant_id, external_id)
         if cached:
-            return UUID(cached)
+            agent_uuid = UUID(cached)
+            # Verify existence to prevent cache mismatch/corruption
+            verify = await session.execute(
+                text("SELECT 1 FROM agents WHERE id = :id AND tenant_id = :tid"),
+                {"id": agent_uuid, "tid": tenant_id},
+            )
+            if verify.fetchone():
+                return agent_uuid
+            else:
+                logger.warning("Agent ID found in cache but missing from DB, evicting from cache", agent_id=str(agent_uuid))
+                key = self.cache.AGENT_ID.format(tenant_id=tenant_id, external_id=external_id)
+                await self.cache.redis.delete(key)
 
         # Cold path: DB lookup or insert
         result = await session.execute(

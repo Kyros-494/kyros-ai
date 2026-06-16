@@ -41,6 +41,14 @@ services:
       retries: 5
       start_period: 5s
 
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
   kyros-server:
     build:
       context: ./server
@@ -56,6 +64,7 @@ services:
     environment:
       KYROS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-kyros}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-kyros}
       KYROS_REDIS_URL: redis://redis:6379/0
+      KYROS_LOCAL_LLM_URL: http://ollama:11434
       PYTHONPATH: /app
     depends_on:
       postgres:
@@ -85,3 +94,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  ollama_data:
