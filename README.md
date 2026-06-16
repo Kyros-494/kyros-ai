@@ -15,7 +15,6 @@
 <p align="center">
   <a href="https://pypi.org/project/kyros-sdk/"><img src="https://img.shields.io/pypi/v/kyros-sdk?color=ff4a00&label=PyPI" alt="PyPI version" /></a>
   <a href="https://www.npmjs.com/package/@kyros.494/sdk"><img src="https://img.shields.io/npm/v/@kyros.494/sdk?color=ff4a00&label=npm" alt="npm version" /></a>
-  <a href="https://github.com/Kyros-494/kyros-ai/actions"><img src="https://img.shields.io/github/actions/workflow/status/Kyros-494/kyros-ai/ci.yml?branch=master&label=CI&color=ff4a00" alt="CI Status" /></a>
   <a href="https://github.com/Kyros-494/kyros-ai/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-ff4a00.svg" alt="License" /></a>
   <a href="https://github.com/Kyros-494/kyros-ai/stargazers"><img src="https://img.shields.io/github/stars/Kyros-494/kyros-ai?style=social" alt="GitHub Stars" /></a>
 </p>

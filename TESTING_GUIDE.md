@@ -251,7 +251,7 @@ results = client.search(
 )
 print(f"✓ Found {len(results.results)} results across all memory types")
 
-print("\n✅ All tests passed!")
+print("\nAll tests passed!")
 ```
 
 Run the test:
@@ -265,7 +265,7 @@ python test_api.py
 ### Install SDK
 
 ```bash
-npm install @kyros/sdk
+npm install @kyros.494/sdk
 ```
 
 ### Test Script
@@ -273,7 +273,7 @@ npm install @kyros/sdk
 Create `test-api.ts`:
 
 ```typescript
-import { KyrosClient } from '@kyros/sdk';
+import { KyrosClient } from '@kyros.494/sdk';
 
 async function testAPI() {
   // Initialize client
@@ -354,7 +354,7 @@ async function testAPI() {
   );
   console.log(`✓ Found ${searchResults.results.length} results across all memory types`);
 
-  console.log('\n✅ All tests passed!');
+  console.log('\nAll tests passed!');
 }
 
 testAPI().catch(console.error);
