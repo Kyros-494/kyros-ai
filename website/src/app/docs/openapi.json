@@ -1,0 +1,2773 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kyros API",
+    "description": "Persistent memory operating system for AI agents",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/remember": {
+      "post": {
+        "tags": [
+          "Smart Gateway"
+        ],
+        "summary": "Smart Remember",
+        "description": "Smart Ingestion Gateway: Ingests raw turn into episodic memories,\n\nwhile automatically extracting and writing bitemporal semantic facts and\ncausal edges asynchronously in the background.",
+        "operationId": "smart_remember_v1_remember_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RememberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RememberResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recall": {
+      "post": {
+        "tags": [
+          "Smart Gateway"
+        ],
+        "summary": "Smart Recall",
+        "description": "Smart Retrieval Gateway: Searches across episodic, semantic, and procedural\n\nmemories concurrently using query classification, freshness decay, and\nlocal Cross-Encoder reranking.",
+        "operationId": "smart_recall_v1_recall_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/episodic/remember": {
+      "post": {
+        "tags": [
+          "Episodic Memory"
+        ],
+        "summary": "Remember",
+        "description": "Store an episodic memory (conversation turn, action, observation).",
+        "operationId": "remember_v1_memory_episodic_remember_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RememberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RememberResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/episodic/recall": {
+      "post": {
+        "tags": [
+          "Episodic Memory"
+        ],
+        "summary": "Recall",
+        "description": "Retrieve relevant episodic memories via semantic search.",
+        "operationId": "recall_v1_memory_episodic_recall_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/episodic/{memory_id}": {
+      "delete": {
+        "tags": [
+          "Episodic Memory"
+        ],
+        "summary": "Forget",
+        "description": "Soft-delete a specific episodic memory.",
+        "operationId": "forget_v1_memory_episodic__memory_id__delete",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Memory Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/semantic/facts": {
+      "put": {
+        "tags": [
+          "Semantic Memory"
+        ],
+        "summary": "Upsert Fact",
+        "description": "Upsert a semantic fact (subject-predicate-object triple) dynamically.",
+        "operationId": "upsert_fact_v1_memory_semantic_facts_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreFactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Semantic Memory"
+        ],
+        "summary": "Store Fact",
+        "description": "Store a semantic fact (subject-predicate-object triple) with contradiction detection.",
+        "operationId": "store_fact_v1_memory_semantic_facts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreFactRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/semantic/query": {
+      "post": {
+        "tags": [
+          "Semantic Memory"
+        ],
+        "summary": "Query Facts",
+        "description": "Query the semantic knowledge graph via natural language.",
+        "operationId": "query_facts_v1_memory_semantic_query_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/semantic/graph/{agent_id}": {
+      "get": {
+        "tags": [
+          "Semantic Memory"
+        ],
+        "summary": "Get Semantic Graph",
+        "description": "Return the agent's semantic belief graph for frontend rendering (D3/Cytoscape).",
+        "operationId": "get_semantic_graph_v1_memory_semantic_graph__agent_id__get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Semantic Graph V1 Memory Semantic Graph  Agent Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/procedural/store": {
+      "post": {
+        "tags": [
+          "Procedural Memory"
+        ],
+        "summary": "Store Procedure",
+        "description": "Store a learned procedure (workflow, tool-call sequence).",
+        "operationId": "store_procedure_v1_memory_procedural_store_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoreProcedureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StoreProcedureResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/procedural/match": {
+      "post": {
+        "tags": [
+          "Procedural Memory"
+        ],
+        "summary": "Match Procedure",
+        "description": "Find the best matching procedure for a task description.\n\nResults are ranked by: 0.60 \u00d7 cosine_similarity + 0.40 \u00d7 success_rate",
+        "operationId": "match_procedure_v1_memory_procedural_match_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MatchProcedureRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProceduralMatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/procedural/outcome": {
+      "post": {
+        "tags": [
+          "Procedural Memory"
+        ],
+        "summary": "Report Outcome",
+        "description": "Report success/failure for a procedure (reinforcement signal).",
+        "operationId": "report_outcome_v1_memory_procedural_outcome_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutcomeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutcomeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/search/unified": {
+      "post": {
+        "tags": [
+          "Search"
+        ],
+        "summary": "Unified Search",
+        "description": "Search across episodic, semantic, and procedural memory simultaneously.",
+        "operationId": "unified_search_v1_search_unified_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecallResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/summarise/{agent_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Summarise",
+        "description": "Get the compressed history card for an agent.",
+        "operationId": "summarise_v1_admin_summarise__agent_id__get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Summarise V1 Admin Summarise  Agent Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/export/{agent_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Export Memories",
+        "description": "Export all memories for an agent as JSON.",
+        "operationId": "export_memories_v1_admin_export__agent_id__get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExportResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/import/{agent_id}": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Import Memories",
+        "description": "Import memories from JSON into an agent.",
+        "operationId": "import_memories_v1_admin_import__agent_id__post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Import Memories V1 Admin Import  Agent Id  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/staleness-report/{agent_id}": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Staleness Report",
+        "description": "Get a comprehensive staleness report for an agent.",
+        "operationId": "staleness_report_v1_admin_staleness_report__agent_id__get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Staleness Report V1 Admin Staleness Report  Agent Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/decay-rates": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Decay Rates",
+        "description": "Get the current decay rate configuration.",
+        "operationId": "get_decay_rates_v1_admin_decay_rates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Decay Rates V1 Admin Decay Rates Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update Decay Rates",
+        "description": "Update tenant-specific decay rates (half_life_days \u2192 decay_rate).",
+        "operationId": "update_decay_rates_v1_admin_decay_rates_put",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Update Decay Rates V1 Admin Decay Rates Put"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/memory/{memory_id}/proof": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Memory Proof",
+        "description": "Get the cryptographic Merkle proof for a specific memory.",
+        "operationId": "get_memory_proof_v1_admin_memory__memory_id__proof_get",
+        "parameters": [
+          {
+            "name": "memory_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Memory Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Memory Proof V1 Admin Memory  Memory Id  Proof Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/agent/{agent_id}/audit": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Audit Integrity",
+        "description": "Verify the cryptographic integrity of all memories for an agent.",
+        "operationId": "audit_integrity_v1_admin_agent__agent_id__audit_post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Audit Integrity V1 Admin Agent  Agent Id  Audit Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/agent/{agent_id}/compliance-export": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Compliance Export",
+        "description": "Export the immutable audit log for an agent for the past N days.",
+        "operationId": "compliance_export_v1_admin_agent__agent_id__compliance_export_get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 90,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Compliance Export V1 Admin Agent  Agent Id  Compliance Export Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/agent/{agent_id}/migrate-embeddings": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Migrate Embeddings",
+        "description": "Migrate all agent memory embeddings to a new embedding model space.",
+        "operationId": "migrate_embeddings_v1_admin_agent__agent_id__migrate_embeddings_post",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Migrate Embeddings V1 Admin Agent  Agent Id  Migrate Embeddings Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/agent/{agent_id}/memories": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Hard Delete Agent Memories",
+        "description": "GDPR 'Right to be Forgotten' \u2014 hard delete all memories for an agent.",
+        "operationId": "hard_delete_agent_memories_v1_admin_agent__agent_id__memories_delete",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Hard Delete Agent Memories V1 Admin Agent  Agent Id  Memories Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/agents": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List Agents",
+        "description": "List all agents for the current tenant.",
+        "operationId": "list_agents_v1_admin_agents_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Agents V1 Admin Agents Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Agent",
+        "description": "Explicitly register/create a new agent (project namespace).",
+        "operationId": "create_agent_v1_admin_agents_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Agent V1 Admin Agents Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/tenants": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Tenant",
+        "description": "Create a new tenant and generate an API key.\n\nRequires the master admin token or jwt_secret_key for authentication.",
+        "operationId": "create_tenant_v1_admin_tenants_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Tenant V1 Admin Tenants Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/public/sandbox/keys": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create Public Sandbox Key",
+        "description": "Create a new tenant with free tier/sandbox plan and return the generated API key.",
+        "operationId": "create_public_sandbox_key_v1_admin_public_sandbox_keys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePublicTenantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Public Sandbox Key V1 Admin Public Sandbox Keys Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/background-tasks": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Background Tasks",
+        "description": "Retrieve the recent background tasks and their execution statuses/errors.",
+        "operationId": "get_background_tasks_v1_admin_background_tasks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": true,
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "title": "Response Get Background Tasks V1 Admin Background Tasks Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/configure-llm": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get Llm Config",
+        "description": "Retrieve the current in-memory LLM configurations and active status.",
+        "operationId": "get_llm_config_v1_admin_configure_llm_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Llm Config V1 Admin Configure Llm Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Configure Llm",
+        "description": "Dynamically configure LLM API key in memory and persist to .env.",
+        "operationId": "configure_llm_v1_admin_configure_llm_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Configure Llm V1 Admin Configure Llm Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/test-llm": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Test Llm",
+        "description": "Test if the provided LLM credentials are valid by making a lightweight test call.",
+        "operationId": "test_llm_v1_admin_test_llm_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Test Llm V1 Admin Test Llm Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/agents/{agent_id}": {
+      "delete": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Delete Agent",
+        "description": "Delete an agent (project namespace) and all its associated memories completely.",
+        "operationId": "delete_agent_v1_admin_agents__agent_id__delete",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Delete Agent V1 Admin Agents  Agent Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/tenants/{target_tenant_id}/rotate-key": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Rotate Tenant Key",
+        "description": "Generate and rotate a new API key for an existing tenant.\n\nRequires master admin token.",
+        "operationId": "rotate_tenant_key_v1_admin_tenants__target_tenant_id__rotate_key_post",
+        "parameters": [
+          {
+            "name": "target_tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Target Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Rotate Tenant Key V1 Admin Tenants  Target Tenant Id  Rotate Key Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/causal/explain": {
+      "post": {
+        "tags": [
+          "Causal Memory"
+        ],
+        "summary": "Explain Memory",
+        "description": "Explain why a memory happened (causal chain traversal).",
+        "operationId": "explain_memory_v1_memory_causal_explain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalExplainRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Explain Memory V1 Memory Causal Explain Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/causal/frequent-causes": {
+      "post": {
+        "tags": [
+          "Causal Memory"
+        ],
+        "summary": "Frequent Causes",
+        "description": "Analyze what causes a specific type of event across all memories.",
+        "operationId": "frequent_causes_v1_memory_causal_frequent_causes_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalFrequencyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Frequent Causes V1 Memory Causal Frequent Causes Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/memory/causal/graph/{agent_id}": {
+      "get": {
+        "tags": [
+          "Causal Memory"
+        ],
+        "summary": "Get Causal Graph",
+        "description": "Return the agent's causal graph for D3/Cytoscape frontend rendering.",
+        "operationId": "get_causal_graph_v1_memory_causal_graph__agent_id__get",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Causal Graph V1 Memory Causal Graph  Agent Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/trust/status": {
+      "get": {
+        "tags": [
+          "Trust"
+        ],
+        "summary": "Get Trust Status",
+        "description": "Return the current trust and compliance status of the platform.\n\nUpdate the compliance fields to reflect your actual certification status\nbefore deploying to production.",
+        "operationId": "get_trust_status_v1_trust_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Trust Status V1 Trust Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/index.html": {
+      "get": {
+        "summary": "Serve Dashboard",
+        "description": "Serve dashboard with no-cache headers so edits are always visible.",
+        "operationId": "serve_dashboard_dashboard_index_html_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/": {
+      "get": {
+        "summary": "Serve Dashboard",
+        "description": "Serve dashboard with no-cache headers so edits are always visible.",
+        "operationId": "serve_dashboard_dashboard__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "summary": "Serve Dashboard",
+        "description": "Serve dashboard with no-cache headers so edits are always visible.",
+        "operationId": "serve_dashboard_dashboard_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health Check",
+        "description": "Liveness probe \u2014 returns OK if the process is running.",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Health Check Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Readiness Check",
+        "description": "Readiness probe \u2014 checks all dependencies before accepting traffic.",
+        "operationId": "readiness_check_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CausalExplainRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "memory_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Memory Id"
+          },
+          "max_depth": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Max Depth",
+            "default": 3
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction",
+            "description": "'causes', 'effects', or 'both'",
+            "default": "both"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "memory_id"
+        ],
+        "title": "CausalExplainRequest"
+      },
+      "CausalFrequencyRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "theme": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Theme",
+            "description": "The effect to analyze (e.g., 'customer churn')"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 50
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "theme"
+        ],
+        "title": "CausalFrequencyRequest"
+      },
+      "ContentType": {
+        "type": "string",
+        "enum": [
+          "text",
+          "action",
+          "tool_call",
+          "observation"
+        ],
+        "title": "ContentType"
+      },
+      "CreateAgentRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Agent Id"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id"
+        ],
+        "title": "CreateAgentRequest"
+      },
+      "CreatePublicTenantRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "CreatePublicTenantRequest"
+      },
+      "CreateTenantRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Email"
+          },
+          "plan": {
+            "type": "string",
+            "title": "Plan",
+            "default": "pro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "email"
+        ],
+        "title": "CreateTenantRequest"
+      },
+      "ExportResponse": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "episodic": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Episodic"
+          },
+          "semantic": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Semantic"
+          },
+          "procedural": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Procedural"
+          },
+          "total_memories": {
+            "type": "integer",
+            "title": "Total Memories"
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Exported At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "episodic",
+          "semantic",
+          "procedural",
+          "total_memories",
+          "exported_at"
+        ],
+        "title": "ExportResponse"
+      },
+      "FactResult": {
+        "properties": {
+          "fact_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Fact Id"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "predicate": {
+            "type": "string",
+            "title": "Predicate"
+          },
+          "object": {
+            "type": "string",
+            "title": "Object"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "was_contradiction": {
+            "type": "boolean",
+            "title": "Was Contradiction",
+            "default": false
+          },
+          "replaced_fact_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replaced Fact Id"
+          },
+          "propagated_updates": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Propagated Updates",
+            "description": "Other facts whose confidence was updated due to this fact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "fact_id",
+          "subject",
+          "predicate",
+          "object",
+          "confidence",
+          "created_at"
+        ],
+        "title": "FactResult"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MatchProcedureRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Agent Id"
+          },
+          "task_description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Task Description",
+            "default": ""
+          },
+          "k": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "K",
+            "default": 5
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id"
+        ],
+        "title": "MatchProcedureRequest"
+      },
+      "MemoryResult": {
+        "properties": {
+          "memory_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Memory Id"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "memory_type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "relevance_score": {
+            "type": "number",
+            "title": "Relevance Score"
+          },
+          "importance": {
+            "type": "number",
+            "title": "Importance"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "freshness_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Freshness Score",
+            "default": 1.0
+          },
+          "freshness_warning": {
+            "type": "boolean",
+            "title": "Freshness Warning",
+            "default": false
+          },
+          "memory_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Category"
+          },
+          "causal_ancestry": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Causal Ancestry"
+          }
+        },
+        "type": "object",
+        "required": [
+          "memory_id",
+          "content",
+          "memory_type",
+          "relevance_score",
+          "importance",
+          "created_at"
+        ],
+        "title": "MemoryResult"
+      },
+      "MemoryType": {
+        "type": "string",
+        "enum": [
+          "episodic",
+          "semantic",
+          "procedural"
+        ],
+        "title": "MemoryType"
+      },
+      "MigrationRequest": {
+        "properties": {
+          "from_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "From Model"
+          },
+          "to_model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "To Model"
+          },
+          "strategy": {
+            "type": "string",
+            "title": "Strategy",
+            "description": "'translate' (fast ML projection) or 're-embed' (full API re-embedding)",
+            "default": "translate"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_model",
+          "to_model"
+        ],
+        "title": "MigrationRequest"
+      },
+      "OutcomeRequest": {
+        "properties": {
+          "procedure_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Procedure Id"
+          },
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "procedure_id",
+          "success"
+        ],
+        "title": "OutcomeRequest"
+      },
+      "OutcomeResponse": {
+        "properties": {
+          "procedure_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Procedure Id"
+          },
+          "success_count": {
+            "type": "integer",
+            "title": "Success Count"
+          },
+          "failure_count": {
+            "type": "integer",
+            "title": "Failure Count"
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate"
+          },
+          "avg_duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Duration Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "procedure_id",
+          "success_count",
+          "failure_count",
+          "success_rate",
+          "avg_duration_ms"
+        ],
+        "title": "OutcomeResponse"
+      },
+      "ProceduralMatchResponse": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "task_description": {
+            "type": "string",
+            "title": "Task Description"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ProceduralResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "task_description",
+          "results",
+          "latency_ms"
+        ],
+        "title": "ProceduralMatchResponse"
+      },
+      "ProceduralResult": {
+        "properties": {
+          "procedure_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Procedure Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "task_type": {
+            "type": "string",
+            "title": "Task Type"
+          },
+          "steps": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate"
+          },
+          "total_executions": {
+            "type": "integer",
+            "title": "Total Executions"
+          },
+          "relevance_score": {
+            "type": "number",
+            "title": "Relevance Score"
+          },
+          "avg_duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Duration Ms"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "procedure_id",
+          "name",
+          "description",
+          "task_type",
+          "steps",
+          "success_rate",
+          "total_executions",
+          "relevance_score",
+          "avg_duration_ms",
+          "created_at"
+        ],
+        "title": "ProceduralResult"
+      },
+      "RecallRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Agent Id"
+          },
+          "query": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Query",
+            "description": "Natural language search query",
+            "default": ""
+          },
+          "memory_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MemoryType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "k": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "K",
+            "description": "Number of results to return",
+            "default": 10
+          },
+          "min_relevance": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Relevance",
+            "default": 0.0
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "importance_weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Importance Weight",
+            "default": 0.15
+          },
+          "freshness_weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Freshness Weight",
+            "default": 0.15
+          },
+          "include_causal_ancestry": {
+            "type": "boolean",
+            "title": "Include Causal Ancestry",
+            "description": "If true, fetches causal ancestors for each recalled memory",
+            "default": false
+          },
+          "retrieve_by_entity": {
+            "type": "boolean",
+            "title": "Retrieve By Entity",
+            "description": "If true, performs dynamic canonical entity resolution retrieval",
+            "default": false
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata",
+            "description": "Optional metadata for search context (e.g. reference_time)"
+          },
+          "strict": {
+            "type": "boolean",
+            "title": "Strict",
+            "description": "Strict deterministic recall mode (bypass vector search and use only canonical fact store)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id"
+        ],
+        "title": "RecallRequest"
+      },
+      "RecallResponse": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "total_searched": {
+            "type": "integer",
+            "title": "Total Searched"
+          },
+          "latency_ms": {
+            "type": "number",
+            "title": "Latency Ms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "query",
+          "results",
+          "total_searched",
+          "latency_ms"
+        ],
+        "title": "RecallResponse"
+      },
+      "RememberRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Agent Id",
+            "description": "Your agent's unique identifier"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 50000,
+            "minLength": 1,
+            "title": "Content",
+            "description": "Memory content to store"
+          },
+          "memory_type": {
+            "$ref": "#/components/schemas/MemoryType",
+            "default": "episodic"
+          },
+          "content_type": {
+            "$ref": "#/components/schemas/ContentType",
+            "default": "text"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "importance": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Importance",
+            "default": 0.5
+          },
+          "memory_category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Category",
+            "description": "Optional category to determine decay rate"
+          },
+          "decay_rate_override": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decay Rate Override",
+            "description": "Optional hard override for decay rate"
+          },
+          "cause_memory_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cause Memory Id",
+            "description": "ID of the memory that caused this one"
+          },
+          "effect_memory_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effect Memory Id",
+            "description": "ID of the memory that this one caused"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time",
+            "description": "Optional absolute or relative temporal information"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "Optional creation timestamp (ISO format, Locomo format, or epoch float)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "content"
+        ],
+        "title": "RememberRequest"
+      },
+      "RememberResponse": {
+        "properties": {
+          "memory_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Memory Id"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "memory_type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "memory_id",
+          "agent_id",
+          "memory_type",
+          "created_at"
+        ],
+        "title": "RememberResponse"
+      },
+      "StoreFactRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Agent Id"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Subject",
+            "description": "Entity the fact is about"
+          },
+          "predicate": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Predicate",
+            "description": "Relationship or property name"
+          },
+          "object": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Object",
+            "description": "Value of the fact"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "default": 1.0
+          },
+          "source_type": {
+            "type": "string",
+            "maxLength": 50,
+            "title": "Source Type",
+            "default": "explicit"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time",
+            "description": "Optional absolute or relative temporal information"
+          },
+          "source_episodic_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Episodic Id",
+            "description": "Optional link to original episodic turn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "subject",
+          "predicate",
+          "object"
+        ],
+        "title": "StoreFactRequest"
+      },
+      "StoreProcedureRequest": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Agent Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Human-readable procedure name"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "minLength": 1,
+            "title": "Description",
+            "description": "What this procedure does"
+          },
+          "task_type": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Task Type",
+            "description": "Task category for matching"
+          },
+          "steps": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Steps",
+            "description": "Ordered list of procedure steps"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Metadata"
+          },
+          "event_time": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Time",
+            "description": "Optional absolute or relative temporal information"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "name",
+          "description",
+          "task_type",
+          "steps"
+        ],
+        "title": "StoreProcedureRequest"
+      },
+      "StoreProcedureResponse": {
+        "properties": {
+          "procedure_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Procedure Id"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "task_type": {
+            "type": "string",
+            "title": "Task Type"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "procedure_id",
+          "agent_id",
+          "name",
+          "task_type",
+          "created_at"
+        ],
+        "title": "StoreProcedureResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
