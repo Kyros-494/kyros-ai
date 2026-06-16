@@ -2,7 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+
+const procedureSteps = [
+  { name: "Query context", desc: "Retrieve active task context & state" },
+  { name: "Verify signatures", desc: "Validate Merkle tree cryptographic integrity" },
+  { name: "Apply decay", desc: "Calculate forgetting curve coefficients" },
+  { name: "Propagate beliefs", desc: "Resolve graph contradictions" },
+];
 
 export default function Home() {
   // Playground State
@@ -44,14 +50,6 @@ export default function Home() {
   // Procedural Memory Simulator State
   const [runningProcedure, setRunningProcedure] = useState(false);
   const [currentProcedureStep, setCurrentProcedureStep] = useState(-1);
-  const procedureSteps = [
-    { name: "Query context", desc: "Retrieve active task context & state" },
-    { name: "Verify signatures", desc: "Validate Merkle tree cryptographic integrity" },
-    { name: "Apply decay", desc: "Calculate forgetting curve coefficients" },
-    { name: "Propagate beliefs", desc: "Resolve graph contradictions" },
-  ];
-
-
 
   // Architecture hover state
   const [hoveredArchNode, setHoveredArchNode] = useState<string | null>(null);
@@ -352,14 +350,14 @@ export default function Home() {
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           {/* Playground Left Panel - Tabs & Settings */}
           <div className="lg:col-span-4 space-y-4">
-            {[
+            {([
               { id: "episodic", label: "Episodic Logger", desc: "Sequential log stream of conversations, actions, and observations with cryptographic hashes." },
               { id: "semantic", label: "Semantic Graph", desc: "Triples database representing facts and relationships. Features graph-based belief updates." },
               { id: "procedural", label: "Procedural Workflows", desc: "Workflow and task state execution trackers that measure agent performance." },
-            ].map((tab) => (
+            ] as const).map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActivePlaygroundTab(tab.id as any)}
+                onClick={() => setActivePlaygroundTab(tab.id)}
                 className={`w-full p-5 rounded-2xl text-left transition-all border ${
                   activePlaygroundTab === tab.id
                     ? "bg-zinc-900/60 border-cyan-500/30 shadow-lg shadow-cyan-950/20"
@@ -652,14 +650,14 @@ export default function Home() {
         <div className="grid lg:grid-cols-12 gap-8 items-start">
           {/* Integration selector tabs */}
           <div className="lg:col-span-4 space-y-2">
-            {[
+            {([
               { id: "crewai", label: "CrewAI", desc: "Episodic and semantic tools injected directly into CrewAI Agent lists." },
               { id: "langchain", label: "LangChain", desc: "Idiomatic ConversationChain memory wrappers for chat sessions." },
               { id: "llamaindex", label: "LlamaIndex", desc: "Data memory components for chat engines and query structures." },
-            ].map((tab) => (
+            ] as const).map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveIntegration(tab.id as any)}
+                onClick={() => setActiveIntegration(tab.id)}
                 className={`w-full p-4 rounded-xl text-left border transition-all ${
                   activeIntegration === tab.id
                     ? "bg-zinc-900/60 border-cyan-500/20 text-cyan-400"
@@ -897,14 +895,14 @@ response = engine.chat("Summarize Q3 financial results.")`}</code>
         
         <div className="border border-zinc-900 rounded-xl overflow-hidden bg-zinc-900/20 backdrop-blur-sm shadow-xl">
           <div className="flex border-b border-zinc-900 bg-zinc-950/40 px-4">
-            {[
+            {([
               { id: "docker", label: "Self-Host (Docker)" },
               { id: "python", label: "Python SDK" },
               { id: "typescript", label: "TypeScript SDK" },
-            ].map((tab) => (
+            ] as const).map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveCodeTab(tab.id as any)}
+                onClick={() => setActiveCodeTab(tab.id)}
                 className={`py-3.5 px-4 font-mono text-xs font-semibold border-b-2 transition-all ${
                   activeCodeTab === tab.id
                     ? "text-cyan-400 border-cyan-500"

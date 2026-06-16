@@ -96,11 +96,12 @@ export default function DocsPage() {
   // Group endpoints by tags
   const endpoints = useMemo(() => {
     const list: { path: string; method: string; tag: string; summary: string; spec: OpenApiEndpoint }[] = [];
-    if (!openapi.paths) return list;
+    const paths = openapi.paths;
+    if (!paths) return list;
 
-    Object.keys(openapi.paths).forEach((path) => {
-      Object.keys(openapi.paths[path]).forEach((method) => {
-        const spec = openapi.paths[path][method];
+    Object.keys(paths).forEach((path) => {
+      Object.keys(paths[path]).forEach((method) => {
+        const spec = paths[path][method];
         const tag = spec.tags && spec.tags[0] ? spec.tags[0] : "General";
         list.push({
           path,
@@ -112,7 +113,7 @@ export default function DocsPage() {
       });
     });
     return list;
-  }, [openapi]);
+  }, []);
 
   // Filtered lists based on search
   const filteredGuides = useMemo(() => {
@@ -152,10 +153,11 @@ export default function DocsPage() {
     const schema = ref ? getSchemaDetails(ref) : null;
 
     // Build sample payload properties
-    const samplePayload: Record<string, any> = {};
-    if (schema && schema.properties) {
-      Object.keys(schema.properties).forEach((key) => {
-        const prop = schema.properties[key];
+    const samplePayload: Record<string, unknown> = {};
+    const properties = schema?.properties;
+    if (properties) {
+      Object.keys(properties).forEach((key) => {
+        const prop = properties[key];
         if (key === "agent_id") {
           samplePayload[key] = "agent-123";
         } else if (key === "content") {
@@ -736,7 +738,7 @@ client.set_decay_rates({"trip_search": 0.25})`}
                       </tr>
                     </thead>
                     <tbody className="text-slate-300 font-sans">
-                      {activeEndpoint.spec.parameters.map((param: any) => (
+                      {activeEndpoint.spec.parameters.map((param) => (
                         <tr key={param.name} className="border-b border-slate-855">
                           <td className="p-3 font-mono text-blue-400">{param.name}</td>
                           <td className="p-3 font-mono text-slate-500">{param.schema?.type || "string"}</td>
@@ -764,7 +766,8 @@ client.set_decay_rates({"trip_search": 0.25})`}
                       activeEndpoint.spec.requestBody.content["application/json"]
                         .schema["$ref"];
                     const schema = getSchemaDetails(ref);
-                    if (!schema || !schema.properties) {
+                    const properties = schema?.properties;
+                    if (!schema || !properties) {
                       return <p className="text-xs text-slate-500">No properties defined.</p>;
                     }
                     return (
@@ -778,8 +781,8 @@ client.set_decay_rates({"trip_search": 0.25})`}
                           </tr>
                         </thead>
                         <tbody className="text-slate-300 font-sans">
-                          {Object.keys(schema.properties).map((key) => {
-                            const prop = schema.properties[key];
+                          {Object.keys(properties).map((key) => {
+                            const prop = properties[key];
                             const isRequired =
                               schema.required && schema.required.includes(key);
                             return (
@@ -808,20 +811,24 @@ client.set_decay_rates({"trip_search": 0.25})`}
                   Responses
                 </h3>
                 <div className="space-y-2">
-                  {Object.keys(activeEndpoint.spec.responses).map((status) => {
-                    const res = activeEndpoint.spec.responses[status];
-                    return (
-                      <div
-                        key={status}
-                        className="p-3 rounded border border-slate-855 bg-slate-900/20 flex items-center justify-between text-xs"
-                      >
-                        <span className="font-mono text-slate-350">
-                          Status Code: <strong className="text-white">{status}</strong>
-                        </span>
-                        <span className="text-slate-400">{res.description}</span>
-                      </div>
-                    );
-                  })}
+                  {activeEndpoint.spec.responses ? (
+                    Object.keys(activeEndpoint.spec.responses).map((status) => {
+                      const res = activeEndpoint.spec.responses![status];
+                      return (
+                        <div
+                          key={status}
+                          className="p-3 rounded border border-slate-855 bg-slate-900/20 flex items-center justify-between text-xs"
+                        >
+                          <span className="font-mono text-slate-350">
+                            Status Code: <strong className="text-white">{status}</strong>
+                          </span>
+                          <span className="text-slate-400">{res.description}</span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-xs text-slate-500">No responses documented.</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -831,14 +838,14 @@ client.set_decay_rates({"trip_search": 0.25})`}
               <div className="sticky top-24 border border-slate-855 bg-black rounded overflow-hidden shadow-2xl">
                 {/* Tabs */}
                 <div className="flex border-b border-slate-855 bg-slate-900/60 px-2 text-xs font-mono">
-                  {[
+                  {([
                     { id: "curl", label: "cURL" },
                     { id: "python", label: "Python SDK" },
                     { id: "typescript", label: "TypeScript" },
-                  ].map((tab) => (
+                  ] as const).map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveSnippetTab(tab.id as any)}
+                      onClick={() => setActiveSnippetTab(tab.id)}
                       className={`py-3 px-3 font-semibold border-b-2 transition-all ${
                         activeSnippetTab === tab.id
                           ? "text-blue-400 border-blue-500"
