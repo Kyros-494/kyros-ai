@@ -43,8 +43,9 @@ export default function Navbar() {
       } else {
         throw new Error("Invalid response structure from server.");
       }
-    } catch (err: any) {
-      setModalError(err.message || "An unexpected error occurred");
+    } catch (err) {
+      const error = err as Error;
+      setModalError(error.message || "An unexpected error occurred");
     } finally {
       setModalLoading(false);
     }

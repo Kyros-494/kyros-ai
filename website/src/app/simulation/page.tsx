@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 interface SimulatedMemory {
   id: string;
@@ -55,18 +55,7 @@ export default function SimulationPage() {
     { name: "6. Commit to Database", desc: "Write to Postgres and cache in Redis." }
   ];
 
-  // Simulator play loop
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isPlaying) {
-      timer = setInterval(() => {
-        handleStepForward();
-      }, 1500);
-    }
-    return () => clearInterval(timer);
-  }, [isPlaying, currentStep]);
-
-  const handleStepForward = () => {
+  const handleStepForward = useCallback(() => {
     if (currentStep === 0) {
       // Ingest
       setSimulationLogs(prev => [
@@ -121,7 +110,18 @@ export default function SimulationPage() {
       setCurrentStep(0);
       setIsPlaying(false); // Stop loop after complete cycle
     }
-  };
+  }, [currentStep, inputText, memories.length]);
+
+  // Simulator play loop
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isPlaying) {
+      timer = setInterval(() => {
+        handleStepForward();
+      }, 1500);
+    }
+    return () => clearInterval(timer);
+  }, [isPlaying, handleStepForward]);
 
   // Simulate elapsed days and apply decay formula w = w0 * e^(-lambda * t)
   const handleDaysChange = (days: number) => {
