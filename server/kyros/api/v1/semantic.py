@@ -162,6 +162,27 @@ async def get_entities(agent_id: str, request: Request, limit: int = 100) -> dic
                 {"agent_id": agent_id_internal, "limit": limit},
             )
             
+            # Get term counts and avg confidence to calculate memory_count/source_count/confidence
+            stats_result = await session.execute(
+                text("""
+                SELECT term, SUM(cnt) as total_count, AVG(avg_c) as avg_confidence FROM (
+                    SELECT subject as term, COUNT(*) as cnt, AVG(confidence) as avg_c FROM semantic_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL AND valid_to IS NULL
+                    GROUP BY subject
+                    UNION ALL
+                    SELECT object as term, COUNT(*) as cnt, AVG(confidence) as avg_c FROM semantic_memories
+                    WHERE agent_id = :agent_id AND deleted_at IS NULL AND valid_to IS NULL
+                    GROUP BY object
+                ) as term_stats
+                GROUP BY term
+                """),
+                {"agent_id": agent_id_internal}
+            )
+            term_stats_map = {}
+            for row in stats_result.fetchall():
+                if row.term:
+                    term_stats_map[row.term.lower()] = (int(row.total_count), float(row.avg_confidence or 1.0))
+
             entities = []
             for r in ent_result.fetchall():
                 ent_state = r.state
@@ -172,12 +193,40 @@ async def get_entities(agent_id: str, request: Request, limit: int = 100) -> dic
                         ent_state = {}
                 elif ent_state is None:
                     ent_state = {}
-                
+
+                ent_type = ent_state.get("type") or ent_state.get("entity_type") or "Other"
+                aliases = ent_state.get("aliases") or ent_state.get("alias") or []
+                if isinstance(aliases, str):
+                    aliases = [aliases]
+                if r.canonical_name and r.name and r.canonical_name.lower() != r.name.lower():
+                    if r.name not in aliases:
+                        aliases.append(r.name)
+
+                name_lower = r.name.lower() if r.name else ""
+                canon_lower = r.canonical_name.lower() if r.canonical_name else ""
+
+                stats1 = term_stats_map.get(name_lower, (0, 0.95))
+                stats2 = term_stats_map.get(canon_lower, (0, 0.95)) if canon_lower and canon_lower != name_lower else (0, 0.95)
+
+                mem_count = stats1[0] + stats2[0]
+                if mem_count == 0:
+                    mem_count = 1
+
+                avg_conf = (stats1[1] + stats2[1]) / 2.0 if stats1[0] > 0 and stats2[0] > 0 else (stats1[1] if stats1[0] > 0 else stats2[1])
+
                 entities.append(
                     {
                         "id": str(r.id),
                         "name": r.name,
                         "canonical_name": r.canonical_name,
+                        "entity_type": ent_type,
+                        "type": ent_type,
+                        "aliases": aliases,
+                        "confidence": avg_conf,
+                        "score": avg_conf,
+                        "memory_count": mem_count,
+                        "source_count": mem_count,
+                        "first_seen": r.created_at.isoformat() if r.created_at else None,
                         "state": ent_state,
                         "created_at": r.created_at.isoformat() if r.created_at else None,
                         "updated_at": r.updated_at.isoformat() if r.updated_at else None,
