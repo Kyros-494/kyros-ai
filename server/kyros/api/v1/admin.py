@@ -10,11 +10,8 @@ import math
 import uuid
 from datetime import datetime, timedelta
 
-try:
-    from datetime import UTC
-except ImportError:
-    from datetime import timezone
-    UTC = timezone.utc
+from datetime import timezone
+UTC = timezone.utc
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
@@ -323,6 +320,7 @@ async def get_memory_proof(memory_id: str, request: Request) -> dict[str, Any]:
 async def audit_integrity(agent_id: str, request: Request) -> dict[str, Any]:
     """Verify the cryptographic integrity of all memories for an agent."""
     from kyros.intelligence.integrity_service import verify_agent_integrity
+    from kyros.intelligence.integrity import MerkleTree
 
     if not agent_id.strip():
         raise HTTPException(status_code=400, detail="agent_id must not be blank")
@@ -333,16 +331,43 @@ async def audit_integrity(agent_id: str, request: Request) -> dict[str, Any]:
     try:
         async with get_db_session_for_tenant(str(tenant_id)) as session:
             agent_id_internal = await service._resolve_agent(session, tenant_id, agent_id)
+            
+            # Fetch all active memory leaves across all three tables
+            leaf_hashes: list[str] = []
+            for table in ["episodic_memories", "semantic_memories", "procedural_memories"]:
+                result = await session.execute(
+                    text(f"""
+                    SELECT merkle_leaf
+                    FROM {table}
+                    WHERE agent_id = :agent_id
+                      AND deleted_at IS NULL
+                      AND merkle_leaf IS NOT NULL
+                    ORDER BY id ASC
+                    """),
+                    {"agent_id": agent_id_internal},
+                )
+                leaf_hashes.extend(row.merkle_leaf for row in result.fetchall())
+
         tampered = await verify_agent_integrity(agent_id_internal)
     except SQLAlchemyError as e:
         logger.error("DB error in audit_integrity", agent_id=agent_id, error=str(e))
         raise HTTPException(status_code=503, detail="Database error, please retry") from e
 
+    tree = MerkleTree(leaf_hashes) if leaf_hashes else None
+    root_hash = tree.get_root() if tree else "N/A"
+    depth = len(tree._levels) if tree else 0
+
     return {
         "agent_id": agent_id,
         "is_intact": len(tampered) == 0,
+        "is_valid": len(tampered) == 0,
         "tampered_count": len(tampered),
         "tampered_memories": tampered,
+        "root_hash": root_hash,
+        "merkle_root": root_hash,
+        "total_memories": len(leaf_hashes),
+        "count": len(leaf_hashes),
+        "depth": depth,
     }
 
 
@@ -470,8 +495,7 @@ async def migrate_embeddings(
                             await session.execute(
                                 text(f"""
                                 UPDATE {table}
-                                SET embedding_secondary = embedding,
-                                    embedding = :new_emb,
+                                SET embedding = :new_emb,
                                     embedding_model = :new_model
                                 WHERE id = :id
                                 """),
@@ -596,6 +620,55 @@ async def hard_delete_agent_memories(
     return certificate
 
 
+# ─── Dashboard Stats ──────────────────────────
+
+
+@router.get("/stats")
+async def get_dashboard_stats(request: Request) -> dict[str, Any]:
+    """Get aggregated stats for the dashboard (memories count, agents count, tenants count, avg retention)."""
+    from kyros.storage.postgres import get_db_session, get_db_session_for_tenant
+
+    tenant_id = getattr(request.state, "tenant_id", None)
+    if not tenant_id:
+        raise HTTPException(status_code=401, detail="Unauthenticated")
+
+    # Get active agents count and tenant count
+    async with get_db_session() as session:
+        tenant_count_res = await session.execute(text("SELECT COUNT(*) FROM tenants WHERE is_active = true"))
+        tenant_count = tenant_count_res.scalar() or 1
+
+    # Get stats for current tenant
+    async with get_db_session_for_tenant(str(tenant_id)) as session:
+        # Count agents
+        agents_res = await session.execute(text("SELECT COUNT(*) FROM agents WHERE tenant_id = :tid"), {"tid": tenant_id})
+        agents_count = agents_res.scalar() or 0
+
+        # Episodic memories count and retention
+        episodic_res = await session.execute(
+            text("SELECT COUNT(*), AVG(freshness_score) FROM episodic_memories WHERE deleted_at IS NULL")
+        )
+        ep_row = episodic_res.fetchone()
+        ep_count = ep_row[0] or 0
+        ep_avg = float(ep_row[1]) if ep_row[1] is not None else 1.0
+
+        # Semantic memories count
+        semantic_res = await session.execute(text("SELECT COUNT(*) FROM semantic_memories WHERE deleted_at IS NULL AND valid_to IS NULL"))
+        sem_count = semantic_res.scalar() or 0
+
+        # Procedural memories count
+        procedural_res = await session.execute(text("SELECT COUNT(*) FROM procedural_memories WHERE deleted_at IS NULL"))
+        proc_count = procedural_res.scalar() or 0
+
+        total_mems = ep_count + sem_count + proc_count
+
+    return {
+        "total_memories": total_mems,
+        "active_agents": agents_count,
+        "active_tenants": tenant_count,
+        "avg_retention": ep_avg,
+    }
+
+
 # ─── List Agents ──────────────────────────────
 
 
@@ -631,6 +704,59 @@ async def list_agents(request: Request) -> dict[str, Any]:
             }
             for row in rows
         ]
+    }
+
+
+# ─── List Tenants ─────────────────────────────
+
+
+@router.get("/tenants")
+async def list_tenants(request: Request) -> dict[str, Any]:
+    """List all tenants (admin only). Returns metadata — API keys are NOT retrievable (stored as hashed)."""
+    from kyros.config import get_settings
+    from kyros.storage.postgres import get_db_session
+
+    settings = get_settings()
+    admin_token = settings.admin_token or settings.jwt_secret_key
+
+    token = request.headers.get("X-Admin-Token", "").strip()
+    if not token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "").strip()
+
+    if not token or token != admin_token:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+
+    try:
+        async with get_db_session() as session:
+            result = await session.execute(
+                text("""
+                SELECT id, name, email, plan, is_active, created_at, updated_at
+                FROM tenants
+                ORDER BY created_at DESC
+                """)
+            )
+            rows = result.fetchall()
+    except SQLAlchemyError as e:
+        logger.error("DB error in list_tenants", error=str(e))
+        raise HTTPException(status_code=503, detail="Database error, please retry") from e
+
+    return {
+        "tenants": [
+            {
+                "tenant_id": str(row.id),
+                "name": row.name,
+                "email": row.email,
+                "plan": row.plan,
+                "is_active": row.is_active,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+                "api_key": "mk_live_***...*** (not retrievable — shown only at creation)",
+            }
+            for row in rows
+        ],
+        "note": "API keys are stored as HMAC-SHA256 hashes and cannot be recovered. Rotate the key to get a new one.",
     }
 
 
@@ -1031,19 +1157,19 @@ async def test_llm(request: Request) -> dict[str, Any]:
             
         # Restore settings
         if provider == "openai":
-            settings.openai_api_key = old_settings_key
+            settings.openai_api_key = old_settings_key  # type: ignore[assignment]
             if old_settings_model:
                 settings.openai_model = old_settings_model
         elif provider == "gemini":
-            settings.gemini_api_key = old_settings_key
+            settings.gemini_api_key = old_settings_key  # type: ignore[assignment]
             if old_settings_model:
                 settings.gemini_model = old_settings_model
         elif provider == "mistral":
-            settings.mistral_api_key = old_settings_key
+            settings.mistral_api_key = old_settings_key  # type: ignore[assignment]
             if old_settings_model:
                 settings.mistral_model = old_settings_model
         elif provider == "anthropic":
-            settings.anthropic_api_key = old_settings_key
+            settings.anthropic_api_key = old_settings_key  # type: ignore[assignment]
             if old_settings_model:
                 settings.anthropic_model = old_settings_model
 
