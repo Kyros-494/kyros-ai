@@ -49,8 +49,16 @@ jobs:
         working-directory: server
         run: |
           pip install pip-audit
-          pip install .
-          pip-audit --strict --desc --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2025-3000 --ignore-vuln CVE-2026-45829
+          python -c '
+          import tomllib
+          with open("pyproject.toml", "rb") as f:
+              data = tomllib.load(f)
+          deps = data.get("project", {}).get("dependencies", [])
+          with open("requirements-audit.txt", "w") as f:
+              for dep in deps:
+                  f.write(dep + "\n")
+          '
+          pip-audit -r requirements-audit.txt --strict --desc --ignore-vuln CVE-2024-23342 --ignore-vuln CVE-2025-3000 --ignore-vuln CVE-2026-45829
 
       - name: Audit npm deps (TypeScript SDK)
         working-directory: sdks/typescript
@@ -74,7 +82,7 @@ jobs:
         run: docker build -t kyros-server:scan ./server
 
       - name: Trivy container scan
-        uses: aquasecurity/trivy-action@ed142fd003893347b5947a151522f77839352e04 # v0.36.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           image-ref: "kyros-server:scan"
           format: "sarif"
@@ -97,7 +105,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@ed142fd003893347b5947a151522f77839352e04 # v0.36.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           scan-type: "fs"
           scan-ref: "."

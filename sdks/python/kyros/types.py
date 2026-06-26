@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 # ─── Type Aliases ─────────────────────────────────────────────────────────────
 
@@ -66,10 +66,7 @@ class FactResult(BaseModel):
     # Belief propagation updates triggered by this fact
     propagated_updates: list[dict[str, Any]] = Field(default_factory=list)
 
-    class Config:
-        """Pydantic config."""
-
-        populate_by_name = True  # Allow both 'object' and 'object' as field names
+    model_config = ConfigDict(populate_by_name=True)
 
 
 # ─── Procedural Memory ────────────────────────────────────────────────────────
