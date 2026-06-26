@@ -43,6 +43,8 @@ except ImportError:
     anthropic = None
 
 try:
+    import warnings
+    warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
     import google.generativeai as genai  # type: ignore[import-not-found]
 except ImportError:
     genai = None
